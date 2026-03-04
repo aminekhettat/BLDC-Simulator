@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-03-04T13:18:24.620741",
+  "num_samples": 82926,
+  "duration": 8.292499999994012,
+  "motor_params": {
+    "nominal_voltage": 48.0,
+    "resistance": 2.5,
+    "inductance": 0.01
+  },
+  "control_params": {
+    "v_nominal": 48.0,
+    "f_nominal": 100.0
+  }
+}
