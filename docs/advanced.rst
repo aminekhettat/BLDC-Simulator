@@ -382,8 +382,47 @@ Generate a human-readable drift report:
 - Regenerate baseline only after intentional model/control updates.
 - If baseline is regenerated, record the reason in commit history/release notes.
 
+FOC Observer and Inverter Tuning Guide
+--------------------------------------
+
+Recent control updates add selectable angle observers and non-ideal inverter terms.
+Use the guidance below as practical starting points before fine tuning.
+
+Observer mode selection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+- `Measured`: Uses model rotor angle directly. Best for reference simulations and debugging.
+- `PLL`: Uses back-EMF angle tracking. Good first sensorless-like observer mode.
+- `SMO`: Sliding-mode-inspired variant with robust error sign action and filtered speed estimate.
+
+Suggested initial observer gains
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- PLL Kp: `50` to `150`
+- PLL Ki: `1000` to `5000`
+- SMO Kslide: `300` to `1000`
+- SMO LPF Alpha: `0.05` to `0.2`
+- SMO Boundary: `0.03` to `0.12` rad
+
+Suggested inverter non-ideality starting points
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Device Drop: `0.2` to `1.0` V
+- Dead-Time Loss: `0.005` to `0.03` pu
+- Conduction Resistance: `0.005` to `0.05` ohm
+
+Tuning workflow (recommended)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Start with `Measured` observer and all inverter non-idealities at zero.
+- Tune d/q current loops and cascaded speed loop first.
+- Switch to `PLL`, tune Kp then Ki to remove steady-state phase error.
+- Switch to `SMO` if robust disturbance rejection is needed, then tune `Kslide` and `LPF Alpha`.
+- Introduce inverter non-idealities one at a time: device drop, dead-time, then conduction resistance.
+- Re-freeze baseline only after expected drift is verified and documented.
+
 **Phase-2 Next Steps**
 
 - Replace simplified torque paths with energy-consistent formulations
-- Add inverter non-idealities (dead-time, device drops, switching effects)
-- Introduce cascaded speed/current FOC loops with robust anti-windup
+- Extend inverter non-idealities with explicit switching-frequency dependent loss modeling
+- Add observer confidence metrics and adaptive handoff criteria

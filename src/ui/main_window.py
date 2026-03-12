@@ -261,6 +261,10 @@ class SimulationThread(QThread):
                     self.svm.set_dc_voltage(supply_v)
                 except AttributeError:
                     pass
+                try:
+                    self.svm.set_phase_currents(self.engine.motor.currents)
+                except AttributeError:
+                    pass
 
             # Get control output (could be polar or cartesian)
             ctrl_out = self.controller.update(dt)
@@ -1076,6 +1080,228 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.foc_group_layout.addWidget(self.foc_speed_ref)
 
+        self.foc_speed_loop_mode = LabeledComboBox(
+            "Speed Loop Mode",
+            items=["Legacy iq mapping", "Cascaded PI"],
+            description="Legacy keeps previous iq mapping behavior. Cascaded PI enables speed-loop to iq generation.",
+        )
+        self.foc_group_layout.addWidget(self.foc_speed_loop_mode)
+
+        self.foc_iq_limit = LabeledSpinBox(
+            "Iq Limit",
+            min_val=0.1,
+            max_val=100.0,
+            initial=30.0,
+            step=0.1,
+            decimals=2,
+            suffix=" A",
+            description="Absolute q-axis current clamp used by cascaded speed loop.",
+        )
+        self.foc_group_layout.addWidget(self.foc_iq_limit)
+
+        self.foc_speed_kp = LabeledSpinBox(
+            "Speed PI Kp",
+            min_val=0.0,
+            max_val=10.0,
+            initial=0.02,
+            step=0.001,
+            decimals=4,
+            suffix="",
+            description="Proportional gain for cascaded speed PI loop.",
+        )
+        self.foc_group_layout.addWidget(self.foc_speed_kp)
+
+        self.foc_speed_ki = LabeledSpinBox(
+            "Speed PI Ki",
+            min_val=0.0,
+            max_val=200.0,
+            initial=1.0,
+            step=0.1,
+            decimals=3,
+            suffix="",
+            description="Integral gain for cascaded speed PI loop.",
+        )
+        self.foc_group_layout.addWidget(self.foc_speed_ki)
+
+        self.foc_d_kp = LabeledSpinBox(
+            "D-axis PI Kp",
+            min_val=0.0,
+            max_val=50.0,
+            initial=1.0,
+            step=0.01,
+            decimals=3,
+            suffix="",
+            description="Proportional gain for d-axis current PI loop.",
+        )
+        self.foc_group_layout.addWidget(self.foc_d_kp)
+
+        self.foc_d_ki = LabeledSpinBox(
+            "D-axis PI Ki",
+            min_val=0.0,
+            max_val=500.0,
+            initial=0.1,
+            step=0.01,
+            decimals=3,
+            suffix="",
+            description="Integral gain for d-axis current PI loop.",
+        )
+        self.foc_group_layout.addWidget(self.foc_d_ki)
+
+        self.foc_q_kp = LabeledSpinBox(
+            "Q-axis PI Kp",
+            min_val=0.0,
+            max_val=50.0,
+            initial=1.0,
+            step=0.01,
+            decimals=3,
+            suffix="",
+            description="Proportional gain for q-axis current PI loop.",
+        )
+        self.foc_group_layout.addWidget(self.foc_q_kp)
+
+        self.foc_q_ki = LabeledSpinBox(
+            "Q-axis PI Ki",
+            min_val=0.0,
+            max_val=500.0,
+            initial=0.1,
+            step=0.01,
+            decimals=3,
+            suffix="",
+            description="Integral gain for q-axis current PI loop.",
+        )
+        self.foc_group_layout.addWidget(self.foc_q_ki)
+
+        self.foc_decouple_d_mode = LabeledComboBox(
+            "D-axis Decoupling",
+            items=["Disabled", "Enabled"],
+            description="Enable d-axis feed-forward compensation term (-omega*Lq*iq).",
+        )
+        self.foc_group_layout.addWidget(self.foc_decouple_d_mode)
+
+        self.foc_decouple_q_mode = LabeledComboBox(
+            "Q-axis Decoupling",
+            items=["Disabled", "Enabled"],
+            description="Enable q-axis feed-forward compensation term (omega*Ld*id).",
+        )
+        self.foc_group_layout.addWidget(self.foc_decouple_q_mode)
+
+        self.foc_angle_observer_mode = LabeledComboBox(
+            "Angle Observer",
+            items=["Measured", "PLL", "SMO"],
+            description="Select rotor electrical angle source: direct model angle, PLL on back-EMF, or sliding-mode observer variant.",
+        )
+        self.foc_group_layout.addWidget(self.foc_angle_observer_mode)
+
+        self.foc_pll_kp = LabeledSpinBox(
+            "PLL Kp",
+            min_val=0.0,
+            max_val=5000.0,
+            initial=80.0,
+            step=1.0,
+            decimals=2,
+            suffix="",
+            description="Proportional gain for back-EMF PLL angle observer.",
+        )
+        self.foc_group_layout.addWidget(self.foc_pll_kp)
+
+        self.foc_pll_ki = LabeledSpinBox(
+            "PLL Ki",
+            min_val=0.0,
+            max_val=50000.0,
+            initial=2000.0,
+            step=10.0,
+            decimals=2,
+            suffix="",
+            description="Integral gain for back-EMF PLL angle observer.",
+        )
+        self.foc_group_layout.addWidget(self.foc_pll_ki)
+
+        self.foc_smo_k_slide = LabeledSpinBox(
+            "SMO Kslide",
+            min_val=0.0,
+            max_val=10000.0,
+            initial=600.0,
+            step=5.0,
+            decimals=2,
+            suffix="",
+            description="Sliding gain for SMO-inspired angle observer correction.",
+        )
+        self.foc_group_layout.addWidget(self.foc_smo_k_slide)
+
+        self.foc_smo_lpf_alpha = LabeledSpinBox(
+            "SMO LPF Alpha",
+            min_val=0.001,
+            max_val=1.0,
+            initial=0.08,
+            step=0.001,
+            decimals=3,
+            suffix="",
+            description="Low-pass blending factor for SMO estimated electrical speed.",
+        )
+        self.foc_group_layout.addWidget(self.foc_smo_lpf_alpha)
+
+        self.foc_smo_boundary = LabeledSpinBox(
+            "SMO Boundary",
+            min_val=0.001,
+            max_val=1.0,
+            initial=0.06,
+            step=0.001,
+            decimals=3,
+            suffix=" rad",
+            description="Boundary layer width used in SMO switching nonlinearity.",
+        )
+        self.foc_group_layout.addWidget(self.foc_smo_boundary)
+
+        self.foc_startup_transition_mode = LabeledComboBox(
+            "Observer Startup Transition",
+            items=["Disabled", "Enabled"],
+            description="When enabled, start with an initial observer mode and automatically hand off to selected observer when startup conditions are met.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_transition_mode)
+
+        self.foc_startup_initial_observer = LabeledComboBox(
+            "Startup Initial Observer",
+            items=["Measured", "PLL", "SMO"],
+            description="Observer mode used during startup before handoff.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_initial_observer)
+
+        self.foc_startup_min_speed = LabeledSpinBox(
+            "Startup Min Speed",
+            min_val=0.0,
+            max_val=20000.0,
+            initial=300.0,
+            step=10.0,
+            decimals=1,
+            suffix=" RPM",
+            description="Minimum speed required before observer handoff.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_min_speed)
+
+        self.foc_startup_min_time = LabeledSpinBox(
+            "Startup Min Time",
+            min_val=0.0,
+            max_val=5.0,
+            initial=0.05,
+            step=0.005,
+            decimals=3,
+            suffix=" s",
+            description="Minimum startup dwell time before observer handoff.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_min_time)
+
+        self.foc_startup_min_emf = LabeledSpinBox(
+            "Startup Min Back-EMF",
+            min_val=0.0,
+            max_val=50.0,
+            initial=0.5,
+            step=0.05,
+            decimals=3,
+            suffix=" V",
+            description="Minimum back-EMF magnitude required before observer handoff.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_min_emf)
+
         btn_auto_d = AccessibleButton(
             "Auto-tune d-axis", "Auto-tune d-axis PI controller"
         )
@@ -1090,6 +1316,75 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.foc_group.setLayout(self.foc_group_layout)
         layout.addWidget(self.foc_group)
+
+        self.inverter_group = AccessibleGroupBox(
+            "Inverter Non-Idealities",
+            "Optional inverter realism settings. Set to zero to keep ideal inverter behavior.",
+        )
+        inverter_layout = QVBoxLayout()
+
+        self.inverter_device_drop = LabeledSpinBox(
+            "Device Drop",
+            min_val=0.0,
+            max_val=10.0,
+            initial=0.0,
+            step=0.01,
+            decimals=3,
+            suffix=" V",
+            description="Approximate per-phase effective voltage drop from switching devices.",
+        )
+        inverter_layout.addWidget(self.inverter_device_drop)
+
+        self.inverter_dead_time_fraction = LabeledSpinBox(
+            "Dead-Time Loss",
+            min_val=0.0,
+            max_val=0.2,
+            initial=0.0,
+            step=0.001,
+            decimals=4,
+            suffix=" pu",
+            description="Duty loss fraction from dead-time effects. 0 keeps ideal modulation.",
+        )
+        inverter_layout.addWidget(self.inverter_dead_time_fraction)
+
+        self.inverter_conduction_resistance = LabeledSpinBox(
+            "Conduction Resistance",
+            min_val=0.0,
+            max_val=5.0,
+            initial=0.0,
+            step=0.001,
+            decimals=4,
+            suffix=" Ohm",
+            description="Effective inverter conduction path resistance used for current-dependent voltage drop.",
+        )
+        inverter_layout.addWidget(self.inverter_conduction_resistance)
+
+        self.inverter_switching_frequency = LabeledSpinBox(
+            "Switching Frequency",
+            min_val=0.0,
+            max_val=200000.0,
+            initial=0.0,
+            step=500.0,
+            decimals=1,
+            suffix=" Hz",
+            description="PWM switching frequency used by switching-loss approximation (0 disables).",
+        )
+        inverter_layout.addWidget(self.inverter_switching_frequency)
+
+        self.inverter_switching_loss_coeff = LabeledSpinBox(
+            "Switching Loss Coeff",
+            min_val=0.0,
+            max_val=1.0,
+            initial=0.0,
+            step=0.001,
+            decimals=4,
+            suffix=" V/A/kHz",
+            description="Voltage-loss coefficient per ampere and kHz for switching-dependent drop modeling.",
+        )
+        inverter_layout.addWidget(self.inverter_switching_loss_coeff)
+
+        self.inverter_group.setLayout(inverter_layout)
+        layout.addWidget(self.inverter_group)
 
         layout.addStretch()
 
@@ -1143,6 +1438,18 @@ class BLDCMotorControlGUI(QMainWindow):
             ("back_emf_c", "Back-EMF Phase C", "V"),
             ("id_ref", "d-axis Current Ref", "A"),
             ("iq_ref", "q-axis Current Ref", "A"),
+            ("speed_error", "Speed Error", "rad/s"),
+            ("v_d_ff", "d-axis Feedforward", "V"),
+            ("v_q_ff", "q-axis Feedforward", "V"),
+            ("speed_loop_enabled", "Speed Loop Enabled", "0/1"),
+            ("decouple_d_enabled", "D-axis Decoupling", "0/1"),
+            ("decouple_q_enabled", "Q-axis Decoupling", "0/1"),
+            ("observer_mode_code", "Observer Mode Code", "0/1/2"),
+            ("theta_electrical", "Estimated Electrical Angle", "rad"),
+            ("theta_meas_emf", "Back-EMF Angle", "rad"),
+            ("theta_error_pll", "PLL Angle Error", "rad"),
+            ("theta_error_smo", "SMO Angle Error", "rad"),
+            ("smo_omega_est", "SMO Estimated Speed", "rad/s"),
             ("time", "Simulation Time", "s"),
         ]
 
@@ -1356,6 +1663,13 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Create SVM generator (cartesian capable if needed later)
         self.svm = SVMGenerator(dc_voltage=SIMULATION_PARAMS["dc_voltage"])
+        self.svm.set_nonidealities(
+            device_drop_v=self.inverter_device_drop.value(),
+            dead_time_fraction=self.inverter_dead_time_fraction.value(),
+            conduction_resistance_ohm=self.inverter_conduction_resistance.value(),
+            switching_frequency_hz=self.inverter_switching_frequency.value(),
+            switching_loss_coeff_v_per_a_khz=self.inverter_switching_loss_coeff.value(),
+        )
 
         # Determine controller type
         if self.ctrl_mode.currentText() == "V/f":
@@ -1372,10 +1686,12 @@ class BLDCMotorControlGUI(QMainWindow):
             # FOC controller configuration
             use_conc = self.foc_transform.currentText() == "Concordia"
             out_cart = self.foc_output_mode.currentText() == "Cartesian"
+            speed_loop_enabled = self.foc_speed_loop_mode.currentText() == "Cascaded PI"
             self.controller = FOCController(
                 motor=self.motor,
                 use_concordia=use_conc,
                 output_cartesian=out_cart,
+                enable_speed_loop=speed_loop_enabled,
             )
             # set references
             self.controller.set_current_references(
@@ -1383,6 +1699,43 @@ class BLDCMotorControlGUI(QMainWindow):
                 iq_ref=self.foc_iq_ref.value(),
             )
             self.controller.set_speed_reference(self.foc_speed_ref.value())
+            self.controller.set_cascaded_speed_loop(
+                enabled=speed_loop_enabled,
+                iq_limit_a=self.foc_iq_limit.value(),
+            )
+            self.controller.set_speed_pi_gains(
+                kp=self.foc_speed_kp.value(),
+                ki=self.foc_speed_ki.value(),
+            )
+            self.controller.set_current_pi_gains(
+                d_kp=self.foc_d_kp.value(),
+                d_ki=self.foc_d_ki.value(),
+                q_kp=self.foc_q_kp.value(),
+                q_ki=self.foc_q_ki.value(),
+            )
+            self.controller.set_decoupling(
+                enable_d=self.foc_decouple_d_mode.currentText() == "Enabled",
+                enable_q=self.foc_decouple_q_mode.currentText() == "Enabled",
+            )
+            self.controller.set_angle_observer(
+                self.foc_angle_observer_mode.currentText()
+            )
+            self.controller.set_pll_gains(
+                kp=self.foc_pll_kp.value(),
+                ki=self.foc_pll_ki.value(),
+            )
+            self.controller.set_smo_gains(
+                k_slide=self.foc_smo_k_slide.value(),
+                lpf_alpha=self.foc_smo_lpf_alpha.value(),
+                boundary=self.foc_smo_boundary.value(),
+            )
+            self.controller.set_startup_transition(
+                enabled=self.foc_startup_transition_mode.currentText() == "Enabled",
+                initial_mode=self.foc_startup_initial_observer.currentText(),
+                min_speed_rpm=self.foc_startup_min_speed.value(),
+                min_elapsed_s=self.foc_startup_min_time.value(),
+                min_emf_v=self.foc_startup_min_emf.value(),
+            )
 
     def _start_simulation(self):
         """Start simulation."""
@@ -1461,6 +1814,15 @@ class BLDCMotorControlGUI(QMainWindow):
         speed_val = state.get("speed_rpm", 0)
         time_val = state.get("time", 0)
 
+        # Pull advanced controller telemetry when FOC is active.
+        ctrl_state = {}
+        observer_mode_code = 0.0
+        if isinstance(self.controller, FOCController):
+            ctrl_state = self.controller.get_state()
+            observer_mode = str(ctrl_state.get("angle_observer_mode", "Measured"))
+            mode_to_code = {"Measured": 0.0, "PLL": 1.0, "SMO": 2.0}
+            observer_mode_code = mode_to_code.get(observer_mode, -1.0)
+
         # Update accessible text blocks with new values
         if hasattr(self, "status_blocks"):
             self.status_blocks["speed_rpm"].update_value(speed_val)
@@ -1473,6 +1835,38 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["back_emf_a"].update_value(state.get("back_emf_a", 0))
             self.status_blocks["back_emf_b"].update_value(state.get("back_emf_b", 0))
             self.status_blocks["back_emf_c"].update_value(state.get("back_emf_c", 0))
+            self.status_blocks["id_ref"].update_value(ctrl_state.get("id_ref", 0.0))
+            self.status_blocks["iq_ref"].update_value(ctrl_state.get("iq_ref", 0.0))
+            self.status_blocks["speed_error"].update_value(
+                ctrl_state.get("speed_error", 0.0)
+            )
+            self.status_blocks["v_d_ff"].update_value(ctrl_state.get("v_d_ff", 0.0))
+            self.status_blocks["v_q_ff"].update_value(ctrl_state.get("v_q_ff", 0.0))
+            self.status_blocks["speed_loop_enabled"].update_value(
+                1.0 if ctrl_state.get("speed_loop_enabled", False) else 0.0
+            )
+            self.status_blocks["decouple_d_enabled"].update_value(
+                1.0 if ctrl_state.get("decouple_d_enabled", False) else 0.0
+            )
+            self.status_blocks["decouple_q_enabled"].update_value(
+                1.0 if ctrl_state.get("decouple_q_enabled", False) else 0.0
+            )
+            self.status_blocks["observer_mode_code"].update_value(observer_mode_code)
+            self.status_blocks["theta_electrical"].update_value(
+                ctrl_state.get("theta_electrical", 0.0)
+            )
+            self.status_blocks["theta_meas_emf"].update_value(
+                ctrl_state.get("theta_meas_emf", 0.0)
+            )
+            self.status_blocks["theta_error_pll"].update_value(
+                ctrl_state.get("theta_error_pll", 0.0)
+            )
+            self.status_blocks["theta_error_smo"].update_value(
+                ctrl_state.get("theta_error_smo", 0.0)
+            )
+            self.status_blocks["smo_omega_est"].update_value(
+                ctrl_state.get("smo", {}).get("omega_est", 0.0)
+            )
             self.status_blocks["time"].update_value(time_val)
         else:
             # Fallback for backward compatibility with old label-based system
@@ -1505,6 +1899,48 @@ class BLDCMotorControlGUI(QMainWindow):
             )
             self.status_labels["back_emf_c"].setText(
                 f"Back-EMF Phase C: {state.get('back_emf_c', 0):.3f} V"
+            )
+            self.status_labels["id_ref"].setText(
+                f"d-axis Current Ref: {ctrl_state.get('id_ref', 0.0):.3f} A"
+            )
+            self.status_labels["iq_ref"].setText(
+                f"q-axis Current Ref: {ctrl_state.get('iq_ref', 0.0):.3f} A"
+            )
+            self.status_labels["speed_error"].setText(
+                f"Speed Error: {ctrl_state.get('speed_error', 0.0):.4f} rad/s"
+            )
+            self.status_labels["v_d_ff"].setText(
+                f"d-axis Feedforward: {ctrl_state.get('v_d_ff', 0.0):.4f} V"
+            )
+            self.status_labels["v_q_ff"].setText(
+                f"q-axis Feedforward: {ctrl_state.get('v_q_ff', 0.0):.4f} V"
+            )
+            self.status_labels["speed_loop_enabled"].setText(
+                f"Speed Loop Enabled: {1 if ctrl_state.get('speed_loop_enabled', False) else 0}"
+            )
+            self.status_labels["decouple_d_enabled"].setText(
+                f"D-axis Decoupling: {1 if ctrl_state.get('decouple_d_enabled', False) else 0}"
+            )
+            self.status_labels["decouple_q_enabled"].setText(
+                f"Q-axis Decoupling: {1 if ctrl_state.get('decouple_q_enabled', False) else 0}"
+            )
+            self.status_labels["observer_mode_code"].setText(
+                f"Observer Mode Code: {observer_mode_code:.0f}"
+            )
+            self.status_labels["theta_electrical"].setText(
+                f"Estimated Electrical Angle: {ctrl_state.get('theta_electrical', 0.0):.4f} rad"
+            )
+            self.status_labels["theta_meas_emf"].setText(
+                f"Back-EMF Angle: {ctrl_state.get('theta_meas_emf', 0.0):.4f} rad"
+            )
+            self.status_labels["theta_error_pll"].setText(
+                f"PLL Angle Error: {ctrl_state.get('theta_error_pll', 0.0):.4f} rad"
+            )
+            self.status_labels["theta_error_smo"].setText(
+                f"SMO Angle Error: {ctrl_state.get('theta_error_smo', 0.0):.4f} rad"
+            )
+            self.status_labels["smo_omega_est"].setText(
+                f"SMO Estimated Speed: {ctrl_state.get('smo', {}).get('omega_est', 0.0):.4f} rad/s"
             )
             self.status_labels["time"].setText(f"Simulation Time: {time_val:.3f} s")
 
@@ -1601,18 +2037,6 @@ class BLDCMotorControlGUI(QMainWindow):
             self.speed_ax.legend()
             self.speed_figure.tight_layout()
             self.speed_canvas.draw()
-
-        # if using FOC, show additional controller state
-        if isinstance(self.controller, FOCController):
-            ctrl_state = self.controller.get_state()
-            id_val = ctrl_state.get("id_ref", 0)
-            iq_val = ctrl_state.get("iq_ref", 0)
-            self.status_labels.setdefault("id_ref", QLabel()).setText(
-                f"d-axis ref: {id_val:.2f} A"
-            )
-            self.status_labels.setdefault("iq_ref", QLabel()).setText(
-                f"q-axis ref: {iq_val:.2f} A"
-            )
 
     def _update_display(self):
         """Update display (for manual updates)."""

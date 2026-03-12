@@ -48,7 +48,15 @@ class SVMGenerator:
         >>> print(voltages)  # [v_a, v_b, v_c]
     """
 
-    def __init__(self, dc_voltage: float = 48.0):
+    def __init__(
+        self,
+        dc_voltage: float = 48.0,
+        device_drop_v: float = 0.0,
+        dead_time_fraction: float = 0.0,
+        conduction_resistance_ohm: float = 0.0,
+        switching_frequency_hz: float = 0.0,
+        switching_loss_coeff_v_per_a_khz: float = 0.0,
+    ):
         """
         Initialize SVM generator.
 
@@ -61,6 +69,19 @@ class SVMGenerator:
             raise ValueError("DC voltage must be positive")
 
         self.dc_voltage = dc_voltage
+        self.device_drop_v = 0.0
+        self.dead_time_fraction = 0.0
+        self.conduction_resistance_ohm = 0.0
+        self.switching_frequency_hz = 0.0
+        self.switching_loss_coeff_v_per_a_khz = 0.0
+        self.phase_currents = np.zeros(3, dtype=np.float64)
+        self.set_nonidealities(
+            device_drop_v=device_drop_v,
+            dead_time_fraction=dead_time_fraction,
+            conduction_resistance_ohm=conduction_resistance_ohm,
+            switching_frequency_hz=switching_frequency_hz,
+            switching_loss_coeff_v_per_a_khz=switching_loss_coeff_v_per_a_khz,
+        )
 
         # Sector boundaries (in radians)
         self.sector_angles = np.array(
@@ -153,6 +174,7 @@ class SVMGenerator:
         # Generate modulated voltage (time-domain PWM)
         # Using standard SVM switching sequence
         voltages = self._generate_phase_voltages(sector, t1, t2, t0)
+        voltages = self._apply_nonidealities(voltages)
 
         return voltages
 
@@ -215,6 +237,84 @@ class SVMGenerator:
         :rtype: float
         """
         return (2.0 / 3.0) * self.dc_voltage
+
+    def set_nonidealities(
+        self,
+        device_drop_v: float = 0.0,
+        dead_time_fraction: float = 0.0,
+        conduction_resistance_ohm: float = 0.0,
+        switching_frequency_hz: float = 0.0,
+        switching_loss_coeff_v_per_a_khz: float = 0.0,
+    ) -> None:
+        """Configure simple inverter non-idealities.
+
+        :param device_drop_v: Per-phase effective conduction voltage drop [V]
+        :param dead_time_fraction: Duty loss ratio due to dead-time [0..0.2]
+        :param conduction_resistance_ohm: Effective conduction path resistance [ohm]
+        :param switching_frequency_hz: Inverter switching frequency [Hz]
+        :param switching_loss_coeff_v_per_a_khz:
+            Voltage-loss coefficient per ampere and kHz [V/A/kHz]
+        """
+        if device_drop_v < 0:
+            raise ValueError("device_drop_v must be non-negative")
+        if dead_time_fraction < 0 or dead_time_fraction > 0.2:
+            raise ValueError("dead_time_fraction must be between 0 and 0.2")
+        if conduction_resistance_ohm < 0:
+            raise ValueError("conduction_resistance_ohm must be non-negative")
+        if switching_frequency_hz < 0:
+            raise ValueError("switching_frequency_hz must be non-negative")
+        if switching_loss_coeff_v_per_a_khz < 0:
+            raise ValueError("switching_loss_coeff_v_per_a_khz must be non-negative")
+
+        self.device_drop_v = float(device_drop_v)
+        self.dead_time_fraction = float(dead_time_fraction)
+        self.conduction_resistance_ohm = float(conduction_resistance_ohm)
+        self.switching_frequency_hz = float(switching_frequency_hz)
+        self.switching_loss_coeff_v_per_a_khz = float(switching_loss_coeff_v_per_a_khz)
+
+    def set_phase_currents(self, phase_currents: np.ndarray) -> None:
+        """Provide phase currents used for current-dependent voltage drops."""
+        arr = np.asarray(phase_currents, dtype=np.float64)
+        if arr.shape != (3,):
+            raise ValueError("phase_currents must be a 3-element array")
+        self.phase_currents = arr
+
+    def _apply_nonidealities(self, voltages: np.ndarray) -> np.ndarray:
+        """Apply lightweight inverter non-ideality effects to phase voltages."""
+        out = np.array(voltages, dtype=np.float64, copy=True)
+        if (
+            self.device_drop_v > 0.0
+            or self.conduction_resistance_ohm > 0.0
+            or self.switching_loss_coeff_v_per_a_khz > 0.0
+        ):
+            total_drop = np.full(3, self.device_drop_v, dtype=np.float64)
+            if self.conduction_resistance_ohm > 0.0:
+                total_drop += self.conduction_resistance_ohm * np.abs(
+                    self.phase_currents
+                )
+            if (
+                self.switching_loss_coeff_v_per_a_khz > 0.0
+                and self.switching_frequency_hz > 0.0
+            ):
+                f_khz = self.switching_frequency_hz / 1000.0
+                total_drop += (
+                    self.switching_loss_coeff_v_per_a_khz
+                    * np.abs(self.phase_currents)
+                    * f_khz
+                )
+
+            signs = np.sign(out)
+            out = np.where(
+                np.abs(out) > total_drop,
+                out - signs * total_drop,
+                0.0,
+            )
+
+        if self.dead_time_fraction > 0.0:
+            out *= 1.0 - self.dead_time_fraction
+
+        half_bus = self.dc_voltage / 2.0
+        return np.clip(out, -half_bus, half_bus)
 
     def set_dc_voltage(self, dc_voltage: float) -> None:
         """
