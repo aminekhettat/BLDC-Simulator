@@ -1,0 +1,141 @@
+name: Regression Gates
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      QT_QPA_PLATFORM: offscreen
+      MPLBACKEND: Agg
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Enforce baseline rationale on PR
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+        run: |
+          CHANGED_BASELINES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -E '^tests/baselines/(reference_baseline|foc_reference_baseline)\.json$' || true)
+          if [ -z "$CHANGED_BASELINES" ]; then
+            echo "No baseline JSON changes detected."
+            exit 0
+          fi
+
+          echo "Baseline files changed:"
+          echo "$CHANGED_BASELINES"
+
+          python - << 'PY'
+          import json
+          import os
+          import sys
+
+          event_path = os.environ["GITHUB_EVENT_PATH"]
+          with open(event_path, "r", encoding="utf-8") as f:
+              payload = json.load(f)
+
+          body = (payload.get("pull_request", {}).get("body") or "").lower()
+          required_markers = [
+              "baseline rationale",
+              "drift evidence",
+          ]
+          missing = [m for m in required_markers if m not in body]
+
+          if missing:
+              print("PR body is missing required baseline documentation markers:")
+              for m in missing:
+                  print(f"- {m}")
+              print("\nPlease complete .github/PULL_REQUEST_TEMPLATE.md sections.")
+              sys.exit(1)
+
+          print("Baseline rationale markers found in PR body.")
+          PY
+
+      - name: Run baseline integrity and regression gates
+        run: |
+          pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py -v
+
+      - name: Generate drift report artifact
+        if: always()
+        run: |
+          python examples/report_regression_drift.py > regression_drift_report.txt
+
+      - name: Generate baseline governance summary artifact
+        if: always()
+        env:
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          SUMMARY_FILE=baseline_governance_summary.txt
+          {
+            echo "Baseline Governance Summary"
+            echo "==========================="
+            echo "event: ${GITHUB_EVENT_NAME}"
+            echo "head_sha: ${HEAD_SHA}"
+          } > "$SUMMARY_FILE"
+
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            CHANGED_BASELINES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -E '^tests/baselines/(reference_baseline|foc_reference_baseline)\.json$' || true)
+            if [ -z "$CHANGED_BASELINES" ]; then
+              echo "baseline_json_changed: no" >> "$SUMMARY_FILE"
+            else
+              echo "baseline_json_changed: yes" >> "$SUMMARY_FILE"
+              echo "changed_files:" >> "$SUMMARY_FILE"
+              echo "$CHANGED_BASELINES" | sed 's/^/  - /' >> "$SUMMARY_FILE"
+            fi
+
+            python - << 'PY' >> "$SUMMARY_FILE"
+import json
+import os
+
+with open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8") as f:
+    payload = json.load(f)
+
+body = (payload.get("pull_request", {}).get("body") or "").lower()
+markers = ["baseline rationale", "drift evidence"]
+print("pr_body_markers:")
+for m in markers:
+    print(f"  - {m}: {'yes' if m in body else 'no'}")
+PY
+          else
+            echo "baseline_json_changed: n/a (not a pull_request event)" >> "$SUMMARY_FILE"
+            echo "pr_body_markers: n/a (not a pull_request event)" >> "$SUMMARY_FILE"
+          fi
+
+      - name: Upload drift report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-drift-report
+          path: |
+            regression_drift_report.txt
+            baseline_governance_summary.txt
+            tests/baselines/reference_baseline.json
+            tests/baselines/foc_reference_baseline.json
+          if-no-files-found: warn

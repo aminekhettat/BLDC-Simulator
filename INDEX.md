@@ -216,6 +216,27 @@ python -m pytest -v
 
 ---
 
+## 🛡️ Release & Governance Checklist
+
+Before merging or releasing:
+
+1. Confirm CI check is green: **Regression Gates / regression**
+2. Run local governance + regression suite:
+
+```bash
+python -m pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py tests/test_regression_reporting.py -v
+```
+
+3. If baseline JSON files changed, document in PR:
+   - **Baseline rationale:** why baseline was regenerated
+   - **Drift evidence:** summary from `python examples/report_regression_drift.py`
+4. Use templates:
+   - PR: [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md)
+   - Release notes: [RELEASE_NOTES_TEMPLATE.md](RELEASE_NOTES_TEMPLATE.md)
+5. Follow contributor policy: [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
 ## 🚀 Launching the Application
 
 ### Option 1: GUI Application

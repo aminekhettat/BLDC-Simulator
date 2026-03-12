@@ -270,6 +270,28 @@ Educational use simulator. Based on standard BLDC motor control theory.
 - **Type hints** for clarity
 - **Examples** in docstrings
 
+## Release & Governance Checklist
+
+Before merge or release:
+
+1. Regression gate is green in CI: `Regression Gates / regression`
+2. Baseline integrity and regression tests pass locally:
+
+```bash
+pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py tests/test_regression_reporting.py -v
+```
+
+3. If baseline JSON files changed, include in PR:
+   - `Baseline rationale:`
+   - `Drift evidence:`
+4. Use templates:
+   - PR template: `.github/PULL_REQUEST_TEMPLATE.md`
+   - Release notes template: `RELEASE_NOTES_TEMPLATE.md`
+
+Policy references:
+- `CONTRIBUTING.md`
+- `docs/branch_protection.rst`
+
 Generate documentation:
 
 ```bash

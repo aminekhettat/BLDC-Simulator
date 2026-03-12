@@ -241,3 +241,149 @@ To add a new control algorithm:
         def get_control_law(self):
             # Return control voltages
             return Ua, Ub, Uc
+
+Research-Grade Fidelity Roadmap (Phase 1)
+------------------------------------------
+
+Phase 1 establishes deterministic regression checks before deeper physics and control upgrades.
+
+**Objective**
+
+- Freeze a reproducible KPI baseline over fixed scenarios
+- Detect unintended behavior drift when changing motor/control models
+- Keep changes measurable release-to-release
+
+**Implemented Baseline Framework**
+
+- `src.utils.regression_baseline`:
+    - Defines fixed reference scenarios
+    - Runs deterministic V/f simulations
+    - Runs deterministic FOC simulations
+    - Computes KPI set per scenario
+    - Saves/loads baseline JSON
+    - Compares current KPIs against frozen baseline tolerances
+- `tests.test_regression_baseline`:
+    - Executes the reference suite and checks drift against baseline
+- `tests.test_regression_baseline_foc`:
+    - Executes the FOC reference suite and checks drift against baseline
+- `examples.generate_regression_baseline`:
+    - Utility script to freeze or refresh baseline data
+- `examples.generate_foc_regression_baseline`:
+    - Utility script to freeze or refresh FOC baseline data
+- `examples.report_regression_drift`:
+    - Utility script to print KPI drift tables (full and failed rows)
+
+**Reference Scenarios**
+
+1. no_load_spinup
+2. constant_load
+3. ramp_load
+4. supply_sag
+
+**FOC Reference Scenarios**
+
+1. foc_constant_load_clarke
+2. foc_ramp_load_clarke
+3. foc_supply_sag_concordia
+
+**Current KPI Set**
+
+- final_speed_rpm
+- peak_speed_rpm
+- peak_phase_current_a
+- steady_state_speed_std_rpm
+- torque_ripple_std_nm
+- mean_supply_voltage_v
+- mean_load_torque_nm
+
+**Drift Diagnostics**
+
+Baseline comparisons now include row-wise drift reporting with:
+
+- absolute delta
+- percentage delta
+- tolerance percentage
+- pass/fail/missing status
+
+When regression tests fail, the failure output includes a compact drift table
+to show exactly which KPI exceeded tolerance and by how much.
+
+**CI Regression Gate**
+
+GitHub Actions workflow:
+
+- `.github/workflows/regression-gates.yml`
+
+Behavior:
+
+- Runs V/f and FOC baseline regression tests on pushes and pull requests
+- Fails the CI job when KPI drift exceeds configured tolerance
+- Always uploads an artifact bundle with:
+    - `regression_drift_report.txt`
+    - current frozen baseline JSON files
+
+Branch protection setup and required status-check mapping are documented in:
+
+- `docs/branch_protection.rst`
+
+PR merge checklist template:
+
+- `.github/PULL_REQUEST_TEMPLATE.md`
+
+Contributor policy for baseline regeneration and required evidence:
+
+- `CONTRIBUTING.md`
+
+Release note template with explicit baseline-change section:
+
+- `RELEASE_NOTES_TEMPLATE.md`
+
+**How to Freeze Baseline**
+
+::
+
+        python examples/generate_regression_baseline.py
+
+This writes baseline data to:
+
+- `tests/baselines/reference_baseline.json`
+
+To freeze FOC baseline:
+
+::
+
+    python examples/generate_foc_regression_baseline.py
+
+This writes baseline data to:
+
+- `tests/baselines/foc_reference_baseline.json`
+
+**How to Run Regression Check**
+
+::
+
+        pytest tests/test_regression_baseline.py -v
+
+Run both V/f and FOC regression checks:
+
+::
+
+    pytest tests/test_regression_baseline.py tests/test_regression_baseline_foc.py -v
+
+Generate a human-readable drift report:
+
+::
+
+    python examples/report_regression_drift.py
+
+**Important Notes**
+
+- Keep `SIMULATION_PARAMS['dt']` fixed when comparing against the same baseline.
+- Regenerate baseline only after intentional model/control updates.
+- If baseline is regenerated, record the reason in commit history/release notes.
+
+**Phase-2 Next Steps**
+
+- Replace simplified torque paths with energy-consistent formulations
+- Add inverter non-idealities (dead-time, device drops, switching effects)
+- Introduce cascaded speed/current FOC loops with robust anti-windup

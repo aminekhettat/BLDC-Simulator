@@ -27,10 +27,10 @@ def test_imports():
 
         print("✅ BLDCMotorControlGUI imported successfully")
 
-        return True
+        assert True
     except Exception as e:
         print(f"❌ Import error: {e}")
-        return False
+        assert False, f"Import error: {e}"
 
 
 def test_data_logger():
@@ -93,13 +93,13 @@ def test_data_logger():
                     f"✅ CSV contains {len(lines)} lines (1 header + {len(lines) - 1} data)"
                 )
 
-        return True
+        assert True
     except Exception as e:
         print(f"❌ DataLogger test error: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        assert False, f"DataLogger test error: {e}"
 
 
 def test_accessible_widgets():
@@ -126,12 +126,21 @@ def test_accessible_widgets():
         assert list_widget.accessibleName() == "Test List"
         print("✅ AccessibleListWidget created with correct accessible name")
 
-        return True
+        assert True
     except Exception as e:
         print(f"❌ AccessibleWidgets test error: {e}")
         import traceback
 
         traceback.print_exc()
+        assert False, f"AccessibleWidgets test error: {e}"
+
+
+def _run_check(func):
+    """Run a test function and convert assertion results to a boolean."""
+    try:
+        func()
+        return True
+    except AssertionError:
         return False
 
 
@@ -156,13 +165,13 @@ def test_ld_lq_and_params_display():
         assert "dt" in info or "Simulation time step" in info
         print("✅ Simulation parameters info available")
 
-        return True
+        assert True
     except Exception as e:
         print(f"❌ Ld/Lq test error: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        assert False, f"Ld/Lq test error: {e}"
 
 
 def main():
@@ -174,10 +183,12 @@ def main():
     results = []
 
     # Run tests
-    results.append(("Imports", test_imports()))
-    results.append(("DataLogger Custom Paths", test_data_logger()))
-    results.append(("Accessible Widgets", test_accessible_widgets()))
-    results.append(("Ld/Lq and Params Display", test_ld_lq_and_params_display()))
+    results.append(("Imports", _run_check(test_imports)))
+    results.append(("DataLogger Custom Paths", _run_check(test_data_logger)))
+    results.append(("Accessible Widgets", _run_check(test_accessible_widgets)))
+    results.append(
+        ("Ld/Lq and Params Display", _run_check(test_ld_lq_and_params_display))
+    )
 
     # Summary
     print("\n" + "=" * 60)

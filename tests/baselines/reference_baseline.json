@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "sim_dt": 0.0001,
+  "scenarios": {
+    "no_load_spinup": {
+      "final_speed_rpm": 9726.102714333214,
+      "peak_speed_rpm": 9821.119525759426,
+      "peak_phase_current_a": 18.28235428329245,
+      "steady_state_speed_std_rpm": 57.81417774998976,
+      "torque_ripple_std_nm": 0.40647506750625484,
+      "mean_supply_voltage_v": 48.0,
+      "mean_load_torque_nm": 0.0
+    },
+    "constant_load": {
+      "final_speed_rpm": -306.4684889968025,
+      "peak_speed_rpm": -1.9077125305857643,
+      "peak_phase_current_a": 14.714301787365093,
+      "steady_state_speed_std_rpm": 3.740276055605876,
+      "torque_ripple_std_nm": 0.11889630231078595,
+      "mean_supply_voltage_v": 48.0,
+      "mean_load_torque_nm": 1.0
+    },
+    "ramp_load": {
+      "final_speed_rpm": -9030.896007408264,
+      "peak_speed_rpm": 59.550142028934076,
+      "peak_phase_current_a": 17.758945549105228,
+      "steady_state_speed_std_rpm": 56.15859919603647,
+      "torque_ripple_std_nm": 0.40133803488349606,
+      "mean_supply_voltage_v": 48.0,
+      "mean_load_torque_nm": 1.499966666666622
+    },
+    "supply_sag": {
+      "final_speed_rpm": -713.8031074700008,
+      "peak_speed_rpm": 272.8040570971078,
+      "peak_phase_current_a": 11.647303873709836,
+      "steady_state_speed_std_rpm": 7.810902875618048,
+      "torque_ripple_std_nm": 0.2138619144984293,
+      "mean_supply_voltage_v": 40.00020000000037,
+      "mean_load_torque_nm": 0.8000000000000002
+    }
+  }
+}

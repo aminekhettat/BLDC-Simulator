@@ -31,8 +31,27 @@ from PyQt6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QScrollArea,
+    QFrame,
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QAccessible
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread
+
+# QAccessible was removed from PyQt6.QtCore in some builds of PyQt6.
+# We still want the code to run even if accessibility support is not available.
+try:
+    from PyQt6.QtCore import QAccessible
+except ImportError:  # pragma: no cover
+
+    class _DummyQAccessible:
+        class Event:
+            NameChange = 0
+            ValueChange = 1
+
+        @staticmethod
+        def updateAccessibility(*args, **kwargs):
+            return
+
+    QAccessible = _DummyQAccessible
+
 from PyQt6.QtGui import QFont
 
 from src.ui.widgets.accessible_widgets import (
@@ -62,6 +81,117 @@ from src.utils.config import (
 from src.utils.speech import speak
 from src.utils.data_logger import DataLogger
 from src.visualization.visualization import SimulationPlotter
+
+logger = logging.getLogger(__name__)
+
+
+class AccessibleTextBlock(QFrame):
+    """
+    Accessible visual text block component for monitoring values.
+    Each block displays a labeled monitoring value with units.
+    Optimized for screen reader detection and visual distinction.
+    """
+
+    def __init__(
+        self,
+        parameter_name: str,
+        unit: str,
+        index: int,
+        total_count: int,
+        parent=None,
+    ):
+        super().__init__(parent)
+
+        self.parameter_name = parameter_name
+        self.unit = unit
+        self.index = index
+        self.total_count = total_count
+        self.current_value = 0.0
+
+        # Visual styling for text block
+        self.setFrameShape(QFrame.Shape.Box)
+        self.setFrameShadow(QFrame.Shadow.Raised)
+        self.setLineWidth(2)
+        self.setStyleSheet(
+            """
+            AccessibleTextBlock {
+                background-color: #f0f0f0;
+                border: 2px solid #4CAF50;
+                border-radius: 5px;
+                padding: 8px;
+                margin: 4px;
+            }
+            AccessibleTextBlock:focus {
+                border: 2px solid #2196F3;
+                background-color: #e8f4f8;
+            }
+        """
+        )
+
+        # Make focusable for keyboard navigation and screen readers
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+        # Layout
+        layout = QVBoxLayout()
+        layout.setContentsMargins(8, 4, 8, 4)
+
+        # Parameter name label (bold, prominent)
+        self.name_label = QLabel(parameter_name)
+        name_font = QFont()
+        name_font.setBold(True)
+        name_font.setPointSize(10)
+        self.name_label.setFont(name_font)
+        self.name_label.setAccessibleName(
+            f"Parameter {self.index + 1}: {parameter_name}"
+        )
+        layout.addWidget(self.name_label)
+
+        # Value display (large, readable)
+        self.value_label = QLabel("-- " + unit)
+        value_font = QFont()
+        value_font.setPointSize(12)
+        value_font.setBold(True)
+        value_font.setFamily("Courier")  # Monospace for alignment
+        self.value_label.setFont(value_font)
+        self.value_label.setStyleSheet("color: #1976D2;")
+        self.value_label.setAccessibleName(f"Value: {parameter_name} in {unit}")
+        layout.addWidget(self.value_label)
+
+        self.setLayout(layout)
+
+        # Set accessible properties for screen readers
+        self.setAccessibleName(
+            f"Monitoring Block {self.index + 1} of {self.total_count}: {parameter_name}"
+        )
+        self.setAccessibleDescription(
+            f"{parameter_name} current value (Unit: {unit}). Navigation: Tab to next block, Shift+Tab to previous."
+        )
+
+    def update_value(self, value: float):
+        """Update the displayed value."""
+        self.current_value = value
+        formatted_value = f"{value:.4g}"
+        self.value_label.setText(f"{formatted_value} {self.unit}")
+        self.value_label.setToolTip(
+            f"{self.parameter_name}: {formatted_value} {self.unit}"
+        )
+
+        # Notify screen readers of value change
+        QAccessible.updateAccessibility(
+            self.value_label, 0, QAccessible.Event.NameChange
+        )
+
+    def keyPressEvent(self, event):
+        """Handle keyboard navigation for accessibility."""
+        if event.key() in (Qt.Key.Key_Up, Qt.Key.Key_Left):
+            self.focusPreviousChild()
+            event.accept()
+        elif event.key() in (Qt.Key.Key_Down, Qt.Key.Key_Right):
+            self.focusNextChild()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
 
 logger = logging.getLogger(__name__)
 
@@ -999,6 +1129,7 @@ class BLDCMotorControlGUI(QMainWindow):
         scroll_layout = QVBoxLayout()
 
         self.status_labels = {}
+        self.status_blocks = {}  # Store text blocks for easier access
         status_items = [
             ("speed_rpm", "⚡ Rotor Speed", "RPM"),
             ("omega", "Angular Velocity", "rad/s"),
@@ -1015,17 +1146,13 @@ class BLDCMotorControlGUI(QMainWindow):
             ("time", "Simulation Time", "s"),
         ]
 
+        total_items = len(status_items)
         for idx, (key, name, unit) in enumerate(status_items):
-            label = QLabel(f"{name}: -- {unit}")
-            label.setAccessibleName(name)
-            label.setAccessibleDescription(
-                f"Monitoring value {idx + 1} of {len(status_items)}: {name} (Unit: {unit})"
-            )
-            label.setFocusPolicy(
-                Qt.FocusPolicy.StrongFocus
-            )  # Make focusable for accessibility
-            self.status_labels[key] = label
-            scroll_layout.addWidget(label)
+            # Create accessible text block component
+            text_block = AccessibleTextBlock(name, unit, idx, total_items)
+            self.status_blocks[key] = text_block
+            self.status_labels[key] = text_block.value_label  # Keep for backward compat
+            scroll_layout.addWidget(text_block)
 
         scroll_layout.addStretch()
         scroll_widget.setLayout(scroll_layout)
@@ -1334,48 +1461,63 @@ class BLDCMotorControlGUI(QMainWindow):
         speed_val = state.get("speed_rpm", 0)
         time_val = state.get("time", 0)
 
-        self.status_labels["speed_rpm"].setText(f"⚡ Rotor Speed: {speed_val:.2f} RPM")
-        self.status_labels["omega"].setText(
-            f"Angular Velocity: {state.get('omega', 0):.4f} rad/s"
-        )
-        self.status_labels["theta"].setText(
-            f"Rotor Position: {state.get('theta', 0):.4f} rad"
-        )
-        self.status_labels["currents_a"].setText(
-            f"Phase A Current: {state.get('currents_a', 0):.3f} A"
-        )
-        self.status_labels["currents_b"].setText(
-            f"Phase B Current: {state.get('currents_b', 0):.3f} A"
-        )
-        self.status_labels["currents_c"].setText(
-            f"Phase C Current: {state.get('currents_c', 0):.3f} A"
-        )
-        self.status_labels["torque"].setText(
-            f"Electromagnetic Torque: {state.get('torque', 0):.4f} N·m"
-        )
-        self.status_labels["back_emf_a"].setText(
-            f"Back-EMF Phase A: {state.get('back_emf_a', 0):.3f} V"
-        )
-        self.status_labels["back_emf_b"].setText(
-            f"Back-EMF Phase B: {state.get('back_emf_b', 0):.3f} V"
-        )
-        self.status_labels["back_emf_c"].setText(
-            f"Back-EMF Phase C: {state.get('back_emf_c', 0):.3f} V"
-        )
-        self.status_labels["time"].setText(f"Simulation Time: {time_val:.3f} s")
+        # Update accessible text blocks with new values
+        if hasattr(self, "status_blocks"):
+            self.status_blocks["speed_rpm"].update_value(speed_val)
+            self.status_blocks["omega"].update_value(state.get("omega", 0))
+            self.status_blocks["theta"].update_value(state.get("theta", 0))
+            self.status_blocks["currents_a"].update_value(state.get("currents_a", 0))
+            self.status_blocks["currents_b"].update_value(state.get("currents_b", 0))
+            self.status_blocks["currents_c"].update_value(state.get("currents_c", 0))
+            self.status_blocks["torque"].update_value(state.get("torque", 0))
+            self.status_blocks["back_emf_a"].update_value(state.get("back_emf_a", 0))
+            self.status_blocks["back_emf_b"].update_value(state.get("back_emf_b", 0))
+            self.status_blocks["back_emf_c"].update_value(state.get("back_emf_c", 0))
+            self.status_blocks["time"].update_value(time_val)
+        else:
+            # Fallback for backward compatibility with old label-based system
+            self.status_labels["speed_rpm"].setText(
+                f"⚡ Rotor Speed: {speed_val:.2f} RPM"
+            )
+            self.status_labels["omega"].setText(
+                f"Angular Velocity: {state.get('omega', 0):.4f} rad/s"
+            )
+            self.status_labels["theta"].setText(
+                f"Rotor Position: {state.get('theta', 0):.4f} rad"
+            )
+            self.status_labels["currents_a"].setText(
+                f"Phase A Current: {state.get('currents_a', 0):.3f} A"
+            )
+            self.status_labels["currents_b"].setText(
+                f"Phase B Current: {state.get('currents_b', 0):.3f} A"
+            )
+            self.status_labels["currents_c"].setText(
+                f"Phase C Current: {state.get('currents_c', 0):.3f} A"
+            )
+            self.status_labels["torque"].setText(
+                f"Electromagnetic Torque: {state.get('torque', 0):.4f} N·m"
+            )
+            self.status_labels["back_emf_a"].setText(
+                f"Back-EMF Phase A: {state.get('back_emf_a', 0):.3f} V"
+            )
+            self.status_labels["back_emf_b"].setText(
+                f"Back-EMF Phase B: {state.get('back_emf_b', 0):.3f} V"
+            )
+            self.status_labels["back_emf_c"].setText(
+                f"Back-EMF Phase C: {state.get('back_emf_c', 0):.3f} V"
+            )
+            self.status_labels["time"].setText(f"Simulation Time: {time_val:.3f} s")
 
-        # Update accessible descriptions so screen readers announce latest values
-        # Extract and format numerical values for better screen reader access
-        for lbl in self.status_labels.values():
-            try:
-                # Get the full text which includes the numerical value
-                full_text = lbl.text()
-                # Set tooltip, which is often read by screen readers on focus
-                lbl.setToolTip(full_text)
-                # Crucially, emit an accessibility event to notify screen readers of the update
-                QAccessible.updateAccessibility(lbl, 0, QAccessible.Event.ValueChange)
-            except Exception:
-                pass
+            # Update accessible descriptions
+            for lbl in self.status_labels.values():
+                try:
+                    full_text = lbl.text()
+                    lbl.setToolTip(full_text)
+                    QAccessible.updateAccessibility(
+                        lbl, 0, QAccessible.Event.ValueChange
+                    )
+                except Exception:
+                    pass
 
         # Update permanent info panel values
         try:

@@ -86,6 +86,10 @@ class TestMotorModel:
         motor = BLDCMotor(motor_params, dt=0.0001)
 
         voltages = np.array([10.0, -5.0, -5.0])
+
+        # Align rotor electrical angle so the applied voltages produce a non-zero
+        # q-axis component (torque-producing in the dq model).
+        motor.state[4] = np.pi / 2
         initial_omega = motor.omega
 
         # Run a few steps to see if it accelerates

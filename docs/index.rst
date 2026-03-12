@@ -44,6 +44,7 @@ Table of Contents
 
    architecture
    advanced
+   branch_protection
 
 Indices and Tables
 ==================
