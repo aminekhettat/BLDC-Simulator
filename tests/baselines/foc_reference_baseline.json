@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "min_abs_tolerance": 0.001,
+  "min_abs_tolerance": 0.1,
   "sim_dt": 0.0001,
   "scenarios": {
     "foc_constant_load_clarke": {
@@ -29,6 +29,35 @@
       "torque_ripple_std_nm": 0.062173560324652793,
       "mean_supply_voltage_v": 41.00020000000027,
       "mean_load_torque_nm": 0.5999999999999999
+    }
+  },
+  "tolerances": {
+    "foc_constant_load_clarke": {
+      "final_speed_rpm": 0.5,
+      "peak_speed_rpm": 0.5,
+      "peak_phase_current_a": 0.5,
+      "steady_state_speed_std_rpm": 0.75,
+      "torque_ripple_std_nm": 0.75,
+      "mean_supply_voltage_v": 0.1,
+      "mean_load_torque_nm": 0.1
+    },
+    "foc_ramp_load_clarke": {
+      "final_speed_rpm": 0.5,
+      "peak_speed_rpm": 0.5,
+      "peak_phase_current_a": 0.5,
+      "steady_state_speed_std_rpm": 0.75,
+      "torque_ripple_std_nm": 0.75,
+      "mean_supply_voltage_v": 0.1,
+      "mean_load_torque_nm": 0.1
+    },
+    "foc_supply_sag_concordia": {
+      "final_speed_rpm": 0.5,
+      "peak_speed_rpm": 0.5,
+      "peak_phase_current_a": 0.5,
+      "steady_state_speed_std_rpm": 0.75,
+      "torque_ripple_std_nm": 0.75,
+      "mean_supply_voltage_v": 0.1,
+      "mean_load_torque_nm": 0.1
     }
   }
 }

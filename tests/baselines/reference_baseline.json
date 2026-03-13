@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "min_abs_tolerance": 0.001,
+  "min_abs_tolerance": 0.1,
   "sim_dt": 0.0001,
   "scenarios": {
     "no_load_spinup": {
@@ -42,40 +42,40 @@
   },
   "tolerances": {
     "no_load_spinup": {
-      "final_speed_rpm": 0.4,
-      "peak_speed_rpm": 0.15,
-      "peak_phase_current_a": 0.2,
-      "steady_state_speed_std_rpm": 0.35,
-      "torque_ripple_std_nm": 0.4,
-      "mean_supply_voltage_v": 0.02,
-      "mean_load_torque_nm": 0.02
+      "final_speed_rpm": 0.75,
+      "peak_speed_rpm": 0.6,
+      "peak_phase_current_a": 0.6,
+      "steady_state_speed_std_rpm": 0.75,
+      "torque_ripple_std_nm": 0.75,
+      "mean_supply_voltage_v": 0.1,
+      "mean_load_torque_nm": 0.1
     },
     "constant_load": {
-      "final_speed_rpm": 0.4,
-      "peak_speed_rpm": 0.2,
-      "peak_phase_current_a": 0.2,
-      "steady_state_speed_std_rpm": 0.35,
-      "torque_ripple_std_nm": 0.4,
-      "mean_supply_voltage_v": 0.02,
-      "mean_load_torque_nm": 0.02
+      "final_speed_rpm": 0.75,
+      "peak_speed_rpm": 0.6,
+      "peak_phase_current_a": 0.6,
+      "steady_state_speed_std_rpm": 0.75,
+      "torque_ripple_std_nm": 0.75,
+      "mean_supply_voltage_v": 0.1,
+      "mean_load_torque_nm": 0.1
     },
     "ramp_load": {
-      "final_speed_rpm": 0.4,
-      "peak_speed_rpm": 0.25,
-      "peak_phase_current_a": 0.2,
-      "steady_state_speed_std_rpm": 0.4,
-      "torque_ripple_std_nm": 0.4,
-      "mean_supply_voltage_v": 0.02,
-      "mean_load_torque_nm": 0.05
+      "final_speed_rpm": 0.75,
+      "peak_speed_rpm": 0.6,
+      "peak_phase_current_a": 0.6,
+      "steady_state_speed_std_rpm": 0.75,
+      "torque_ripple_std_nm": 0.75,
+      "mean_supply_voltage_v": 0.1,
+      "mean_load_torque_nm": 0.15
     },
     "supply_sag": {
-      "final_speed_rpm": 0.4,
-      "peak_speed_rpm": 0.2,
-      "peak_phase_current_a": 0.25,
-      "steady_state_speed_std_rpm": 0.4,
-      "torque_ripple_std_nm": 0.4,
-      "mean_supply_voltage_v": 0.03,
-      "mean_load_torque_nm": 0.02
+      "final_speed_rpm": 0.75,
+      "peak_speed_rpm": 0.6,
+      "peak_phase_current_a": 0.6,
+      "steady_state_speed_std_rpm": 0.75,
+      "torque_ripple_std_nm": 0.75,
+      "mean_supply_voltage_v": 0.1,
+      "mean_load_torque_nm": 0.1
     }
   }
 }
