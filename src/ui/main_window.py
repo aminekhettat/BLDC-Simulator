@@ -1302,6 +1302,61 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.foc_group_layout.addWidget(self.foc_startup_min_emf)
 
+        self.foc_startup_min_confidence = LabeledSpinBox(
+            "Startup Min Confidence",
+            min_val=0.0,
+            max_val=1.0,
+            initial=0.6,
+            step=0.01,
+            decimals=2,
+            suffix="",
+            description="Minimum observer confidence required before handoff.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_min_confidence)
+
+        self.foc_startup_confidence_hold = LabeledSpinBox(
+            "Confidence Hold Time",
+            min_val=0.0,
+            max_val=1.0,
+            initial=0.02,
+            step=0.005,
+            decimals=3,
+            suffix=" s",
+            description="Time confidence must stay above threshold before handoff.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_confidence_hold)
+
+        self.foc_startup_confidence_hysteresis = LabeledSpinBox(
+            "Confidence Hysteresis",
+            min_val=0.0,
+            max_val=1.0,
+            initial=0.1,
+            step=0.01,
+            decimals=2,
+            suffix="",
+            description="Lower-confidence margin before fallback to startup observer.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_confidence_hysteresis)
+
+        self.foc_startup_fallback_mode = LabeledComboBox(
+            "Observer Fallback",
+            items=["Enabled", "Disabled"],
+            description="Allow reverting to startup observer when confidence degrades.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_fallback_mode)
+
+        self.foc_startup_fallback_hold = LabeledSpinBox(
+            "Fallback Hold Time",
+            min_val=0.0,
+            max_val=1.0,
+            initial=0.03,
+            step=0.005,
+            decimals=3,
+            suffix=" s",
+            description="Time degraded confidence must persist before fallback.",
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_fallback_hold)
+
         btn_auto_d = AccessibleButton(
             "Auto-tune d-axis", "Auto-tune d-axis PI controller"
         )
@@ -1450,6 +1505,50 @@ class BLDCMotorControlGUI(QMainWindow):
             ("theta_error_pll", "PLL Angle Error", "rad"),
             ("theta_error_smo", "SMO Angle Error", "rad"),
             ("smo_omega_est", "SMO Estimated Speed", "rad/s"),
+            ("observer_confidence", "Observer Confidence", "0-1"),
+            ("observer_confidence_emf", "Confidence from EMF", "0-1"),
+            ("observer_confidence_speed", "Confidence from Speed", "0-1"),
+            ("observer_confidence_coherence", "Confidence from Coherence", "0-1"),
+            ("observer_confidence_ema", "Confidence EMA", "0-1"),
+            ("observer_confidence_trend", "Confidence Trend", "delta"),
+            (
+                "observer_confidence_above_threshold_time_s",
+                "Confidence Above Threshold Time",
+                "s",
+            ),
+            (
+                "observer_confidence_below_threshold_time_s",
+                "Confidence Below Threshold Time",
+                "s",
+            ),
+            ("observer_confidence_crossings_up", "Confidence Crossings Up", "count"),
+            (
+                "observer_confidence_crossings_down",
+                "Confidence Crossings Down",
+                "count",
+            ),
+            ("startup_handoff_count", "Startup Handoff Count", "count"),
+            (
+                "startup_last_handoff_time_s",
+                "Last Handoff Time",
+                "s",
+            ),
+            (
+                "startup_last_handoff_confidence",
+                "Last Handoff Confidence",
+                "0-1",
+            ),
+            (
+                "startup_handoff_confidence_peak",
+                "Handoff Confidence Peak",
+                "0-1",
+            ),
+            ("startup_handoff_quality", "Handoff Quality KPI", "0-1"),
+            (
+                "startup_handoff_stability_ratio",
+                "Handoff Stability Ratio",
+                "0-1",
+            ),
             ("time", "Simulation Time", "s"),
         ]
 
@@ -1735,6 +1834,12 @@ class BLDCMotorControlGUI(QMainWindow):
                 min_speed_rpm=self.foc_startup_min_speed.value(),
                 min_elapsed_s=self.foc_startup_min_time.value(),
                 min_emf_v=self.foc_startup_min_emf.value(),
+                min_confidence=self.foc_startup_min_confidence.value(),
+                confidence_hold_s=self.foc_startup_confidence_hold.value(),
+                confidence_hysteresis=self.foc_startup_confidence_hysteresis.value(),
+                fallback_enabled=self.foc_startup_fallback_mode.currentText()
+                == "Enabled",
+                fallback_hold_s=self.foc_startup_fallback_hold.value(),
             )
 
     def _start_simulation(self):
@@ -1867,6 +1972,58 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["smo_omega_est"].update_value(
                 ctrl_state.get("smo", {}).get("omega_est", 0.0)
             )
+            self.status_blocks["observer_confidence"].update_value(
+                ctrl_state.get("observer_confidence", 0.0)
+            )
+            self.status_blocks["observer_confidence_emf"].update_value(
+                ctrl_state.get("observer_confidence_emf", 0.0)
+            )
+            self.status_blocks["observer_confidence_speed"].update_value(
+                ctrl_state.get("observer_confidence_speed", 0.0)
+            )
+            self.status_blocks["observer_confidence_coherence"].update_value(
+                ctrl_state.get("observer_confidence_coherence", 0.0)
+            )
+            self.status_blocks["observer_confidence_ema"].update_value(
+                ctrl_state.get("observer_confidence_ema", 0.0)
+            )
+            self.status_blocks["observer_confidence_trend"].update_value(
+                ctrl_state.get("observer_confidence_trend", 0.0)
+            )
+            self.status_blocks[
+                "observer_confidence_above_threshold_time_s"
+            ].update_value(
+                ctrl_state.get("observer_confidence_above_threshold_time_s", 0.0)
+            )
+            self.status_blocks[
+                "observer_confidence_below_threshold_time_s"
+            ].update_value(
+                ctrl_state.get("observer_confidence_below_threshold_time_s", 0.0)
+            )
+            self.status_blocks["observer_confidence_crossings_up"].update_value(
+                ctrl_state.get("observer_confidence_crossings_up", 0.0)
+            )
+            self.status_blocks["observer_confidence_crossings_down"].update_value(
+                ctrl_state.get("observer_confidence_crossings_down", 0.0)
+            )
+            self.status_blocks["startup_handoff_count"].update_value(
+                ctrl_state.get("startup_handoff_count", 0.0)
+            )
+            self.status_blocks["startup_last_handoff_time_s"].update_value(
+                ctrl_state.get("startup_last_handoff_time_s", 0.0)
+            )
+            self.status_blocks["startup_last_handoff_confidence"].update_value(
+                ctrl_state.get("startup_last_handoff_confidence", 0.0)
+            )
+            self.status_blocks["startup_handoff_confidence_peak"].update_value(
+                ctrl_state.get("startup_handoff_confidence_peak", 0.0)
+            )
+            self.status_blocks["startup_handoff_quality"].update_value(
+                ctrl_state.get("startup_handoff_quality", 0.0)
+            )
+            self.status_blocks["startup_handoff_stability_ratio"].update_value(
+                ctrl_state.get("startup_handoff_stability_ratio", 1.0)
+            )
             self.status_blocks["time"].update_value(time_val)
         else:
             # Fallback for backward compatibility with old label-based system
@@ -1941,6 +2098,54 @@ class BLDCMotorControlGUI(QMainWindow):
             )
             self.status_labels["smo_omega_est"].setText(
                 f"SMO Estimated Speed: {ctrl_state.get('smo', {}).get('omega_est', 0.0):.4f} rad/s"
+            )
+            self.status_labels["observer_confidence"].setText(
+                f"Observer Confidence: {ctrl_state.get('observer_confidence', 0.0):.3f}"
+            )
+            self.status_labels["observer_confidence_emf"].setText(
+                f"Confidence from EMF: {ctrl_state.get('observer_confidence_emf', 0.0):.3f}"
+            )
+            self.status_labels["observer_confidence_speed"].setText(
+                f"Confidence from Speed: {ctrl_state.get('observer_confidence_speed', 0.0):.3f}"
+            )
+            self.status_labels["observer_confidence_coherence"].setText(
+                f"Confidence from Coherence: {ctrl_state.get('observer_confidence_coherence', 0.0):.3f}"
+            )
+            self.status_labels["observer_confidence_ema"].setText(
+                f"Confidence EMA: {ctrl_state.get('observer_confidence_ema', 0.0):.3f}"
+            )
+            self.status_labels["observer_confidence_trend"].setText(
+                f"Confidence Trend: {ctrl_state.get('observer_confidence_trend', 0.0):.4f}"
+            )
+            self.status_labels["observer_confidence_above_threshold_time_s"].setText(
+                f"Confidence Above Threshold Time: {ctrl_state.get('observer_confidence_above_threshold_time_s', 0.0):.3f} s"
+            )
+            self.status_labels["observer_confidence_below_threshold_time_s"].setText(
+                f"Confidence Below Threshold Time: {ctrl_state.get('observer_confidence_below_threshold_time_s', 0.0):.3f} s"
+            )
+            self.status_labels["observer_confidence_crossings_up"].setText(
+                f"Confidence Crossings Up: {int(ctrl_state.get('observer_confidence_crossings_up', 0))}"
+            )
+            self.status_labels["observer_confidence_crossings_down"].setText(
+                f"Confidence Crossings Down: {int(ctrl_state.get('observer_confidence_crossings_down', 0))}"
+            )
+            self.status_labels["startup_handoff_count"].setText(
+                f"Startup Handoff Count: {int(ctrl_state.get('startup_handoff_count', 0))}"
+            )
+            self.status_labels["startup_last_handoff_time_s"].setText(
+                f"Last Handoff Time: {ctrl_state.get('startup_last_handoff_time_s', 0.0):.3f} s"
+            )
+            self.status_labels["startup_last_handoff_confidence"].setText(
+                f"Last Handoff Confidence: {ctrl_state.get('startup_last_handoff_confidence', 0.0):.3f}"
+            )
+            self.status_labels["startup_handoff_confidence_peak"].setText(
+                f"Handoff Confidence Peak: {ctrl_state.get('startup_handoff_confidence_peak', 0.0):.3f}"
+            )
+            self.status_labels["startup_handoff_quality"].setText(
+                f"Handoff Quality KPI: {ctrl_state.get('startup_handoff_quality', 0.0):.3f}"
+            )
+            self.status_labels["startup_handoff_stability_ratio"].setText(
+                f"Handoff Stability Ratio: {ctrl_state.get('startup_handoff_stability_ratio', 1.0):.3f}"
             )
             self.status_labels["time"].setText(f"Simulation Time: {time_val:.3f} s")
 

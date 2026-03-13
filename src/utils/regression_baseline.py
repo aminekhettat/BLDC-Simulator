@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List, Tuple, TypedDict
 
 import numpy as np
 
@@ -42,6 +42,40 @@ class DriftRow(TypedDict):
     allowed_abs: float
     tolerance_pct: float
     status: str
+
+
+class ThresholdRow(TypedDict):
+    """One threshold evaluation row for startup-transition diagnostics."""
+
+    kpi: str
+    actual: float
+    warn_min: float | None
+    warn_max: float | None
+    fail_min: float | None
+    fail_max: float | None
+    status: str
+
+
+# Conservative defaults intended to prevent severe regressions while avoiding
+# fragile failures from small numeric drift across environments.
+DEFAULT_STARTUP_TRANSITION_THRESHOLDS: Dict[str, Dict[str, float]] = {
+    "startup_handoff_count": {"fail_min": 1.0, "warn_min": 1.0},
+    "startup_fallback_event_count": {"fail_min": 1.0, "warn_min": 1.0},
+    "startup_last_handoff_confidence": {"fail_min": 0.10, "warn_min": 0.20},
+    "startup_handoff_confidence_peak": {"fail_min": 0.10, "warn_min": 0.20},
+    "startup_handoff_quality": {"fail_min": 0.05, "warn_min": 0.20},
+    "startup_handoff_stability_ratio": {"fail_min": 0.05, "warn_min": 0.20},
+    "observer_confidence_above_threshold_time_s": {
+        "fail_min": 0.001,
+        "warn_min": 0.003,
+    },
+    "observer_confidence_below_threshold_time_s": {
+        "fail_min": 0.001,
+        "warn_min": 0.003,
+    },
+    "observer_confidence_crossings_up": {"fail_min": 1.0, "warn_min": 1.0},
+    "observer_confidence_crossings_down": {"fail_min": 1.0, "warn_min": 1.0},
+}
 
 
 @dataclass(frozen=True)
@@ -317,6 +351,59 @@ def run_foc_reference_suite() -> Dict[str, Dict[str, float]]:
     }
 
 
+def run_foc_startup_transition_diagnostics() -> Dict[str, float]:
+    """Run a deterministic startup-transition exercise and return reliability KPIs.
+
+    This is used for CI/report artifacts so transition quality and stability
+    trends can be reviewed release-to-release.
+    """
+    motor = _default_motor()
+    ctrl = FOCController(motor=motor)
+    ctrl.set_angle_observer("PLL")
+    ctrl.set_startup_transition(
+        enabled=True,
+        initial_mode="Measured",
+        min_speed_rpm=100.0,
+        min_elapsed_s=0.005,
+        min_emf_v=0.05,
+        min_confidence=0.2,
+        confidence_hold_s=0.002,
+        confidence_hysteresis=0.1,
+        fallback_enabled=True,
+        fallback_hold_s=0.005,
+    )
+
+    # Phase A: satisfy handoff conditions.
+    motor.state[3] = 95.0
+    motor.state[4] = 0.55
+    for _ in range(30):
+        motor._last_emf = motor._calculate_back_emf(motor.theta)
+        ctrl.update(0.001)
+
+    # Phase B: degrade conditions and trigger fallback.
+    motor.state[3] = 2.0
+    motor.state[4] = 0.05
+    for _ in range(20):
+        motor._last_emf = motor._calculate_back_emf(motor.theta)
+        ctrl.update(0.001)
+
+    s = ctrl.get_state()
+    keys = [
+        "startup_handoff_count",
+        "startup_fallback_event_count",
+        "startup_last_handoff_time_s",
+        "startup_last_handoff_confidence",
+        "startup_handoff_confidence_peak",
+        "startup_handoff_quality",
+        "startup_handoff_stability_ratio",
+        "observer_confidence_above_threshold_time_s",
+        "observer_confidence_below_threshold_time_s",
+        "observer_confidence_crossings_up",
+        "observer_confidence_crossings_down",
+    ]
+    return {k: float(s[k]) for k in keys}
+
+
 def save_baseline(
     output_path: Path, tolerances: Dict[str, Dict[str, float]] | None = None
 ) -> Path:
@@ -487,3 +574,76 @@ def compare_to_baseline(
             )
 
     return failures
+
+
+def _threshold_bounds(
+    threshold_spec: Dict[str, float] | None,
+) -> Tuple[float | None, float | None, float | None, float | None]:
+    spec = threshold_spec or {}
+    return (
+        float(spec["warn_min"]) if "warn_min" in spec else None,
+        float(spec["warn_max"]) if "warn_max" in spec else None,
+        float(spec["fail_min"]) if "fail_min" in spec else None,
+        float(spec["fail_max"]) if "fail_max" in spec else None,
+    )
+
+
+def evaluate_startup_transition_thresholds(
+    diagnostics: Dict[str, float],
+    thresholds: Dict[str, Dict[str, float]] | None = None,
+) -> List[ThresholdRow]:
+    """Evaluate startup-transition diagnostics against warn/fail thresholds."""
+    spec = thresholds or DEFAULT_STARTUP_TRANSITION_THRESHOLDS
+    rows: List[ThresholdRow] = []
+
+    for kpi in sorted(spec.keys()):
+        actual = float(diagnostics.get(kpi, float("nan")))
+        warn_min, warn_max, fail_min, fail_max = _threshold_bounds(spec.get(kpi))
+
+        status = "pass"
+        if not np.isfinite(actual):
+            status = "fail"
+        elif fail_min is not None and actual < fail_min:
+            status = "fail"
+        elif fail_max is not None and actual > fail_max:
+            status = "fail"
+        elif warn_min is not None and actual < warn_min:
+            status = "warn"
+        elif warn_max is not None and actual > warn_max:
+            status = "warn"
+
+        rows.append(
+            ThresholdRow(
+                kpi=kpi,
+                actual=actual,
+                warn_min=warn_min,
+                warn_max=warn_max,
+                fail_min=fail_min,
+                fail_max=fail_max,
+                status=status,
+            )
+        )
+
+    return rows
+
+
+def format_startup_threshold_report(rows: List[ThresholdRow]) -> str:
+    """Format startup threshold rows as a compact text table."""
+    if not rows:
+        return "No threshold rows to report."
+
+    def _bound_str(v: float | None) -> str:
+        return "-" if v is None else f"{v:.6g}"
+
+    lines = [
+        "kpi | actual | warn_min | warn_max | fail_min | fail_max | status",
+        "-" * 88,
+    ]
+    for row in rows:
+        lines.append(
+            f"{row['kpi']} | {row['actual']:.6g} | "
+            f"{_bound_str(row['warn_min'])} | {_bound_str(row['warn_max'])} | "
+            f"{_bound_str(row['fail_min'])} | {_bound_str(row['fail_max'])} | {row['status']}"
+        )
+
+    return "\n".join(lines)

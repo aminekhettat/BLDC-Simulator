@@ -40,6 +40,7 @@ def _print_report(title: str, baseline_path: Path, current: dict) -> None:
 
 def main() -> None:
     from src.utils.regression_baseline import (
+        run_foc_startup_transition_diagnostics,
         run_foc_reference_suite,
         run_reference_suite,
     )
@@ -49,9 +50,19 @@ def main() -> None:
 
     vf_current = run_reference_suite()
     foc_current = run_foc_reference_suite()
+    transition_diag = run_foc_startup_transition_diagnostics()
 
     _print_report("V/f Regression Drift Report", vf_baseline, vf_current)
     _print_report("FOC Regression Drift Report", foc_baseline, foc_current)
+    print("=" * 80)
+    print("FOC Startup Transition Diagnostics")
+    print("=" * 80)
+    for key in sorted(transition_diag.keys()):
+        val = transition_diag[key]
+        if key.endswith("_count") or key.endswith("_up") or key.endswith("_down"):
+            print(f"{key}: {int(val)}")
+        else:
+            print(f"{key}: {val:.6f}")
 
 
 if __name__ == "__main__":

@@ -421,8 +421,27 @@ Tuning workflow (recommended)
 - Introduce inverter non-idealities one at a time: device drop, dead-time, then conduction resistance.
 - Re-freeze baseline only after expected drift is verified and documented.
 
+Sensorless low-speed maturity enhancement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The FOC observer path now uses confidence-and-speed weighted angle blending in
+sensorless modes (`PLL`/`SMO`) to improve low-speed robustness:
+
+- At low speed or low confidence, electrical angle remains closer to measured angle.
+- As speed and confidence increase, control transitions smoothly toward full observer angle.
+- This reduces abrupt observer phase behavior during weak back-EMF conditions.
+
+Configuration entry point:
+
+- `FOCController.set_sensorless_blend(enabled, min_speed_rpm, min_confidence)`
+
+Runtime diagnostics exposed in controller state:
+
+- `sensorless_blend_weight`
+- `theta_sensorless_raw`
+
 **Phase-2 Next Steps**
 
 - Replace simplified torque paths with energy-consistent formulations
-- Extend inverter non-idealities with explicit switching-frequency dependent loss modeling
-- Add observer confidence metrics and adaptive handoff criteria
+- Add adaptive handoff fallback tuning guidelines for low-speed recovery scenarios
+- Add startup transition scenario diversity (load/supply/noise sweeps) for stress coverage

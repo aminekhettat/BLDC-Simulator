@@ -35,6 +35,14 @@ def _wrap_angle(angle: float) -> float:
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
+def _blend_angles(theta_a: float, theta_b: float, weight_b: float) -> float:
+    """Blend two wrapped angles using vector interpolation."""
+    w = float(np.clip(weight_b, 0.0, 1.0))
+    s = (1.0 - w) * np.sin(theta_a) + w * np.sin(theta_b)
+    c = (1.0 - w) * np.cos(theta_a) + w * np.cos(theta_b)
+    return float(np.arctan2(s, c) % (2 * np.pi))
+
+
 def _pi_update(state: dict, error: float, dt: float) -> float:
     """Update simple PI controller with state dict containing kp, ki, integral."""
     kp = state["kp"]
@@ -150,9 +158,42 @@ class FOCController(BaseController):
         self.startup_min_speed_rpm = 300.0
         self.startup_min_elapsed_s = 0.05
         self.startup_min_emf_v = 0.5
+        self.startup_min_confidence = 0.6
+        self.startup_confidence_hold_s = 0.02
+        self.startup_confidence_hysteresis = 0.1
+        self.startup_fallback_enabled = True
+        self.startup_fallback_hold_s = 0.03
         self.startup_elapsed_s = 0.0
+        self.startup_confidence_elapsed_s = 0.0
+        self.startup_fallback_elapsed_s = 0.0
         self.startup_transition_done = True
         self.startup_ready_to_switch = False
+        self.startup_fallback_event_count = 0
+        self.observer_confidence = 0.0
+        self.observer_confidence_emf = 0.0
+        self.observer_confidence_speed = 0.0
+        self.observer_confidence_coherence = 0.0
+        self.observer_confidence_ema = 0.0
+        self.observer_confidence_trend = 0.0
+        self.observer_confidence_prev_above = False
+        self.observer_confidence_above_threshold_time_s = 0.0
+        self.observer_confidence_below_threshold_time_s = 0.0
+        self.observer_confidence_crossings_up = 0
+        self.observer_confidence_crossings_down = 0
+        self.startup_handoff_count = 0
+        self.startup_last_handoff_time_s = 0.0
+        self.startup_last_handoff_confidence = 0.0
+        self.startup_handoff_confidence_peak = 0.0
+        self.startup_handoff_quality = 0.0
+        self.startup_handoff_stability_ratio = 1.0
+
+        # Sensorless maturity: blend measured and observer angle at low confidence
+        # to improve low-speed robustness and reduce abrupt phase behavior.
+        self.sensorless_blend_enabled = True
+        self.sensorless_blend_min_speed_rpm = 250.0
+        self.sensorless_blend_min_confidence = 0.65
+        self.sensorless_blend_weight = 0.0
+        self.theta_sensorless_raw = 0.0
 
     @staticmethod
     def _normalize_observer_mode(mode: str) -> str:
@@ -181,6 +222,11 @@ class FOCController(BaseController):
         min_speed_rpm: float = 300.0,
         min_elapsed_s: float = 0.05,
         min_emf_v: float = 0.5,
+        min_confidence: float = 0.6,
+        confidence_hold_s: float = 0.02,
+        confidence_hysteresis: float = 0.1,
+        fallback_enabled: bool = True,
+        fallback_hold_s: float = 0.03,
     ) -> None:
         """Configure observer startup handoff from an initial to target mode."""
         if min_speed_rpm < 0.0:
@@ -189,23 +235,52 @@ class FOCController(BaseController):
             raise ValueError("min_elapsed_s must be non-negative")
         if min_emf_v < 0.0:
             raise ValueError("min_emf_v must be non-negative")
+        if min_confidence < 0.0 or min_confidence > 1.0:
+            raise ValueError("min_confidence must be in [0, 1]")
+        if confidence_hold_s < 0.0:
+            raise ValueError("confidence_hold_s must be non-negative")
+        if confidence_hysteresis < 0.0 or confidence_hysteresis > 1.0:
+            raise ValueError("confidence_hysteresis must be in [0, 1]")
+        if fallback_hold_s < 0.0:
+            raise ValueError("fallback_hold_s must be non-negative")
 
         self.startup_transition_enabled = bool(enabled)
         self.startup_initial_mode = self._normalize_observer_mode(initial_mode)
         self.startup_min_speed_rpm = float(min_speed_rpm)
         self.startup_min_elapsed_s = float(min_elapsed_s)
         self.startup_min_emf_v = float(min_emf_v)
+        self.startup_min_confidence = float(min_confidence)
+        self.startup_confidence_hold_s = float(confidence_hold_s)
+        self.startup_confidence_hysteresis = float(confidence_hysteresis)
+        self.startup_fallback_enabled = bool(fallback_enabled)
+        self.startup_fallback_hold_s = float(fallback_hold_s)
 
         self.startup_elapsed_s = 0.0
+        self.startup_confidence_elapsed_s = 0.0
+        self.startup_fallback_elapsed_s = 0.0
         self.startup_ready_to_switch = False
         self.startup_transition_done = not self.startup_transition_enabled
+        self.startup_fallback_event_count = 0
+        self.startup_handoff_count = 0
+        self.startup_last_handoff_time_s = 0.0
+        self.startup_last_handoff_confidence = 0.0
+        self.startup_handoff_confidence_peak = 0.0
+        self.startup_handoff_quality = 0.0
+        self.startup_handoff_stability_ratio = 1.0
+        self.observer_confidence_prev_above = False
+        self.observer_confidence_above_threshold_time_s = 0.0
+        self.observer_confidence_below_threshold_time_s = 0.0
+        self.observer_confidence_crossings_up = 0
+        self.observer_confidence_crossings_down = 0
         self.angle_observer_mode = (
             self.startup_initial_mode
             if self.startup_transition_enabled
             else self.observer_target_mode
         )
 
-    def _resolve_observer_mode(self, dt: float, emf_mag: float) -> str:
+    def _resolve_observer_mode(
+        self, dt: float, emf_mag: float, confidence: float
+    ) -> str:
         """Resolve active observer mode considering startup transition logic."""
         if not self.startup_transition_enabled:
             self.startup_transition_done = True
@@ -213,13 +288,90 @@ class FOCController(BaseController):
             return self.observer_target_mode
 
         self.startup_elapsed_s += dt
+        speed_mag = abs(self.motor.speed_rpm)
+        conf_hi = self.startup_min_confidence
+        conf_lo = max(0.0, conf_hi - self.startup_confidence_hysteresis)
+
         speed_ready = abs(self.motor.speed_rpm) >= self.startup_min_speed_rpm
         time_ready = self.startup_elapsed_s >= self.startup_min_elapsed_s
         emf_ready = emf_mag >= self.startup_min_emf_v
-        self.startup_ready_to_switch = bool(speed_ready and time_ready and emf_ready)
+        static_ready = bool(speed_ready and time_ready and emf_ready)
+
+        if confidence >= conf_hi:
+            self.startup_confidence_elapsed_s += dt
+        else:
+            self.startup_confidence_elapsed_s = 0.0
+
+        adaptive_ready = (
+            self.startup_confidence_elapsed_s >= self.startup_confidence_hold_s
+        )
+        self.startup_ready_to_switch = bool(static_ready and adaptive_ready)
+
+        if not self.startup_transition_done:
+            self.startup_handoff_confidence_peak = max(
+                self.startup_handoff_confidence_peak, confidence
+            )
 
         if not self.startup_transition_done and self.startup_ready_to_switch:
+            speed_score = min(speed_mag / max(self.startup_min_speed_rpm, 1e-9), 1.0)
+            emf_score = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
+            time_score = min(
+                self.startup_elapsed_s / max(self.startup_min_elapsed_s, 1e-9), 1.0
+            )
+            self.startup_handoff_quality = float(
+                np.clip(
+                    0.5 * confidence
+                    + 0.2 * speed_score
+                    + 0.2 * emf_score
+                    + 0.1 * time_score,
+                    0.0,
+                    1.0,
+                )
+            )
+            self.startup_handoff_count += 1
+            self.startup_last_handoff_time_s = self.startup_elapsed_s
+            self.startup_last_handoff_confidence = float(confidence)
             self.startup_transition_done = True
+            self.startup_fallback_elapsed_s = 0.0
+
+        if self.startup_transition_done and self.startup_fallback_enabled:
+            speed_release = self.startup_min_speed_rpm * 0.9
+            emf_release = self.startup_min_emf_v * 0.9
+            degraded = (
+                confidence <= conf_lo
+                or speed_mag < speed_release
+                or emf_mag < emf_release
+            )
+            if degraded:
+                self.startup_fallback_elapsed_s += dt
+            else:
+                self.startup_fallback_elapsed_s = 0.0
+
+            if self.startup_fallback_elapsed_s >= self.startup_fallback_hold_s:
+                self.startup_transition_done = False
+                self.startup_ready_to_switch = False
+                self.startup_elapsed_s = 0.0
+                self.startup_confidence_elapsed_s = 0.0
+                self.startup_fallback_elapsed_s = 0.0
+                self.startup_fallback_event_count += 1
+                total_transitions = (
+                    self.startup_handoff_count + self.startup_fallback_event_count
+                )
+                self.startup_handoff_stability_ratio = (
+                    self.startup_handoff_count / total_transitions
+                    if total_transitions > 0
+                    else 1.0
+                )
+                return self.startup_initial_mode
+
+        total_transitions = (
+            self.startup_handoff_count + self.startup_fallback_event_count
+        )
+        self.startup_handoff_stability_ratio = (
+            self.startup_handoff_count / total_transitions
+            if total_transitions > 0
+            else 1.0
+        )
 
         if self.startup_transition_done:
             return self.observer_target_mode
@@ -245,6 +397,21 @@ class FOCController(BaseController):
         self.smo["lpf_alpha"] = float(lpf_alpha)
         self.smo["boundary"] = float(boundary)
 
+    def set_sensorless_blend(
+        self,
+        enabled: bool = True,
+        min_speed_rpm: float = 250.0,
+        min_confidence: float = 0.65,
+    ) -> None:
+        """Configure low-speed sensorless angle blending behavior."""
+        if min_speed_rpm < 0.0:
+            raise ValueError("min_speed_rpm must be non-negative")
+        if min_confidence < 0.0 or min_confidence > 1.0:
+            raise ValueError("min_confidence must be in [0, 1]")
+        self.sensorless_blend_enabled = bool(enabled)
+        self.sensorless_blend_min_speed_rpm = float(min_speed_rpm)
+        self.sensorless_blend_min_confidence = float(min_confidence)
+
     def _estimate_theta_electrical(self, dt: float) -> float:
         """Estimate electrical angle from selected observer mode."""
         theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (
@@ -259,15 +426,69 @@ class FOCController(BaseController):
 
         emf_mag = float(np.hypot(emf_alpha, emf_beta))
         self.emf_observer_mag = emf_mag
-        self.angle_observer_mode = self._resolve_observer_mode(dt, emf_mag)
 
         if abs(emf_alpha) + abs(emf_beta) > 1e-12:
             self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
+
+        speed_norm = min(
+            abs(self.motor.speed_rpm) / max(self.startup_min_speed_rpm, 1e-9), 1.0
+        )
+        emf_norm = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
+
+        if self.observer_target_mode == "PLL":
+            target_theta = self.theta_est_pll
+        elif self.observer_target_mode == "SMO":
+            target_theta = self.theta_est_smo
+        else:
+            target_theta = theta_measured
+
+        phase_err = abs(_wrap_angle(self.theta_meas_emf - target_theta))
+        coherence = 1.0 - min(phase_err / np.pi, 1.0)
+
+        self.observer_confidence_emf = float(np.clip(emf_norm, 0.0, 1.0))
+        self.observer_confidence_speed = float(np.clip(speed_norm, 0.0, 1.0))
+        self.observer_confidence_coherence = float(np.clip(coherence, 0.0, 1.0))
+
+        self.observer_confidence = float(
+            np.clip(
+                0.45 * self.observer_confidence_emf
+                + 0.35 * self.observer_confidence_speed
+                + 0.20 * self.observer_confidence_coherence,
+                0.0,
+                1.0,
+            )
+        )
+
+        conf_prev = self.observer_confidence_ema
+        conf_alpha = 0.15
+        self.observer_confidence_ema = float(
+            (1.0 - conf_alpha) * conf_prev + conf_alpha * self.observer_confidence
+        )
+        self.observer_confidence_trend = float(
+            np.clip(self.observer_confidence_ema - conf_prev, -1.0, 1.0)
+        )
+
+        conf_above = self.observer_confidence >= self.startup_min_confidence
+        if conf_above:
+            self.observer_confidence_above_threshold_time_s += dt
+        else:
+            self.observer_confidence_below_threshold_time_s += dt
+        if conf_above and not self.observer_confidence_prev_above:
+            self.observer_confidence_crossings_up += 1
+        elif (not conf_above) and self.observer_confidence_prev_above:
+            self.observer_confidence_crossings_down += 1
+        self.observer_confidence_prev_above = conf_above
+
+        self.angle_observer_mode = self._resolve_observer_mode(
+            dt, emf_mag, self.observer_confidence
+        )
 
         mode = self.angle_observer_mode
         if mode == "Measured":
             self.theta_error_pll = 0.0
             self.theta_error_smo = 0.0
+            self.sensorless_blend_weight = 0.0
+            self.theta_sensorless_raw = theta_measured
             return theta_measured
 
         if mode == "PLL":
@@ -281,25 +502,43 @@ class FOCController(BaseController):
             self.theta_est_pll = (
                 self.theta_est_pll + (omega_base + omega_correction) * dt
             ) % (2 * np.pi)
-            return self.theta_est_pll
+            theta_obs = self.theta_est_pll
+        else:
+            # Sliding-mode-inspired observer variant.
+            err = _wrap_angle(self.theta_meas_emf - self.theta_est_smo)
+            self.theta_error_smo = err
+            boundary = self.smo["boundary"]
+            slide = float(np.tanh(err / boundary))
+            omega_target = (
+                self.motor.omega * self.motor.params.poles_pairs
+                + self.smo["k_slide"] * slide
+            )
+            alpha = self.smo["lpf_alpha"]
+            self.smo["omega_est"] = (1.0 - alpha) * self.smo[
+                "omega_est"
+            ] + alpha * omega_target
+            self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (
+                2 * np.pi
+            )
+            theta_obs = self.theta_est_smo
 
-        # Sliding-mode-inspired observer variant.
-        err = _wrap_angle(self.theta_meas_emf - self.theta_est_smo)
-        self.theta_error_smo = err
-        boundary = self.smo["boundary"]
-        slide = float(np.tanh(err / boundary))
-        omega_target = (
-            self.motor.omega * self.motor.params.poles_pairs
-            + self.smo["k_slide"] * slide
+        self.theta_sensorless_raw = theta_obs
+        if not self.sensorless_blend_enabled:
+            self.sensorless_blend_weight = 1.0
+            return theta_obs
+
+        w_speed = np.clip(
+            abs(self.motor.speed_rpm) / max(self.sensorless_blend_min_speed_rpm, 1e-9),
+            0.0,
+            1.0,
         )
-        alpha = self.smo["lpf_alpha"]
-        self.smo["omega_est"] = (1.0 - alpha) * self.smo[
-            "omega_est"
-        ] + alpha * omega_target
-        self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (
-            2 * np.pi
+        w_conf = np.clip(
+            self.observer_confidence / max(self.sensorless_blend_min_confidence, 1e-9),
+            0.0,
+            1.0,
         )
-        return self.theta_est_smo
+        self.sensorless_blend_weight = float(w_speed * w_conf)
+        return _blend_angles(theta_measured, theta_obs, self.sensorless_blend_weight)
 
     def set_cascaded_speed_loop(
         self, enabled: bool, iq_limit_a: Optional[float] = None
@@ -455,8 +694,30 @@ class FOCController(BaseController):
         self.theta_error_smo = 0.0
         self.emf_observer_mag = 0.0
         self.startup_elapsed_s = 0.0
+        self.startup_confidence_elapsed_s = 0.0
+        self.startup_fallback_elapsed_s = 0.0
         self.startup_ready_to_switch = False
         self.startup_transition_done = not self.startup_transition_enabled
+        self.startup_fallback_event_count = 0
+        self.observer_confidence = 0.0
+        self.observer_confidence_emf = 0.0
+        self.observer_confidence_speed = 0.0
+        self.observer_confidence_coherence = 0.0
+        self.observer_confidence_ema = 0.0
+        self.observer_confidence_trend = 0.0
+        self.observer_confidence_prev_above = False
+        self.observer_confidence_above_threshold_time_s = 0.0
+        self.observer_confidence_below_threshold_time_s = 0.0
+        self.observer_confidence_crossings_up = 0
+        self.observer_confidence_crossings_down = 0
+        self.startup_handoff_count = 0
+        self.startup_last_handoff_time_s = 0.0
+        self.startup_last_handoff_confidence = 0.0
+        self.startup_handoff_confidence_peak = 0.0
+        self.startup_handoff_quality = 0.0
+        self.startup_handoff_stability_ratio = 1.0
+        self.sensorless_blend_weight = 0.0
+        self.theta_sensorless_raw = 0.0
         self.angle_observer_mode = (
             self.startup_initial_mode
             if self.startup_transition_enabled
@@ -484,10 +745,39 @@ class FOCController(BaseController):
             "startup_transition_done": self.startup_transition_done,
             "startup_ready_to_switch": self.startup_ready_to_switch,
             "startup_elapsed_s": self.startup_elapsed_s,
+            "startup_confidence_elapsed_s": self.startup_confidence_elapsed_s,
+            "startup_fallback_elapsed_s": self.startup_fallback_elapsed_s,
             "startup_initial_mode": self.startup_initial_mode,
             "startup_min_speed_rpm": self.startup_min_speed_rpm,
             "startup_min_elapsed_s": self.startup_min_elapsed_s,
             "startup_min_emf_v": self.startup_min_emf_v,
+            "startup_min_confidence": self.startup_min_confidence,
+            "startup_confidence_hold_s": self.startup_confidence_hold_s,
+            "startup_confidence_hysteresis": self.startup_confidence_hysteresis,
+            "startup_fallback_enabled": self.startup_fallback_enabled,
+            "startup_fallback_hold_s": self.startup_fallback_hold_s,
+            "startup_fallback_event_count": self.startup_fallback_event_count,
+            "observer_confidence": self.observer_confidence,
+            "observer_confidence_emf": self.observer_confidence_emf,
+            "observer_confidence_speed": self.observer_confidence_speed,
+            "observer_confidence_coherence": self.observer_confidence_coherence,
+            "observer_confidence_ema": self.observer_confidence_ema,
+            "observer_confidence_trend": self.observer_confidence_trend,
+            "observer_confidence_above_threshold_time_s": self.observer_confidence_above_threshold_time_s,
+            "observer_confidence_below_threshold_time_s": self.observer_confidence_below_threshold_time_s,
+            "observer_confidence_crossings_up": self.observer_confidence_crossings_up,
+            "observer_confidence_crossings_down": self.observer_confidence_crossings_down,
+            "startup_handoff_count": self.startup_handoff_count,
+            "startup_last_handoff_time_s": self.startup_last_handoff_time_s,
+            "startup_last_handoff_confidence": self.startup_last_handoff_confidence,
+            "startup_handoff_confidence_peak": self.startup_handoff_confidence_peak,
+            "startup_handoff_quality": self.startup_handoff_quality,
+            "startup_handoff_stability_ratio": self.startup_handoff_stability_ratio,
+            "sensorless_blend_enabled": self.sensorless_blend_enabled,
+            "sensorless_blend_min_speed_rpm": self.sensorless_blend_min_speed_rpm,
+            "sensorless_blend_min_confidence": self.sensorless_blend_min_confidence,
+            "sensorless_blend_weight": self.sensorless_blend_weight,
+            "theta_sensorless_raw": self.theta_sensorless_raw,
             "v_d": self.pi_d,
             "v_q": self.pi_q,
             "v_d_cmd": self.last_v_d,

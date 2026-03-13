@@ -1,6 +1,12 @@
 """Unit tests for regression drift reporting helpers."""
 
-from src.utils.regression_baseline import build_drift_report, format_drift_report
+from src.utils.regression_baseline import (
+    build_drift_report,
+    evaluate_startup_transition_thresholds,
+    format_startup_threshold_report,
+    format_drift_report,
+    run_foc_startup_transition_diagnostics,
+)
 
 
 def test_build_drift_report_detects_fail_and_pass():
@@ -42,3 +48,68 @@ def test_format_drift_report_contains_columns():
     assert "scenario | kpi | expected | actual | delta | delta% | tol% | status" in text
     assert "s1 | k1" in text
     assert "fail" in text
+
+
+def test_startup_transition_diagnostics_returns_expected_kpis():
+    diag = run_foc_startup_transition_diagnostics()
+
+    required = {
+        "startup_handoff_count",
+        "startup_fallback_event_count",
+        "startup_last_handoff_time_s",
+        "startup_last_handoff_confidence",
+        "startup_handoff_confidence_peak",
+        "startup_handoff_quality",
+        "startup_handoff_stability_ratio",
+        "observer_confidence_above_threshold_time_s",
+        "observer_confidence_below_threshold_time_s",
+        "observer_confidence_crossings_up",
+        "observer_confidence_crossings_down",
+    }
+    assert required.issubset(diag.keys())
+    assert diag["startup_handoff_count"] >= 1.0
+    assert diag["startup_fallback_event_count"] >= 1.0
+    assert 0.0 <= diag["startup_handoff_quality"] <= 1.0
+    assert 0.0 <= diag["startup_handoff_stability_ratio"] <= 1.0
+
+
+def test_startup_transition_thresholds_support_pass_warn_fail():
+    diagnostics = {
+        "kpi_pass": 0.80,
+        "kpi_warn": 0.35,
+        "kpi_fail": 0.10,
+    }
+    thresholds = {
+        "kpi_pass": {"warn_min": 0.50, "fail_min": 0.20},
+        "kpi_warn": {"warn_min": 0.50, "fail_min": 0.20},
+        "kpi_fail": {"warn_min": 0.50, "fail_min": 0.20},
+    }
+
+    rows = evaluate_startup_transition_thresholds(
+        diagnostics=diagnostics,
+        thresholds=thresholds,
+    )
+    by_kpi = {row["kpi"]: row for row in rows}
+
+    assert by_kpi["kpi_pass"]["status"] == "pass"
+    assert by_kpi["kpi_warn"]["status"] == "warn"
+    assert by_kpi["kpi_fail"]["status"] == "fail"
+
+
+def test_startup_transition_threshold_report_format_contains_columns():
+    rows = [
+        {
+            "kpi": "kpi_example",
+            "actual": 0.42,
+            "warn_min": 0.50,
+            "warn_max": None,
+            "fail_min": 0.20,
+            "fail_max": None,
+            "status": "warn",
+        }
+    ]
+
+    text = format_startup_threshold_report(rows)
+    assert "kpi | actual | warn_min | warn_max | fail_min | fail_max | status" in text
+    assert "kpi_example" in text
+    assert "warn" in text

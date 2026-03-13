@@ -173,6 +173,8 @@ def test_foc_observer_startup_transition_handoffs_to_target_mode():
         min_speed_rpm=200.0,
         min_elapsed_s=0.01,
         min_emf_v=0.1,
+        min_confidence=0.0,
+        confidence_hold_s=0.0,
     )
 
     # Below threshold: should stay in startup initial mode.
@@ -194,6 +196,141 @@ def test_foc_observer_startup_transition_handoffs_to_target_mode():
     s1 = ctrl.get_state()
     assert s1["startup_transition_done"] is True
     assert s1["angle_observer_mode"] == "PLL"
+    assert s1["startup_handoff_count"] >= 1
+    assert s1["startup_last_handoff_time_s"] >= 0.0
+    assert 0.0 <= s1["startup_last_handoff_confidence"] <= 1.0
+    assert 0.0 <= s1["startup_handoff_confidence_peak"] <= 1.0
+    assert 0.0 <= s1["startup_handoff_quality"] <= 1.0
+    assert 0.0 <= s1["startup_handoff_stability_ratio"] <= 1.0
+
+
+def test_foc_observer_confidence_is_bounded_and_reported():
+    motor = BLDCMotor(MotorParameters())
+    motor.state[0:3] = np.array([1.0, -0.5, -0.5])
+    motor.state[3] = 70.0
+    motor.state[4] = 0.4
+    motor._last_emf = motor._calculate_back_emf(motor.theta)
+
+    ctrl = FOCController(motor=motor)
+    ctrl.set_angle_observer("PLL")
+    _ = ctrl.update(0.001)
+    state = ctrl.get_state()
+
+    assert 0.0 <= state["observer_confidence"] <= 1.0
+    assert 0.0 <= state["observer_confidence_emf"] <= 1.0
+    assert 0.0 <= state["observer_confidence_speed"] <= 1.0
+    assert 0.0 <= state["observer_confidence_coherence"] <= 1.0
+    weighted = (
+        0.45 * state["observer_confidence_emf"]
+        + 0.35 * state["observer_confidence_speed"]
+        + 0.20 * state["observer_confidence_coherence"]
+    )
+    assert state["observer_confidence"] == pytest.approx(weighted, abs=1e-9)
+    assert 0.0 <= state["observer_confidence_ema"] <= 1.0
+    assert -1.0 <= state["observer_confidence_trend"] <= 1.0
+    assert state["observer_confidence_above_threshold_time_s"] >= 0.0
+    assert state["observer_confidence_below_threshold_time_s"] >= 0.0
+    assert state["observer_confidence_crossings_up"] >= 0
+    assert state["observer_confidence_crossings_down"] >= 0
+
+
+def test_foc_sensorless_blend_weight_low_speed_prefers_measured_angle():
+    motor = BLDCMotor(MotorParameters())
+    motor.state[0:3] = np.array([0.6, -0.3, -0.3])
+    motor.state[3] = 5.0
+    motor.state[4] = 0.08
+    motor._last_emf = motor._calculate_back_emf(motor.theta)
+
+    ctrl = FOCController(motor=motor)
+    ctrl.set_angle_observer("PLL")
+    ctrl.set_sensorless_blend(enabled=True, min_speed_rpm=200.0, min_confidence=0.8)
+    _ = ctrl.update(0.001)
+    state = ctrl.get_state()
+
+    assert state["angle_observer_mode"] == "PLL"
+    assert 0.0 <= state["sensorless_blend_weight"] <= 0.25
+    theta_measured = (motor.theta * motor.params.poles_pairs) % (2 * np.pi)
+    err_blended = abs(
+        np.arctan2(
+            np.sin(state["theta_electrical"] - theta_measured),
+            np.cos(state["theta_electrical"] - theta_measured),
+        )
+    )
+    err_raw = abs(
+        np.arctan2(
+            np.sin(state["theta_sensorless_raw"] - theta_measured),
+            np.cos(state["theta_sensorless_raw"] - theta_measured),
+        )
+    )
+    assert err_blended <= err_raw + 1e-9
+
+
+def test_foc_sensorless_blend_weight_high_speed_uses_observer_angle():
+    motor = BLDCMotor(MotorParameters())
+    motor.state[0:3] = np.array([1.2, -0.6, -0.6])
+    motor.state[3] = 100.0
+    motor.state[4] = 0.8
+    motor._last_emf = motor._calculate_back_emf(motor.theta)
+
+    ctrl = FOCController(motor=motor)
+    ctrl.set_angle_observer("SMO")
+    ctrl.set_sensorless_blend(enabled=True, min_speed_rpm=30.0, min_confidence=0.2)
+    _ = ctrl.update(0.001)
+    state = ctrl.get_state()
+
+    assert state["angle_observer_mode"] == "SMO"
+    assert state["sensorless_blend_weight"] >= 0.95
+
+
+def test_foc_set_sensorless_blend_validates_inputs():
+    ctrl = FOCController(motor=BLDCMotor(MotorParameters()))
+
+    with pytest.raises(ValueError):
+        ctrl.set_sensorless_blend(min_speed_rpm=-1.0)
+    with pytest.raises(ValueError):
+        ctrl.set_sensorless_blend(min_confidence=1.2)
+
+
+def test_foc_observer_startup_transition_can_fallback_on_degraded_conditions():
+    motor = BLDCMotor(MotorParameters())
+    ctrl = FOCController(motor=motor)
+    ctrl.set_angle_observer("PLL")
+    ctrl.set_startup_transition(
+        enabled=True,
+        initial_mode="Measured",
+        min_speed_rpm=100.0,
+        min_elapsed_s=0.0,
+        min_emf_v=0.05,
+        min_confidence=0.2,
+        confidence_hold_s=0.0,
+        confidence_hysteresis=0.1,
+        fallback_enabled=True,
+        fallback_hold_s=0.005,
+    )
+
+    motor.state[3] = 90.0
+    motor.state[4] = 0.5
+    for _ in range(20):
+        motor._last_emf = motor._calculate_back_emf(motor.theta)
+        _ = ctrl.update(0.001)
+
+    switched = ctrl.get_state()
+    assert switched["startup_transition_done"] is True
+    assert switched["angle_observer_mode"] == "PLL"
+
+    motor.state[3] = 2.0
+    motor.state[4] = 0.05
+    for _ in range(12):
+        motor._last_emf = motor._calculate_back_emf(motor.theta)
+        _ = ctrl.update(0.001)
+
+    degraded = ctrl.get_state()
+    assert degraded["startup_transition_done"] is False
+    assert degraded["angle_observer_mode"] == "Measured"
+    assert degraded["startup_fallback_event_count"] >= 1
+    assert degraded["startup_handoff_count"] >= 1
+    assert 0.0 <= degraded["startup_handoff_stability_ratio"] <= 1.0
+    assert degraded["startup_handoff_stability_ratio"] < 1.0
 
 
 def test_svm_cartesian_conversion():
@@ -325,6 +462,11 @@ def test_gui_foc_angle_observer_wiring():
     gui.foc_startup_min_speed.setValue(250.0)
     gui.foc_startup_min_time.setValue(0.02)
     gui.foc_startup_min_emf.setValue(0.2)
+    gui.foc_startup_min_confidence.setValue(0.55)
+    gui.foc_startup_confidence_hold.setValue(0.03)
+    gui.foc_startup_confidence_hysteresis.setValue(0.12)
+    gui.foc_startup_fallback_mode.setCurrentText("Enabled")
+    gui.foc_startup_fallback_hold.setValue(0.04)
     gui._apply_to_simulation()
 
     assert isinstance(gui.controller, FOCController)
@@ -340,6 +482,11 @@ def test_gui_foc_angle_observer_wiring():
     assert gui.controller.startup_min_speed_rpm == pytest.approx(250.0)
     assert gui.controller.startup_min_elapsed_s == pytest.approx(0.02)
     assert gui.controller.startup_min_emf_v == pytest.approx(0.2)
+    assert gui.controller.startup_min_confidence == pytest.approx(0.55)
+    assert gui.controller.startup_confidence_hold_s == pytest.approx(0.03)
+    assert gui.controller.startup_confidence_hysteresis == pytest.approx(0.12)
+    assert gui.controller.startup_fallback_enabled is True
+    assert gui.controller.startup_fallback_hold_s == pytest.approx(0.04)
 
 
 def test_gui_inverter_nonidealities_wiring():
@@ -433,3 +580,37 @@ def test_gui_monitoring_updates_advanced_foc_status_blocks():
     assert gui.status_blocks["smo_omega_est"].current_value == pytest.approx(
         ctrl_state["smo"]["omega_est"]
     )
+    assert gui.status_blocks["observer_confidence"].current_value == pytest.approx(
+        ctrl_state["observer_confidence"]
+    )
+    assert gui.status_blocks["observer_confidence_emf"].current_value == pytest.approx(
+        ctrl_state["observer_confidence_emf"]
+    )
+    assert gui.status_blocks[
+        "observer_confidence_speed"
+    ].current_value == pytest.approx(ctrl_state["observer_confidence_speed"])
+    assert gui.status_blocks[
+        "observer_confidence_coherence"
+    ].current_value == pytest.approx(ctrl_state["observer_confidence_coherence"])
+    assert gui.status_blocks["observer_confidence_ema"].current_value == pytest.approx(
+        ctrl_state["observer_confidence_ema"]
+    )
+    assert gui.status_blocks[
+        "observer_confidence_trend"
+    ].current_value == pytest.approx(ctrl_state["observer_confidence_trend"])
+    assert gui.status_blocks[
+        "observer_confidence_above_threshold_time_s"
+    ].current_value == pytest.approx(
+        ctrl_state["observer_confidence_above_threshold_time_s"]
+    )
+    assert gui.status_blocks[
+        "observer_confidence_below_threshold_time_s"
+    ].current_value == pytest.approx(
+        ctrl_state["observer_confidence_below_threshold_time_s"]
+    )
+    assert gui.status_blocks["startup_handoff_quality"].current_value == pytest.approx(
+        ctrl_state["startup_handoff_quality"]
+    )
+    assert gui.status_blocks[
+        "startup_handoff_stability_ratio"
+    ].current_value == pytest.approx(ctrl_state["startup_handoff_stability_ratio"])
