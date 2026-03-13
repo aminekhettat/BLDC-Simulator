@@ -53,8 +53,8 @@ jobs:
           python -c "import json, os, sys; payload=json.load(open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8')); body=(payload.get('pull_request', {}).get('body') or '').lower(); required_markers=['baseline rationale','drift evidence']; missing=[m for m in required_markers if m not in body]; print('PR body is missing required baseline documentation markers:') if missing else None; [print(f'- {m}') for m in missing]; print('\\nPlease complete .github/PULL_REQUEST_TEMPLATE.md sections.') if missing else None; sys.exit(1) if missing else None; print('Baseline rationale markers found in PR body.')"
 
       - name: Run baseline integrity and regression gates
-        working-directory: ${{ github.workspace }}
         run: |
+          cd "$GITHUB_WORKSPACE"
           mkdir -p ci_diagnostics
           set +e
           python -m pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py -vv > ci_diagnostics/pytest_regression.log 2>&1
@@ -68,8 +68,8 @@ jobs:
 
       - name: Generate drift report artifact
         if: always()
-        working-directory: ${{ github.workspace }}
         run: |
+          cd "$GITHUB_WORKSPACE"
           mkdir -p ci_diagnostics
           set +e
           python ./examples/report_regression_drift.py > regression_drift_report.txt 2> ci_diagnostics/drift_report_stderr.log
@@ -84,6 +84,7 @@ jobs:
 
       - name: Evaluate startup transition KPI thresholds
         run: |
+          cd "$GITHUB_WORKSPACE"
           python -c "from pathlib import Path; from src.utils.regression_baseline import evaluate_startup_transition_thresholds, format_startup_threshold_report, run_foc_startup_transition_diagnostics; diag=run_foc_startup_transition_diagnostics(); rows=evaluate_startup_transition_thresholds(diag); summary=format_startup_threshold_report(rows); Path('startup_transition_thresholds.txt').write_text(summary + '\n', encoding='utf-8'); print(summary); fail_rows=[r for r in rows if r['status']=='fail']; warn_rows=[r for r in rows if r['status']=='warn']; print(f'\nStartup threshold status: fail={len(fail_rows)}, warn={len(warn_rows)}'); raise SystemExit(1 if fail_rows else 0)"
 
       - name: Generate baseline governance summary artifact
