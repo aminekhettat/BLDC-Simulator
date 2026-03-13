@@ -76,16 +76,7 @@ jobs:
           DRIFT_EXIT=$?
           echo "$DRIFT_EXIT" > ci_diagnostics/drift_report_exit_code.txt
           if [ "$DRIFT_EXIT" -ne 0 ]; then
-            python - <<'PY' > ci_diagnostics/drift_report_traceback.log 2>&1
-import traceback
-from examples.report_regression_drift import main
-
-try:
-    main()
-except Exception:
-    traceback.print_exc()
-    raise
-PY
+            python -c "import traceback; from examples.report_regression_drift import main; main()" > ci_diagnostics/drift_report_traceback.log 2>&1 || true
             echo "Drift report generation failed. Tail of stderr:"
             tail -n 200 ci_diagnostics/drift_report_stderr.log || true
           fi
