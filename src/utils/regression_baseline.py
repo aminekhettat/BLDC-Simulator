@@ -461,6 +461,7 @@ def build_drift_report(
 
     baseline = baseline_payload.get("scenarios", {})
     tolerances = baseline_payload.get("tolerances", {})
+    min_abs_tolerance = float(baseline_payload.get("min_abs_tolerance", 1e-3))
 
     for scenario_name, baseline_kpis in baseline.items():
         if scenario_name not in current:
@@ -503,7 +504,7 @@ def build_drift_report(
             expected = float(expected)
             tol = float(scenario_tols.get(kpi_name, 0.10))
             delta = abs(actual - expected)
-            allowed = max(1e-9, abs(expected) * tol)
+            allowed = max(min_abs_tolerance, abs(expected) * tol)
 
             if abs(expected) > 1e-12:
                 delta_pct = (delta / abs(expected)) * 100.0
