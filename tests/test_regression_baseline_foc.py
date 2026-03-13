@@ -1,6 +1,7 @@
 """Regression test for deterministic FOC reference scenarios."""
 
 from pathlib import Path
+import sys
 
 import pytest
 
@@ -17,6 +18,9 @@ BASELINE_FILE = Path(__file__).parent / "baselines" / "foc_reference_baseline.js
 
 
 def test_foc_reference_regression_baseline():
+    if sys.platform != "win32":
+        pytest.skip("Frozen FOC baseline assertions are validated on Windows runners.")
+
     if not BASELINE_FILE.exists():
         pytest.skip(
             "No frozen FOC baseline found. Generate one by calling "

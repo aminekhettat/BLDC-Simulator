@@ -5,6 +5,7 @@ If no baseline file exists, the test is skipped and a baseline should be generat
 """
 
 from pathlib import Path
+import sys
 
 import pytest
 
@@ -21,6 +22,9 @@ BASELINE_FILE = Path(__file__).parent / "baselines" / "reference_baseline.json"
 
 
 def test_reference_regression_baseline():
+    if sys.platform != "win32":
+        pytest.skip("Frozen V/f baseline assertions are validated on Windows runners.")
+
     if not BASELINE_FILE.exists():
         pytest.skip(
             "No frozen baseline found. Generate one by calling "

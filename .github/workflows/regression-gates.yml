@@ -58,7 +58,7 @@ jobs:
       - name: Generate drift report artifact
         if: always()
         run: |
-          python examples/report_regression_drift.py > regression_drift_report.txt
+          python "${{ github.workspace }}/examples/report_regression_drift.py" > regression_drift_report.txt
 
       - name: Evaluate startup transition KPI thresholds
         run: |
