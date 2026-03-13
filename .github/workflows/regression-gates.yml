@@ -14,6 +14,7 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
       MPLBACKEND: Agg
+      PYTHONPATH: ${{ github.workspace }}
 
     steps:
       - name: Checkout
@@ -52,13 +53,15 @@ jobs:
           python -c "import json, os, sys; payload=json.load(open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8')); body=(payload.get('pull_request', {}).get('body') or '').lower(); required_markers=['baseline rationale','drift evidence']; missing=[m for m in required_markers if m not in body]; print('PR body is missing required baseline documentation markers:') if missing else None; [print(f'- {m}') for m in missing]; print('\\nPlease complete .github/PULL_REQUEST_TEMPLATE.md sections.') if missing else None; sys.exit(1) if missing else None; print('Baseline rationale markers found in PR body.')"
 
       - name: Run baseline integrity and regression gates
+        working-directory: ${{ github.workspace }}
         run: |
-          pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py -v
+          python -m pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py -v
 
       - name: Generate drift report artifact
         if: always()
+        working-directory: ${{ github.workspace }}
         run: |
-          python "${{ github.workspace }}/examples/report_regression_drift.py" > regression_drift_report.txt
+          python ./examples/report_regression_drift.py > regression_drift_report.txt
 
       - name: Evaluate startup transition KPI thresholds
         run: |
