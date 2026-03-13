@@ -348,6 +348,76 @@ class SimulationPlotter:
         return fig
 
     @staticmethod
+    def create_efficiency_analysis_plot(
+        history: Dict[str, np.ndarray],
+        figsize: tuple = (11, 9),
+        grid_on: bool = True,
+        grid_spacing: Optional[float] = None,
+        minor_grid: bool = False,
+        grid_spacing_y: Optional[float] = None,
+    ) -> Figure:
+        """Create a dedicated efficiency plot with input/output/loss power trends."""
+        from matplotlib.ticker import MultipleLocator
+
+        if "time" not in history:
+            raise KeyError("history must include 'time'")
+
+        time = np.asarray(history["time"], dtype=np.float64)
+        if time.size == 0:
+            raise ValueError("history contains no samples")
+
+        input_power = np.asarray(
+            history.get("input_power", np.zeros_like(time)), dtype=np.float64
+        )
+        mech_power = np.asarray(
+            history.get("mechanical_output_power", np.zeros_like(time)),
+            dtype=np.float64,
+        )
+        loss_power = np.asarray(
+            history.get("total_loss_power", np.zeros_like(time)), dtype=np.float64
+        )
+        efficiency = np.asarray(
+            history.get("efficiency", np.zeros_like(time)), dtype=np.float64
+        )
+
+        fig, axes = plt.subplots(4, 1, figsize=figsize, sharex=True)
+
+        def _style_axis(ax):
+            ax.grid(grid_on, alpha=0.3)
+            if minor_grid:
+                ax.minorticks_on()
+                ax.grid(which="minor", alpha=0.1, linestyle=":")
+            if grid_spacing and grid_spacing > 0:
+                ax.xaxis.set_major_locator(MultipleLocator(grid_spacing))
+            if grid_spacing_y and grid_spacing_y > 0:
+                ax.yaxis.set_major_locator(MultipleLocator(grid_spacing_y))
+
+        axes[0].plot(time, efficiency, color="#00695C", linewidth=1.8)
+        axes[0].set_ylabel("eta")
+        axes[0].set_title("System Efficiency", fontsize=11, fontweight="bold")
+        axes[0].set_ylim(-0.05, 1.05)
+        _style_axis(axes[0])
+
+        axes[1].plot(time, input_power, color="#1565C0", linewidth=1.6)
+        axes[1].set_ylabel("Pin (W)")
+        axes[1].set_title("Electrical Input Power", fontsize=11, fontweight="bold")
+        _style_axis(axes[1])
+
+        axes[2].plot(time, mech_power, color="#2E7D32", linewidth=1.6)
+        axes[2].set_ylabel("Pout (W)")
+        axes[2].set_title("Mechanical Output Power", fontsize=11, fontweight="bold")
+        _style_axis(axes[2])
+
+        axes[3].plot(time, loss_power, color="#C62828", linewidth=1.6)
+        axes[3].set_ylabel("Loss (W)")
+        axes[3].set_xlabel("Time (s)")
+        axes[3].set_title("Estimated Total Loss", fontsize=11, fontweight="bold")
+        _style_axis(axes[3])
+
+        plt.tight_layout()
+        return fig
+
+    @staticmethod
     def create_multi_axis_plot(
         history: Dict[str, np.ndarray],
         variables: list,

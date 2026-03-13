@@ -15,6 +15,9 @@ def make_dummy_history():
         "power_factor": np.clip(0.75 + 0.2 * np.sin(2 * np.pi * t), -1.0, 1.0),
         "input_power": 400.0 + 40.0 * np.sin(2 * np.pi * t),
         "pfc_command_var": 100.0 + 20.0 * np.cos(2 * np.pi * t),
+        "mechanical_output_power": 300.0 + 25.0 * np.sin(2 * np.pi * t),
+        "total_loss_power": 100.0 + 15.0 * np.cos(2 * np.pi * t),
+        "efficiency": np.clip(0.75 + 0.05 * np.sin(2 * np.pi * t), 0.0, 1.0),
     }
 
 
@@ -35,3 +38,13 @@ def test_create_pfc_analysis_plot():
     assert len(axes) == 4
     assert "Power Factor" in axes[0].get_title()
     assert "Reactive" in axes[2].get_title()
+
+
+def test_create_efficiency_analysis_plot():
+    history = make_dummy_history()
+    fig = SimulationPlotter.create_efficiency_analysis_plot(history)
+    axes = fig.get_axes()
+
+    assert len(axes) == 4
+    assert "Efficiency" in axes[0].get_title()
+    assert "Loss" in axes[3].get_title()

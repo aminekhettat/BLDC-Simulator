@@ -36,6 +36,8 @@ Advanced Features
 - **Power Analysis**: Loss calculations including copper, iron, and mechanical losses
 - **Power Factor Analysis**: Waveform-based active/reactive/apparent power and PF metrics with reactive compensation sizing helpers
 - **PFC Telemetry Hook**: Optional closed-loop PF target tracking in simulation metadata/history (`pfc_command_var`, PF trend)
+- **Efficiency Telemetry**: Input power, mechanical output power, estimated total loss, and system efficiency tracked in simulation metadata/history
+- **Efficiency Tuning Suggestions**: Heuristic recommendations for switching-frequency and inverter-loss tradeoff tuning from measured efficiency/PF
 
 User Interface
 --------------

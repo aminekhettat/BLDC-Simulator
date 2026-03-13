@@ -68,6 +68,7 @@ from src.core import (
     SimulationEngine,
     ConstantLoad,
     RampLoad,
+    recommend_efficiency_adjustments,
 )
 from src.control import SVMGenerator, VFController, BaseController, FOCController
 from src.control.transforms import inverse_clarke
@@ -1631,6 +1632,9 @@ class BLDCMotorControlGUI(QMainWindow):
             ("pfc_active_power_w", "Input Active Power", "W"),
             ("pfc_reactive_power_var", "Input Reactive Power", "VAR"),
             ("pfc_command_var", "PFC Compensation Command", "VAR"),
+            ("efficiency", "System Efficiency", "0-1"),
+            ("mechanical_output_power_w", "Mechanical Output Power", "W"),
+            ("total_loss_power_w", "Estimated Total Loss", "W"),
             ("time", "Simulation Time", "s"),
         ]
 
@@ -1763,6 +1767,20 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         btn_plot_pfc.clicked.connect(self._plot_pfc_analysis)
         button_layout.addWidget(btn_plot_pfc)
+
+        btn_plot_efficiency = AccessibleButton(
+            "Plot Efficiency Analysis",
+            "Generate input power, output power, loss, and efficiency trends",
+        )
+        btn_plot_efficiency.clicked.connect(self._plot_efficiency_analysis)
+        button_layout.addWidget(btn_plot_efficiency)
+
+        btn_efficiency_tips = AccessibleButton(
+            "Suggest Efficiency Tuning",
+            "Show heuristic efficiency recommendations from current settings",
+        )
+        btn_efficiency_tips.clicked.connect(self._show_efficiency_recommendations)
+        button_layout.addWidget(btn_efficiency_tips)
 
         btn_plot_custom = AccessibleButton(
             "Plot Selected", "Generate plot for user-selected variables"
@@ -2023,8 +2041,15 @@ class BLDCMotorControlGUI(QMainWindow):
         pfc_state = (
             state.get("pfc", {}) if isinstance(state.get("pfc", {}), dict) else {}
         )
+        efficiency_state = (
+            state.get("efficiency_metrics", {})
+            if isinstance(state.get("efficiency_metrics", {}), dict)
+            else {}
+        )
         if not pfc_state and self.engine is not None:
             pfc_state = self.engine.get_power_factor_control_state()
+        if not efficiency_state and self.engine is not None:
+            efficiency_state = self.engine.get_efficiency_state()
         observer_mode_code = 0.0
         if isinstance(self.controller, FOCController):
             ctrl_state = self.controller.get_state()
@@ -2145,6 +2170,15 @@ class BLDCMotorControlGUI(QMainWindow):
             )
             self.status_blocks["pfc_command_var"].update_value(
                 float(pfc_state.get("compensation_command_var", 0.0))
+            )
+            self.status_blocks["efficiency"].update_value(
+                float(efficiency_state.get("efficiency", 0.0))
+            )
+            self.status_blocks["mechanical_output_power_w"].update_value(
+                float(efficiency_state.get("mechanical_output_power_w", 0.0))
+            )
+            self.status_blocks["total_loss_power_w"].update_value(
+                float(efficiency_state.get("total_loss_power_w", 0.0))
             )
             self.status_blocks["time"].update_value(time_val)
         else:
@@ -2268,6 +2302,15 @@ class BLDCMotorControlGUI(QMainWindow):
             )
             self.status_labels["startup_handoff_stability_ratio"].setText(
                 f"Handoff Stability Ratio: {ctrl_state.get('startup_handoff_stability_ratio', 1.0):.3f}"
+            )
+            self.status_labels["efficiency"].setText(
+                f"System Efficiency: {efficiency_state.get('efficiency', 0.0):.3f}"
+            )
+            self.status_labels["mechanical_output_power_w"].setText(
+                f"Mechanical Output Power: {efficiency_state.get('mechanical_output_power_w', 0.0):.3f} W"
+            )
+            self.status_labels["total_loss_power_w"].setText(
+                f"Estimated Total Loss: {efficiency_state.get('total_loss_power_w', 0.0):.3f} W"
             )
             self.status_labels["time"].setText(f"Simulation Time: {time_val:.3f} s")
 
@@ -2518,6 +2561,68 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         figure.show()
         speak("PFC analysis plot generated.")
+
+    def _plot_efficiency_analysis(self):
+        """Generate dedicated efficiency telemetry plot."""
+        if not self.engine or len(self.engine.get_history()["time"]) == 0:
+            QMessageBox.warning(self, "Warning", "No data to plot!")
+            return
+
+        history = self.engine.get_history()
+        grid_on = (
+            getattr(self, "plot_grid_checkbox", None)
+            and self.plot_grid_checkbox.isChecked()
+        )
+        grid_spacing = (
+            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
+        )
+        minor_grid = (
+            getattr(self, "plot_minor_grid_checkbox", None)
+            and self.plot_minor_grid_checkbox.isChecked()
+        )
+        grid_spacing_y = (
+            getattr(self, "plot_grid_spacing_y", None)
+            and self.plot_grid_spacing_y.value()
+        )
+        figure = SimulationPlotter.create_efficiency_analysis_plot(
+            history,
+            grid_on=grid_on,
+            grid_spacing=grid_spacing,
+            minor_grid=minor_grid,
+            grid_spacing_y=grid_spacing_y,
+        )
+        figure.show()
+        speak("Efficiency analysis plot generated.")
+
+    def _show_efficiency_recommendations(self):
+        """Show heuristic efficiency tuning suggestions for the current setup."""
+        if not self.engine or len(self.engine.get_history()["time"]) == 0:
+            QMessageBox.warning(
+                self,
+                "Warning",
+                "Run a simulation first to generate efficiency recommendations.",
+            )
+            return
+
+        efficiency_state = self.engine.get_efficiency_state()
+        pfc_state = self.engine.get_power_factor_control_state()
+        rec = recommend_efficiency_adjustments(
+            efficiency=efficiency_state.get("efficiency", 0.0),
+            power_factor=pfc_state.get("power_factor", 0.0),
+            device_drop_v=self.inverter_device_drop.value(),
+            dead_time_fraction=self.inverter_dead_time_fraction.value(),
+            conduction_resistance_ohm=self.inverter_conduction_resistance.value(),
+            switching_frequency_hz=self.inverter_switching_frequency.value(),
+            switching_loss_coeff_v_per_a_khz=self.inverter_switching_loss_coeff.value(),
+        )
+        lines = [
+            f"Efficiency: {rec['efficiency']:.3f}",
+            f"Power factor: {rec['power_factor']:.3f}",
+            "",
+            "Suggestions:",
+        ]
+        lines.extend(f"- {item}" for item in rec["suggestions"])
+        QMessageBox.information(self, "Efficiency Tuning Suggestions", "\n".join(lines))
 
     def _plot_custom(self):
         """Generate a custom multi-axis plot from selected variables."""

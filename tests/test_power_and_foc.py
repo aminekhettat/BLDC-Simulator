@@ -15,8 +15,10 @@ app = QApplication.instance() or QApplication(sys.argv)
 from src.core.power_model import (
     SupplyProfile,
     ConstantSupply,
+    compute_efficiency_metrics,
     PowerFactorController,
     compute_power_metrics,
+    recommend_efficiency_adjustments,
     required_reactive_compensation,
 )
 from src.core.simulation_engine import SimulationEngine
@@ -72,6 +74,35 @@ def test_power_factor_controller_generates_non_negative_command():
     assert pfc.last_error > 0.0
 
 
+def test_efficiency_metrics_compute_output_loss_and_efficiency():
+    metrics = compute_efficiency_metrics(
+        input_power_w=500.0,
+        torque_nm=1.0,
+        omega_rad_s=400.0,
+    )
+
+    assert metrics["electrical_input_power_w"] == pytest.approx(500.0)
+    assert metrics["mechanical_output_power_w"] == pytest.approx(400.0)
+    assert metrics["total_loss_power_w"] == pytest.approx(100.0)
+    assert metrics["efficiency"] == pytest.approx(0.8)
+
+
+def test_efficiency_recommendations_flag_loss_and_pf_issues():
+    rec = recommend_efficiency_adjustments(
+        efficiency=0.72,
+        power_factor=0.82,
+        device_drop_v=0.8,
+        dead_time_fraction=0.02,
+        conduction_resistance_ohm=0.03,
+        switching_frequency_hz=20000.0,
+        switching_loss_coeff_v_per_a_khz=0.01,
+    )
+
+    assert rec["needs_attention"] is True
+    assert any("power factor" in item.lower() for item in rec["suggestions"])
+    assert any("switching" in item.lower() for item in rec["suggestions"])
+
+
 def test_engine_pfc_telemetry_hook_updates_metrics():
     motor = BLDCMotor(MotorParameters())
     load = ConstantLoad(0.1)
@@ -92,6 +123,27 @@ def test_engine_pfc_telemetry_hook_updates_metrics():
     assert info["pfc"]["enabled"] is True
     assert 0.0 <= abs(info["pfc"]["power_factor"]) <= 1.0
     assert info["pfc"]["compensation_command_var"] >= 0.0
+
+
+def test_engine_efficiency_telemetry_updates_metrics():
+    motor = BLDCMotor(MotorParameters())
+    load = ConstantLoad(0.05)
+    engine = SimulationEngine(
+        motor, load, dt=0.0005, supply_profile=ConstantSupply(48.0)
+    )
+
+    for _ in range(80):
+        engine.step(np.array([5.0, -2.5, -2.5]), log_data=True)
+
+    hist = engine.get_history()
+    assert hist["efficiency"].size == hist["time"].size
+    assert hist["mechanical_output_power"].size == hist["time"].size
+    assert hist["total_loss_power"].size == hist["time"].size
+
+    info = engine.get_simulation_info()
+    assert "efficiency_metrics" in info
+    assert 0.0 <= info["efficiency_metrics"]["efficiency"] <= 1.0
+    assert info["efficiency_metrics"]["total_loss_power_w"] >= 0.0
 
 
 def test_engine_applies_supply_voltage():
@@ -628,6 +680,31 @@ def test_gui_monitoring_updates_pfc_status_blocks():
         145.0
     )
     assert gui.status_blocks["pfc_command_var"].current_value == pytest.approx(120.0)
+
+
+def test_gui_monitoring_updates_efficiency_status_blocks():
+    from src.ui.main_window import BLDCMotorControlGUI
+
+    gui = BLDCMotorControlGUI()
+    gui._update_monitoring(
+        {
+            "speed_rpm": 900.0,
+            "omega": 94.0,
+            "theta": 0.5,
+            "time": 0.25,
+            "efficiency_metrics": {
+                "efficiency": 0.88,
+                "mechanical_output_power_w": 280.0,
+                "total_loss_power_w": 38.0,
+            },
+        }
+    )
+
+    assert gui.status_blocks["efficiency"].current_value == pytest.approx(0.88)
+    assert gui.status_blocks[
+        "mechanical_output_power_w"
+    ].current_value == pytest.approx(280.0)
+    assert gui.status_blocks["total_loss_power_w"].current_value == pytest.approx(38.0)
 
 
 def test_gui_monitoring_updates_advanced_foc_status_blocks():

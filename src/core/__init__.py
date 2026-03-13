@@ -18,7 +18,9 @@ from .power_model import (
     RampSupply,
     VariableSupply,
     PowerFactorController,
+    compute_efficiency_metrics,
     compute_power_metrics,
+    recommend_efficiency_adjustments,
     required_reactive_compensation,
 )
 
@@ -35,6 +37,8 @@ __all__ = [
     "RampSupply",
     "VariableSupply",
     "PowerFactorController",
+    "compute_efficiency_metrics",
     "compute_power_metrics",
+    "recommend_efficiency_adjustments",
     "required_reactive_compensation",
 ]

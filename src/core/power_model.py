@@ -102,6 +102,85 @@ def required_reactive_compensation(
     }
 
 
+def compute_efficiency_metrics(
+    input_power_w: float,
+    torque_nm: float,
+    omega_rad_s: float,
+) -> Dict[str, float]:
+    """Compute simple drivetrain efficiency metrics from power flow values."""
+    electrical_input = max(float(input_power_w), 0.0)
+    shaft_power = float(torque_nm) * float(omega_rad_s)
+    mechanical_output = max(shaft_power, 0.0)
+    regenerative_power = max(-shaft_power, 0.0)
+    total_loss = max(electrical_input - mechanical_output, 0.0)
+
+    if electrical_input <= 1e-12:
+        efficiency = 0.0
+    else:
+        efficiency = float(np.clip(mechanical_output / electrical_input, 0.0, 1.0))
+
+    return {
+        "electrical_input_power_w": electrical_input,
+        "mechanical_output_power_w": mechanical_output,
+        "regenerative_power_w": regenerative_power,
+        "total_loss_power_w": total_loss,
+        "efficiency": efficiency,
+    }
+
+
+def recommend_efficiency_adjustments(
+    efficiency: float,
+    power_factor: float,
+    device_drop_v: float = 0.0,
+    dead_time_fraction: float = 0.0,
+    conduction_resistance_ohm: float = 0.0,
+    switching_frequency_hz: float = 0.0,
+    switching_loss_coeff_v_per_a_khz: float = 0.0,
+    target_efficiency: float = 0.90,
+) -> Dict[str, object]:
+    """Return simple heuristic suggestions for improving simulated efficiency."""
+    eff = float(np.clip(efficiency, 0.0, 1.0))
+    pf = float(np.clip(abs(power_factor), 0.0, 1.0))
+    target = float(np.clip(target_efficiency, 0.0, 1.0))
+    suggestions: List[str] = []
+
+    if eff < target:
+        if device_drop_v > 0.5:
+            suggestions.append(
+                "Reduce inverter device drop or choose lower-Vf switching devices."
+            )
+        if dead_time_fraction > 0.01:
+            suggestions.append(
+                "Reduce dead-time fraction if switching margins allow it."
+            )
+        if conduction_resistance_ohm > 0.01:
+            suggestions.append(
+                "Lower conduction resistance to reduce current-dependent voltage drop."
+            )
+        if switching_frequency_hz > 12000.0 and switching_loss_coeff_v_per_a_khz > 0.0:
+            suggestions.append(
+                "Lower PWM switching frequency or switching-loss coefficient to trade ripple for lower inverter losses."
+            )
+
+    if pf < 0.90:
+        suggestions.append(
+            "Improve power factor with PFC tuning or a less reactive operating point."
+        )
+
+    if not suggestions:
+        suggestions.append(
+            "Current inverter settings are already near the requested efficiency target."
+        )
+
+    return {
+        "efficiency": eff,
+        "power_factor": pf,
+        "target_efficiency": target,
+        "needs_attention": eff < target or pf < 0.90,
+        "suggestions": suggestions,
+    }
+
+
 class PowerFactorController:
     """Simple closed-loop power factor correction command generator.
 

@@ -22,6 +22,7 @@ from .power_model import (
     SupplyProfile,
     ConstantSupply,
     PowerFactorController,
+    compute_efficiency_metrics,
     compute_power_metrics,
 )
 
@@ -105,6 +106,13 @@ class SimulationEngine:
             "compensation_command_var": 0.0,
             "target_pf": float(pfc_controller.target_pf) if pfc_controller else 0.0,
         }
+        self._efficiency_metrics: Dict[str, float] = {
+            "electrical_input_power_w": 0.0,
+            "mechanical_output_power_w": 0.0,
+            "regenerative_power_w": 0.0,
+            "total_loss_power_w": 0.0,
+            "efficiency": 0.0,
+        }
 
         # Simulation state
         self.time = 0.0
@@ -131,6 +139,9 @@ class SimulationEngine:
         self._history_input_power: List[float] = []
         self._history_pf: List[float] = []
         self._history_pfc_command: List[float] = []
+        self._history_mechanical_output_power: List[float] = []
+        self._history_total_loss_power: List[float] = []
+        self._history_efficiency: List[float] = []
 
         # State variables cache
         self._last_state_dict = {}
@@ -207,6 +218,9 @@ class SimulationEngine:
             self._history_input_power.pop(0)
             self._history_pf.pop(0)
             self._history_pfc_command.pop(0)
+            self._history_mechanical_output_power.pop(0)
+            self._history_total_loss_power.pop(0)
+            self._history_efficiency.pop(0)
 
         # Get motor state
         state = self.motor.get_state_dict()
@@ -242,6 +256,18 @@ class SimulationEngine:
 
         self._history_input_power.append(p_instant)
         self._history_input_current.append(i_in)
+
+        efficiency_metrics = compute_efficiency_metrics(
+            input_power_w=p_instant,
+            torque_nm=state["torque"],
+            omega_rad_s=state["omega"],
+        )
+        self._efficiency_metrics.update(efficiency_metrics)
+        self._history_mechanical_output_power.append(
+            efficiency_metrics["mechanical_output_power_w"]
+        )
+        self._history_total_loss_power.append(efficiency_metrics["total_loss_power_w"])
+        self._history_efficiency.append(efficiency_metrics["efficiency"])
 
         pf_now = self._pfc_metrics["power_factor"] if self._history_pf else 0.0
         cmd_var = self._pfc_metrics["compensation_command_var"]
@@ -306,6 +332,10 @@ class SimulationEngine:
             **self._pfc_metrics,
         }
 
+    def get_efficiency_state(self) -> Dict[str, float]:
+        """Return current efficiency and loss telemetry."""
+        return dict(self._efficiency_metrics)
+
     def log_data(self, load_torque: Optional[float] = None) -> None:
         """
         Manual data logging (for external control loops).
@@ -364,6 +394,9 @@ class SimulationEngine:
         self._history_input_power.clear()
         self._history_pf.clear()
         self._history_pfc_command.clear()
+        self._history_mechanical_output_power.clear()
+        self._history_total_loss_power.clear()
+        self._history_efficiency.clear()
 
         self._pfc_metrics.update(
             {
@@ -375,6 +408,15 @@ class SimulationEngine:
                 "target_pf": float(self.pfc_controller.target_pf)
                 if self.pfc_controller
                 else 0.0,
+            }
+        )
+        self._efficiency_metrics.update(
+            {
+                "electrical_input_power_w": 0.0,
+                "mechanical_output_power_w": 0.0,
+                "regenerative_power_w": 0.0,
+                "total_loss_power_w": 0.0,
+                "efficiency": 0.0,
             }
         )
 
@@ -429,6 +471,13 @@ class SimulationEngine:
             "input_power": np.array(self._history_input_power, dtype=np.float64),
             "power_factor": np.array(self._history_pf, dtype=np.float64),
             "pfc_command_var": np.array(self._history_pfc_command, dtype=np.float64),
+            "mechanical_output_power": np.array(
+                self._history_mechanical_output_power, dtype=np.float64
+            ),
+            "total_loss_power": np.array(
+                self._history_total_loss_power, dtype=np.float64
+            ),
+            "efficiency": np.array(self._history_efficiency, dtype=np.float64),
         }
 
     def get_current_state(self) -> Dict[str, float]:
@@ -459,4 +508,5 @@ class SimulationEngine:
             "dt": self.dt,
             "history_size": len(self._history_times),
             "pfc": self.get_power_factor_control_state(),
+            "efficiency_metrics": self.get_efficiency_state(),
         }
