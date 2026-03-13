@@ -15,10 +15,15 @@ Provides efficient real-time simulation with optimized calculations.
 """
 
 import numpy as np
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple, Any
 from .motor_model import BLDCMotor, MotorParameters
 from .load_model import LoadProfile
-from .power_model import SupplyProfile, ConstantSupply
+from .power_model import (
+    SupplyProfile,
+    ConstantSupply,
+    PowerFactorController,
+    compute_power_metrics,
+)
 
 
 class SimulationEngine:
@@ -57,6 +62,8 @@ class SimulationEngine:
         dt: float = 0.0001,
         max_history: int = 100000,
         supply_profile: Optional[SupplyProfile] = None,
+        pfc_controller: Optional[PowerFactorController] = None,
+        pfc_window_samples: int = 128,
     ):
         """
         Initialize simulation engine.
@@ -87,6 +94,18 @@ class SimulationEngine:
         else:
             self.supply_profile = supply_profile
 
+        self.pfc_controller = pfc_controller
+        self.pfc_window_samples = max(int(pfc_window_samples), 8)
+        self._pfc_enabled = pfc_controller is not None
+        self._pfc_metrics: Dict[str, float] = {
+            "power_factor": 0.0,
+            "active_power_w": 0.0,
+            "apparent_power_va": 0.0,
+            "reactive_power_var": 0.0,
+            "compensation_command_var": 0.0,
+            "target_pf": float(pfc_controller.target_pf) if pfc_controller else 0.0,
+        }
+
         # Simulation state
         self.time = 0.0
         self.step_count = 0
@@ -108,6 +127,10 @@ class SimulationEngine:
         self._history_voltages_b: List[float] = []
         self._history_voltages_c: List[float] = []
         self._history_supply_voltage: List[float] = []
+        self._history_input_current: List[float] = []
+        self._history_input_power: List[float] = []
+        self._history_pf: List[float] = []
+        self._history_pfc_command: List[float] = []
 
         # State variables cache
         self._last_state_dict = {}
@@ -179,6 +202,11 @@ class SimulationEngine:
             self._history_voltages_a.pop(0)
             self._history_voltages_b.pop(0)
             self._history_voltages_c.pop(0)
+            self._history_supply_voltage.pop(0)
+            self._history_input_current.pop(0)
+            self._history_input_power.pop(0)
+            self._history_pf.pop(0)
+            self._history_pfc_command.pop(0)
 
         # Get motor state
         state = self.motor.get_state_dict()
@@ -201,6 +229,82 @@ class SimulationEngine:
         self._history_voltages_b.append(voltages[1])
         self._history_voltages_c.append(voltages[2])
         self._history_supply_voltage.append(supply_voltage)
+
+        i_abc = np.array(
+            [state["currents_a"], state["currents_b"], state["currents_c"]],
+            dtype=np.float64,
+        )
+        p_instant = float(np.dot(voltages, i_abc))
+        if abs(supply_voltage) > 1e-9:
+            i_in = p_instant / float(supply_voltage)
+        else:
+            i_in = 0.0
+
+        self._history_input_power.append(p_instant)
+        self._history_input_current.append(i_in)
+
+        pf_now = self._pfc_metrics["power_factor"] if self._history_pf else 0.0
+        cmd_var = self._pfc_metrics["compensation_command_var"]
+
+        if len(self._history_input_current) >= 8:
+            w = min(self.pfc_window_samples, len(self._history_input_current))
+            metrics = compute_power_metrics(
+                np.array(self._history_supply_voltage[-w:], dtype=np.float64),
+                np.array(self._history_input_current[-w:], dtype=np.float64),
+            )
+            pf_now = float(metrics["power_factor"])
+            self._pfc_metrics["power_factor"] = pf_now
+            self._pfc_metrics["active_power_w"] = float(metrics["active_power_w"])
+            self._pfc_metrics["apparent_power_va"] = float(metrics["apparent_power_va"])
+            self._pfc_metrics["reactive_power_var"] = float(
+                metrics["reactive_power_var"]
+            )
+
+            if self._pfc_enabled and self.pfc_controller is not None:
+                cmd_var = self.pfc_controller.update(
+                    current_pf=pf_now,
+                    active_power_w=float(metrics["active_power_w"]),
+                    dt=self.dt,
+                )
+                self._pfc_metrics["compensation_command_var"] = float(cmd_var)
+                self._pfc_metrics["target_pf"] = float(self.pfc_controller.target_pf)
+
+        self._history_pf.append(pf_now)
+        self._history_pfc_command.append(cmd_var)
+
+    def configure_power_factor_control(
+        self,
+        enabled: bool,
+        target_pf: float = 0.95,
+        kp: float = 0.10,
+        ki: float = 1.0,
+        max_compensation_var: float = 10000.0,
+        window_samples: int = 128,
+    ) -> None:
+        """Enable/disable closed-loop PFC telemetry hook."""
+        self._pfc_enabled = bool(enabled)
+        self.pfc_window_samples = max(int(window_samples), 8)
+
+        if not self._pfc_enabled:
+            self.pfc_controller = None
+            self._pfc_metrics["target_pf"] = 0.0
+            self._pfc_metrics["compensation_command_var"] = 0.0
+            return
+
+        self.pfc_controller = PowerFactorController(
+            target_pf=target_pf,
+            kp=kp,
+            ki=ki,
+            max_compensation_var=max_compensation_var,
+        )
+        self._pfc_metrics["target_pf"] = float(target_pf)
+
+    def get_power_factor_control_state(self) -> Dict[str, float | bool]:
+        """Return current PFC telemetry and controller state."""
+        return {
+            "enabled": self._pfc_enabled,
+            **self._pfc_metrics,
+        }
 
     def log_data(self, load_torque: Optional[float] = None) -> None:
         """
@@ -256,6 +360,26 @@ class SimulationEngine:
         self._history_voltages_b.clear()
         self._history_voltages_c.clear()
         self._history_supply_voltage.clear()
+        self._history_input_current.clear()
+        self._history_input_power.clear()
+        self._history_pf.clear()
+        self._history_pfc_command.clear()
+
+        self._pfc_metrics.update(
+            {
+                "power_factor": 0.0,
+                "active_power_w": 0.0,
+                "apparent_power_va": 0.0,
+                "reactive_power_var": 0.0,
+                "compensation_command_var": 0.0,
+                "target_pf": float(self.pfc_controller.target_pf)
+                if self.pfc_controller
+                else 0.0,
+            }
+        )
+
+        if self.pfc_controller is not None:
+            self.pfc_controller.reset()
 
         self.time = 0.0
         self.step_count = 0
@@ -301,6 +425,10 @@ class SimulationEngine:
             "voltages_b": np.array(self._history_voltages_b, dtype=np.float64),
             "voltages_c": np.array(self._history_voltages_c, dtype=np.float64),
             "supply_voltage": np.array(self._history_supply_voltage, dtype=np.float64),
+            "input_current": np.array(self._history_input_current, dtype=np.float64),
+            "input_power": np.array(self._history_input_power, dtype=np.float64),
+            "power_factor": np.array(self._history_pf, dtype=np.float64),
+            "pfc_command_var": np.array(self._history_pfc_command, dtype=np.float64),
         }
 
     def get_current_state(self) -> Dict[str, float]:
@@ -312,7 +440,7 @@ class SimulationEngine:
         """
         return self.motor.get_state_dict()
 
-    def get_simulation_info(self) -> Dict[str, any]:
+    def get_simulation_info(self) -> Dict[str, Any]:
         """
         Get simulation metadata.
 
@@ -330,4 +458,5 @@ class SimulationEngine:
             "step_count": self.step_count,
             "dt": self.dt,
             "history_size": len(self._history_times),
+            "pfc": self.get_power_factor_control_state(),
         }

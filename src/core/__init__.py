@@ -12,7 +12,15 @@ This package contains the core motor models and simulation engine for BLDC motor
 from .motor_model import BLDCMotor, MotorParameters
 from .load_model import LoadProfile, ConstantLoad, RampLoad, VariableLoad
 from .simulation_engine import SimulationEngine
-from .power_model import SupplyProfile, ConstantSupply, RampSupply, VariableSupply
+from .power_model import (
+    SupplyProfile,
+    ConstantSupply,
+    RampSupply,
+    VariableSupply,
+    PowerFactorController,
+    compute_power_metrics,
+    required_reactive_compensation,
+)
 
 __all__ = [
     "BLDCMotor",
@@ -26,4 +34,7 @@ __all__ = [
     "ConstantSupply",
     "RampSupply",
     "VariableSupply",
+    "PowerFactorController",
+    "compute_power_metrics",
+    "required_reactive_compensation",
 ]

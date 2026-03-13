@@ -15,6 +15,7 @@ app = QApplication.instance() or QApplication(sys.argv)
 from src.core.power_model import (
     SupplyProfile,
     ConstantSupply,
+    PowerFactorController,
     compute_power_metrics,
     required_reactive_compensation,
 )
@@ -62,6 +63,35 @@ def test_required_reactive_compensation_reduces_target_reactive_power():
 
     assert res["required_compensation_var"] > 0.0
     assert res["target_reactive_var"] < res["current_reactive_var"]
+
+
+def test_power_factor_controller_generates_non_negative_command():
+    pfc = PowerFactorController(target_pf=0.95, kp=0.2, ki=0.5)
+    cmd = pfc.update(current_pf=0.70, active_power_w=1200.0, dt=0.001)
+    assert cmd >= 0.0
+    assert pfc.last_error > 0.0
+
+
+def test_engine_pfc_telemetry_hook_updates_metrics():
+    motor = BLDCMotor(MotorParameters())
+    load = ConstantLoad(0.1)
+    engine = SimulationEngine(
+        motor, load, dt=0.0005, supply_profile=ConstantSupply(48.0)
+    )
+    engine.configure_power_factor_control(enabled=True, target_pf=0.97, kp=0.1, ki=0.2)
+
+    for _ in range(80):
+        engine.step(np.array([4.0, -2.0, -2.0]), log_data=True)
+
+    hist = engine.get_history()
+    assert hist["power_factor"].size == hist["time"].size
+    assert hist["pfc_command_var"].size == hist["time"].size
+
+    info = engine.get_simulation_info()
+    assert "pfc" in info
+    assert info["pfc"]["enabled"] is True
+    assert 0.0 <= abs(info["pfc"]["power_factor"]) <= 1.0
+    assert info["pfc"]["compensation_command_var"] >= 0.0
 
 
 def test_engine_applies_supply_voltage():

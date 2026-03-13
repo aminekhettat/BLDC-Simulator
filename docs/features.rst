@@ -35,6 +35,7 @@ Advanced Features
 - **Data Logging**: CSV export with metadata for offline analysis
 - **Power Analysis**: Loss calculations including copper, iron, and mechanical losses
 - **Power Factor Analysis**: Waveform-based active/reactive/apparent power and PF metrics with reactive compensation sizing helpers
+- **PFC Telemetry Hook**: Optional closed-loop PF target tracking in simulation metadata/history (`pfc_command_var`, PF trend)
 
 User Interface
 --------------

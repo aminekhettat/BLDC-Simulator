@@ -102,6 +102,74 @@ def required_reactive_compensation(
     }
 
 
+class PowerFactorController:
+    """Simple closed-loop power factor correction command generator.
+
+    The controller estimates a reactive compensation command from current PF,
+    active power, and a target PF. It is designed as a non-invasive telemetry
+    hook for simulation workflows.
+    """
+
+    def __init__(
+        self,
+        target_pf: float = 0.95,
+        kp: float = 0.10,
+        ki: float = 1.0,
+        max_compensation_var: float = 10000.0,
+    ):
+        if not (0.0 < target_pf <= 1.0):
+            raise ValueError("target_pf must be in (0, 1]")
+        if kp < 0.0 or ki < 0.0:
+            raise ValueError("kp and ki must be non-negative")
+        if max_compensation_var <= 0.0:
+            raise ValueError("max_compensation_var must be positive")
+
+        self.target_pf = float(target_pf)
+        self.kp = float(kp)
+        self.ki = float(ki)
+        self.max_compensation_var = float(max_compensation_var)
+        self.integral = 0.0
+        self.last_command_var = 0.0
+        self.last_error = 0.0
+
+    def reset(self) -> None:
+        self.integral = 0.0
+        self.last_command_var = 0.0
+        self.last_error = 0.0
+
+    def update(self, current_pf: float, active_power_w: float, dt: float) -> float:
+        """Update controller and return recommended compensation [VAR]."""
+        pf_now = abs(float(current_pf))
+        pf_now = float(np.clip(pf_now, 0.0, 1.0))
+        p = max(float(active_power_w), 0.0)
+
+        if dt <= 0.0 or p <= 1e-9:
+            self.last_error = self.target_pf - pf_now
+            self.last_command_var = 0.0
+            return 0.0
+
+        error = self.target_pf - pf_now
+        self.integral = float(np.clip(self.integral + error * dt, -1.0, 1.0))
+
+        if pf_now <= 0.0:
+            baseline = self.max_compensation_var
+        elif pf_now < self.target_pf:
+            baseline = required_reactive_compensation(
+                active_power_w=p,
+                current_pf=max(pf_now, 1e-6),
+                target_pf=self.target_pf,
+            )["required_compensation_var"]
+        else:
+            baseline = 0.0
+
+        trim = p * (self.kp * error + self.ki * self.integral)
+        command = float(np.clip(baseline + trim, 0.0, self.max_compensation_var))
+
+        self.last_error = error
+        self.last_command_var = command
+        return command
+
+
 class SupplyProfile(ABC):
     """
     Abstract base class for supply voltage profiles.
