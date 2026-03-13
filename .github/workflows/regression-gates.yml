@@ -55,13 +55,41 @@ jobs:
       - name: Run baseline integrity and regression gates
         working-directory: ${{ github.workspace }}
         run: |
-          python -m pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py -v
+          mkdir -p ci_diagnostics
+          set +e
+          python -m pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py -vv > ci_diagnostics/pytest_regression.log 2>&1
+          PYTEST_EXIT=$?
+          echo "$PYTEST_EXIT" > ci_diagnostics/pytest_exit_code.txt
+          if [ "$PYTEST_EXIT" -ne 0 ]; then
+            echo "Regression gate failed. Tail of pytest log:"
+            tail -n 200 ci_diagnostics/pytest_regression.log || true
+          fi
+          exit "$PYTEST_EXIT"
 
       - name: Generate drift report artifact
         if: always()
         working-directory: ${{ github.workspace }}
         run: |
-          python ./examples/report_regression_drift.py > regression_drift_report.txt
+          mkdir -p ci_diagnostics
+          set +e
+          python ./examples/report_regression_drift.py > regression_drift_report.txt 2> ci_diagnostics/drift_report_stderr.log
+          DRIFT_EXIT=$?
+          echo "$DRIFT_EXIT" > ci_diagnostics/drift_report_exit_code.txt
+          if [ "$DRIFT_EXIT" -ne 0 ]; then
+            python - <<'PY' > ci_diagnostics/drift_report_traceback.log 2>&1
+import traceback
+from examples.report_regression_drift import main
+
+try:
+    main()
+except Exception:
+    traceback.print_exc()
+    raise
+PY
+            echo "Drift report generation failed. Tail of stderr:"
+            tail -n 200 ci_diagnostics/drift_report_stderr.log || true
+          fi
+          exit "$DRIFT_EXIT"
 
       - name: Evaluate startup transition KPI thresholds
         run: |
@@ -106,6 +134,11 @@ jobs:
           name: regression-drift-report
           path: |
             regression_drift_report.txt
+            ci_diagnostics/pytest_regression.log
+            ci_diagnostics/pytest_exit_code.txt
+            ci_diagnostics/drift_report_stderr.log
+            ci_diagnostics/drift_report_traceback.log
+            ci_diagnostics/drift_report_exit_code.txt
             startup_transition_thresholds.txt
             baseline_governance_summary.txt
             tests/baselines/reference_baseline.json
