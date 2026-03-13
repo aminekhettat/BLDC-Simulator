@@ -1757,6 +1757,13 @@ class BLDCMotorControlGUI(QMainWindow):
         btn_plot_current.clicked.connect(self._plot_currents)
         button_layout.addWidget(btn_plot_current)
 
+        btn_plot_pfc = AccessibleButton(
+            "Plot PFC Analysis",
+            "Generate power-factor, active/reactive power, and command trends",
+        )
+        btn_plot_pfc.clicked.connect(self._plot_pfc_analysis)
+        button_layout.addWidget(btn_plot_pfc)
+
         btn_plot_custom = AccessibleButton(
             "Plot Selected", "Generate plot for user-selected variables"
         )
@@ -2479,6 +2486,38 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         figure.show()
         speak("Current plot generated.")
+
+    def _plot_pfc_analysis(self):
+        """Generate dedicated PFC telemetry plot."""
+        if not self.engine or len(self.engine.get_history()["time"]) == 0:
+            QMessageBox.warning(self, "Warning", "No data to plot!")
+            return
+
+        history = self.engine.get_history()
+        grid_on = (
+            getattr(self, "plot_grid_checkbox", None)
+            and self.plot_grid_checkbox.isChecked()
+        )
+        grid_spacing = (
+            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
+        )
+        minor_grid = (
+            getattr(self, "plot_minor_grid_checkbox", None)
+            and self.plot_minor_grid_checkbox.isChecked()
+        )
+        grid_spacing_y = (
+            getattr(self, "plot_grid_spacing_y", None)
+            and self.plot_grid_spacing_y.value()
+        )
+        figure = SimulationPlotter.create_pfc_analysis_plot(
+            history,
+            grid_on=grid_on,
+            grid_spacing=grid_spacing,
+            minor_grid=minor_grid,
+            grid_spacing_y=grid_spacing_y,
+        )
+        figure.show()
+        speak("PFC analysis plot generated.")
 
     def _plot_custom(self):
         """Generate a custom multi-axis plot from selected variables."""

@@ -280,6 +280,74 @@ class SimulationPlotter:
         return fig
 
     @staticmethod
+    def create_pfc_analysis_plot(
+        history: Dict[str, np.ndarray],
+        figsize: tuple = (11, 9),
+        grid_on: bool = True,
+        grid_spacing: Optional[float] = None,
+        minor_grid: bool = False,
+        grid_spacing_y: Optional[float] = None,
+    ) -> Figure:
+        """Create a dedicated PFC telemetry plot with PF, power, and command trends."""
+        from matplotlib.ticker import MultipleLocator
+
+        if "time" not in history:
+            raise KeyError("history must include 'time'")
+
+        time = np.asarray(history["time"], dtype=np.float64)
+        if time.size == 0:
+            raise ValueError("history contains no samples")
+
+        pf = np.asarray(history.get("power_factor", np.zeros_like(time)), dtype=np.float64)
+        active_power = np.asarray(
+            history.get("input_power", np.zeros_like(time)), dtype=np.float64
+        )
+        pfc_command = np.asarray(
+            history.get("pfc_command_var", np.zeros_like(time)), dtype=np.float64
+        )
+
+        pf_abs = np.clip(np.abs(pf), 1e-6, None)
+        apparent_power = np.abs(active_power) / pf_abs
+        reactive_power = np.sqrt(np.maximum(apparent_power**2 - active_power**2, 0.0))
+
+        fig, axes = plt.subplots(4, 1, figsize=figsize, sharex=True)
+
+        def _style_axis(ax):
+            ax.grid(grid_on, alpha=0.3)
+            if minor_grid:
+                ax.minorticks_on()
+                ax.grid(which="minor", alpha=0.1, linestyle=":")
+            if grid_spacing and grid_spacing > 0:
+                ax.xaxis.set_major_locator(MultipleLocator(grid_spacing))
+            if grid_spacing_y and grid_spacing_y > 0:
+                ax.yaxis.set_major_locator(MultipleLocator(grid_spacing_y))
+
+        axes[0].plot(time, pf, color="#2E7D32", linewidth=1.8)
+        axes[0].set_ylabel("PF")
+        axes[0].set_title("Power Factor Trend", fontsize=11, fontweight="bold")
+        axes[0].set_ylim(-1.05, 1.05)
+        _style_axis(axes[0])
+
+        axes[1].plot(time, active_power, color="#1565C0", linewidth=1.6)
+        axes[1].set_ylabel("P (W)")
+        axes[1].set_title("Input Active Power", fontsize=11, fontweight="bold")
+        _style_axis(axes[1])
+
+        axes[2].plot(time, reactive_power, color="#EF6C00", linewidth=1.6)
+        axes[2].set_ylabel("Q (VAR)")
+        axes[2].set_title("Estimated Reactive Power", fontsize=11, fontweight="bold")
+        _style_axis(axes[2])
+
+        axes[3].plot(time, pfc_command, color="#6A1B9A", linewidth=1.6)
+        axes[3].set_ylabel("Cmd (VAR)")
+        axes[3].set_xlabel("Time (s)")
+        axes[3].set_title("PFC Compensation Command", fontsize=11, fontweight="bold")
+        _style_axis(axes[3])
+
+        plt.tight_layout()
+        return fig
+
+    @staticmethod
     def create_multi_axis_plot(
         history: Dict[str, np.ndarray],
         variables: list,

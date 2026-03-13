@@ -12,6 +12,9 @@ def make_dummy_history():
         "currents_a": np.sin(2 * np.pi * t),
         "voltages_a": np.cos(2 * np.pi * t),
         "speed": t * 100,
+        "power_factor": np.clip(0.75 + 0.2 * np.sin(2 * np.pi * t), -1.0, 1.0),
+        "input_power": 400.0 + 40.0 * np.sin(2 * np.pi * t),
+        "pfc_command_var": 100.0 + 20.0 * np.cos(2 * np.pi * t),
     }
 
 
@@ -22,3 +25,13 @@ def test_create_multi_axis_plot():
     )
     # simple sanity: figure should have axes
     assert fig.get_axes()
+
+
+def test_create_pfc_analysis_plot():
+    history = make_dummy_history()
+    fig = SimulationPlotter.create_pfc_analysis_plot(history)
+    axes = fig.get_axes()
+
+    assert len(axes) == 4
+    assert "Power Factor" in axes[0].get_title()
+    assert "Reactive" in axes[2].get_title()
