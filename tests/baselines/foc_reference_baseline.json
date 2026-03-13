@@ -3,29 +3,29 @@
   "sim_dt": 0.0001,
   "scenarios": {
     "foc_constant_load_clarke": {
-      "final_speed_rpm": 5146.295030835055,
-      "peak_speed_rpm": 5150.021251089739,
-      "peak_phase_current_a": 15.060003861492127,
-      "steady_state_speed_std_rpm": 2.1894204801834163,
-      "torque_ripple_std_nm": 0.08143918805650116,
+      "final_speed_rpm": 4757.705453522074,
+      "peak_speed_rpm": 4763.719817398947,
+      "peak_phase_current_a": 12.678940764583066,
+      "steady_state_speed_std_rpm": 3.1491987436509086,
+      "torque_ripple_std_nm": 0.07117589664923032,
       "mean_supply_voltage_v": 48.0,
       "mean_load_torque_nm": 0.39999999999999997
     },
     "foc_ramp_load_clarke": {
-      "final_speed_rpm": 1412.4471164352797,
-      "peak_speed_rpm": 3743.784011627374,
-      "peak_phase_current_a": 15.083494557488484,
-      "steady_state_speed_std_rpm": 0.5132688067296508,
-      "torque_ripple_std_nm": 0.06811273565505462,
+      "final_speed_rpm": -5931.531275089803,
+      "peak_speed_rpm": 3300.6716455021387,
+      "peak_phase_current_a": 12.683735801350304,
+      "steady_state_speed_std_rpm": 242.9192115998877,
+      "torque_ripple_std_nm": 0.050190756175724174,
       "mean_supply_voltage_v": 48.0,
       "mean_load_torque_nm": 0.9999799999999839
     },
     "foc_supply_sag_concordia": {
-      "final_speed_rpm": 3472.615591563679,
-      "peak_speed_rpm": 3641.293378224261,
-      "peak_phase_current_a": 14.922476564193696,
-      "steady_state_speed_std_rpm": 1.1174500388620083,
-      "torque_ripple_std_nm": 0.07371411717985503,
+      "final_speed_rpm": 3058.8535080800802,
+      "peak_speed_rpm": 3207.1570771898005,
+      "peak_phase_current_a": 12.4975139996444,
+      "steady_state_speed_std_rpm": 1.7658111551313376,
+      "torque_ripple_std_nm": 0.062173560324652793,
       "mean_supply_voltage_v": 41.00020000000027,
       "mean_load_torque_nm": 0.5999999999999999
     }

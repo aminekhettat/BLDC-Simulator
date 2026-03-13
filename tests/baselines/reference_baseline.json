@@ -38,5 +38,43 @@
       "mean_supply_voltage_v": 40.00020000000037,
       "mean_load_torque_nm": 0.8000000000000002
     }
+  },
+  "tolerances": {
+    "no_load_spinup": {
+      "final_speed_rpm": 0.4,
+      "peak_speed_rpm": 0.15,
+      "peak_phase_current_a": 0.2,
+      "steady_state_speed_std_rpm": 0.35,
+      "torque_ripple_std_nm": 0.4,
+      "mean_supply_voltage_v": 0.02,
+      "mean_load_torque_nm": 0.02
+    },
+    "constant_load": {
+      "final_speed_rpm": 0.4,
+      "peak_speed_rpm": 0.2,
+      "peak_phase_current_a": 0.2,
+      "steady_state_speed_std_rpm": 0.35,
+      "torque_ripple_std_nm": 0.4,
+      "mean_supply_voltage_v": 0.02,
+      "mean_load_torque_nm": 0.02
+    },
+    "ramp_load": {
+      "final_speed_rpm": 0.4,
+      "peak_speed_rpm": 0.25,
+      "peak_phase_current_a": 0.2,
+      "steady_state_speed_std_rpm": 0.4,
+      "torque_ripple_std_nm": 0.4,
+      "mean_supply_voltage_v": 0.02,
+      "mean_load_torque_nm": 0.05
+    },
+    "supply_sag": {
+      "final_speed_rpm": 0.4,
+      "peak_speed_rpm": 0.2,
+      "peak_phase_current_a": 0.25,
+      "steady_state_speed_std_rpm": 0.4,
+      "torque_ripple_std_nm": 0.4,
+      "mean_supply_voltage_v": 0.03,
+      "mean_load_torque_nm": 0.02
+    }
   }
 }
