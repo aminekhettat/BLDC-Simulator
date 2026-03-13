@@ -14,11 +14,7 @@ Includes:
 :version: 1.0.0
 """
 
-from . import core
-from . import control
-from . import ui
-from . import utils
-from . import visualization
+from importlib import import_module
 
 __all__ = [
     "core",
@@ -27,3 +23,12 @@ __all__ = [
     "utils",
     "visualization",
 ]
+
+
+def __getattr__(name: str):
+    """Lazily import top-level src subpackages to avoid import-time side effects."""
+    if name in __all__:
+        module = import_module(f"{__name__}.{name}")
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
