@@ -12,7 +12,12 @@ import sys
 # ensure QApplication instance for GUI tests
 app = QApplication.instance() or QApplication(sys.argv)
 
-from src.core.power_model import SupplyProfile, ConstantSupply
+from src.core.power_model import (
+    SupplyProfile,
+    ConstantSupply,
+    compute_power_metrics,
+    required_reactive_compensation,
+)
 from src.core.simulation_engine import SimulationEngine
 from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.load_model import ConstantLoad
@@ -24,6 +29,39 @@ def test_supply_profile_basic():
     p = ConstantSupply(24.0)
     assert p.get_voltage(0) == pytest.approx(24.0)
     assert p.get_voltage(10.5) == pytest.approx(24.0)
+
+
+def test_power_metrics_unity_pf_for_in_phase_waveforms():
+    t = np.linspace(0.0, 2.0 * np.pi, 2000, endpoint=False)
+    v = 230.0 * np.sin(t)
+    i = 10.0 * np.sin(t)
+
+    metrics = compute_power_metrics(v, i)
+    assert metrics["power_factor"] == pytest.approx(1.0, abs=1e-3)
+    assert metrics["reactive_power_var"] == pytest.approx(0.0, abs=1.0)
+    assert metrics["active_power_w"] > 0.0
+
+
+def test_power_metrics_near_zero_pf_for_quadrature_waveforms():
+    t = np.linspace(0.0, 2.0 * np.pi, 2000, endpoint=False)
+    v = 230.0 * np.sin(t)
+    i = 10.0 * np.sin(t + np.pi / 2.0)
+
+    metrics = compute_power_metrics(v, i)
+    assert abs(metrics["power_factor"]) <= 0.02
+    assert abs(metrics["active_power_w"]) <= 5.0
+    assert metrics["reactive_power_var"] > 0.0
+
+
+def test_required_reactive_compensation_reduces_target_reactive_power():
+    res = required_reactive_compensation(
+        active_power_w=1000.0,
+        current_pf=0.80,
+        target_pf=0.95,
+    )
+
+    assert res["required_compensation_var"] > 0.0
+    assert res["target_reactive_var"] < res["current_reactive_var"]
 
 
 def test_engine_applies_supply_voltage():

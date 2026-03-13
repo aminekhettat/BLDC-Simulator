@@ -34,6 +34,7 @@ Advanced Features
 - **Real-time Monitoring**: Live display of motor parameters, currents, voltages, and power
 - **Data Logging**: CSV export with metadata for offline analysis
 - **Power Analysis**: Loss calculations including copper, iron, and mechanical losses
+- **Power Factor Analysis**: Waveform-based active/reactive/apparent power and PF metrics with reactive compensation sizing helpers
 
 User Interface
 --------------

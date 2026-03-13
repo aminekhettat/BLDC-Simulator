@@ -15,7 +15,91 @@ AC ripple rectification, or other variations.
 
 import numpy as np
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Dict
+
+
+def compute_power_metrics(voltage: np.ndarray, current: np.ndarray) -> Dict[str, float]:
+    """Compute basic power-quality metrics from voltage/current waveforms.
+
+    Parameters
+    ----------
+    voltage : np.ndarray
+        Instantaneous voltage samples.
+    current : np.ndarray
+        Instantaneous current samples, aligned with ``voltage``.
+
+    Returns
+    -------
+    dict
+        Active/apparent/reactive power, RMS values, and power factor.
+    """
+    v = np.asarray(voltage, dtype=np.float64)
+    i = np.asarray(current, dtype=np.float64)
+
+    if v.shape != i.shape:
+        raise ValueError("voltage and current arrays must have the same shape")
+    if v.size == 0:
+        raise ValueError("voltage and current arrays must be non-empty")
+
+    v_rms = float(np.sqrt(np.mean(v * v)))
+    i_rms = float(np.sqrt(np.mean(i * i)))
+    active_power = float(np.mean(v * i))
+    apparent_power = float(v_rms * i_rms)
+
+    if apparent_power <= 1e-12:
+        power_factor = 0.0
+        reactive_power = 0.0
+    else:
+        raw_pf = active_power / apparent_power
+        power_factor = float(np.clip(raw_pf, -1.0, 1.0))
+        reactive_power = float(np.sqrt(max(apparent_power**2 - active_power**2, 0.0)))
+
+    return {
+        "voltage_rms_v": v_rms,
+        "current_rms_a": i_rms,
+        "active_power_w": active_power,
+        "apparent_power_va": apparent_power,
+        "reactive_power_var": reactive_power,
+        "power_factor": power_factor,
+    }
+
+
+def required_reactive_compensation(
+    active_power_w: float,
+    current_pf: float,
+    target_pf: float,
+) -> Dict[str, float]:
+    """Estimate reactive compensation needed to improve power factor.
+
+    Notes
+    -----
+    This helper assumes positive active power and lagging-load correction sizing.
+    """
+    p = float(active_power_w)
+    pf_now = abs(float(current_pf))
+    pf_target = abs(float(target_pf))
+
+    if p <= 0.0:
+        raise ValueError("active_power_w must be positive")
+    if not (0.0 < pf_now <= 1.0):
+        raise ValueError("current_pf must be in (0, 1]")
+    if not (0.0 < pf_target <= 1.0):
+        raise ValueError("target_pf must be in (0, 1]")
+    if pf_target < pf_now:
+        raise ValueError("target_pf must be greater than or equal to current_pf")
+
+    q_now = p * np.tan(np.arccos(pf_now))
+    q_target = p * np.tan(np.arccos(pf_target))
+    compensation = max(q_now - q_target, 0.0)
+
+    return {
+        "active_power_w": p,
+        "current_pf": pf_now,
+        "target_pf": pf_target,
+        "current_reactive_var": float(q_now),
+        "target_reactive_var": float(q_target),
+        "required_compensation_var": float(compensation),
+    }
 
 
 class SupplyProfile(ABC):
