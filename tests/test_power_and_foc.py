@@ -575,6 +575,61 @@ def test_gui_inverter_nonidealities_wiring():
     assert gui.svm.switching_loss_coeff_v_per_a_khz == pytest.approx(0.006)
 
 
+def test_gui_pfc_wiring_to_engine_configuration():
+    from src.ui.main_window import BLDCMotorControlGUI
+
+    gui = BLDCMotorControlGUI()
+    gui.pfc_mode.setCurrentText("Enabled")
+    gui.pfc_target_pf.setValue(0.98)
+    gui.pfc_kp.setValue(0.25)
+    gui.pfc_ki.setValue(1.8)
+    gui.pfc_max_var.setValue(4500.0)
+    gui.pfc_window_samples.setValue(96)
+    gui._apply_to_simulation()
+
+    pfc_state = gui.engine.get_power_factor_control_state()
+    assert pfc_state["enabled"] is True
+    assert pfc_state["target_pf"] == pytest.approx(0.98)
+    assert gui.engine.pfc_controller.kp == pytest.approx(0.25)
+    assert gui.engine.pfc_controller.ki == pytest.approx(1.8)
+    assert gui.engine.pfc_controller.max_compensation_var == pytest.approx(4500.0)
+    assert gui.engine.pfc_window_samples == 96
+
+
+def test_gui_monitoring_updates_pfc_status_blocks():
+    from src.ui.main_window import BLDCMotorControlGUI
+
+    gui = BLDCMotorControlGUI()
+    gui.pfc_mode.setCurrentText("Enabled")
+    gui._apply_to_simulation()
+
+    gui._update_monitoring(
+        {
+            "speed_rpm": 850.0,
+            "omega": 45.0,
+            "theta": 0.4,
+            "time": 0.2,
+            "pfc": {
+                "enabled": True,
+                "target_pf": 0.97,
+                "power_factor": 0.91,
+                "active_power_w": 320.0,
+                "reactive_power_var": 145.0,
+                "compensation_command_var": 120.0,
+            },
+        }
+    )
+
+    assert gui.status_blocks["pfc_enabled"].current_value == pytest.approx(1.0)
+    assert gui.status_blocks["pfc_target_pf"].current_value == pytest.approx(0.97)
+    assert gui.status_blocks["pfc_power_factor"].current_value == pytest.approx(0.91)
+    assert gui.status_blocks["pfc_active_power_w"].current_value == pytest.approx(320.0)
+    assert gui.status_blocks["pfc_reactive_power_var"].current_value == pytest.approx(
+        145.0
+    )
+    assert gui.status_blocks["pfc_command_var"].current_value == pytest.approx(120.0)
+
+
 def test_gui_monitoring_updates_advanced_foc_status_blocks():
     from src.ui.main_window import BLDCMotorControlGUI
 

@@ -1441,6 +1441,82 @@ class BLDCMotorControlGUI(QMainWindow):
         self.inverter_group.setLayout(inverter_layout)
         layout.addWidget(self.inverter_group)
 
+        self.pfc_group = AccessibleGroupBox(
+            "Power Factor Correction",
+            "Configure simulation-level closed-loop power factor telemetry control.",
+        )
+        pfc_layout = QVBoxLayout()
+
+        self.pfc_mode = LabeledComboBox(
+            "PFC Mode",
+            items=["Disabled", "Enabled"],
+            description="Enable or disable closed-loop power factor correction telemetry.",
+        )
+        pfc_layout.addWidget(self.pfc_mode)
+
+        self.pfc_target_pf = LabeledSpinBox(
+            "Target Power Factor",
+            min_val=0.50,
+            max_val=1.00,
+            initial=0.95,
+            step=0.01,
+            decimals=3,
+            suffix="",
+            description="Desired target power factor for the PFC controller.",
+        )
+        pfc_layout.addWidget(self.pfc_target_pf)
+
+        self.pfc_kp = LabeledSpinBox(
+            "PFC Kp",
+            min_val=0.0,
+            max_val=10.0,
+            initial=0.10,
+            step=0.01,
+            decimals=3,
+            suffix="",
+            description="Proportional gain for PFC compensation command.",
+        )
+        pfc_layout.addWidget(self.pfc_kp)
+
+        self.pfc_ki = LabeledSpinBox(
+            "PFC Ki",
+            min_val=0.0,
+            max_val=50.0,
+            initial=1.0,
+            step=0.1,
+            decimals=3,
+            suffix="",
+            description="Integral gain for PFC compensation command.",
+        )
+        pfc_layout.addWidget(self.pfc_ki)
+
+        self.pfc_max_var = LabeledSpinBox(
+            "Max Compensation",
+            min_val=10.0,
+            max_val=200000.0,
+            initial=10000.0,
+            step=10.0,
+            decimals=1,
+            suffix=" VAR",
+            description="Upper clamp for reactive compensation command.",
+        )
+        pfc_layout.addWidget(self.pfc_max_var)
+
+        self.pfc_window_samples = LabeledSpinBox(
+            "PF Window Samples",
+            min_val=8,
+            max_val=5000,
+            initial=128,
+            step=1,
+            decimals=0,
+            suffix="",
+            description="Rolling window size used for power-factor metric estimation.",
+        )
+        pfc_layout.addWidget(self.pfc_window_samples)
+
+        self.pfc_group.setLayout(pfc_layout)
+        layout.addWidget(self.pfc_group)
+
         layout.addStretch()
 
         widget.setLayout(layout)
@@ -1549,6 +1625,12 @@ class BLDCMotorControlGUI(QMainWindow):
                 "Handoff Stability Ratio",
                 "0-1",
             ),
+            ("pfc_enabled", "PFC Enabled", "0/1"),
+            ("pfc_target_pf", "PFC Target PF", "0-1"),
+            ("pfc_power_factor", "Input Power Factor", "-1..1"),
+            ("pfc_active_power_w", "Input Active Power", "W"),
+            ("pfc_reactive_power_var", "Input Reactive Power", "VAR"),
+            ("pfc_command_var", "PFC Compensation Command", "VAR"),
             ("time", "Simulation Time", "s"),
         ]
 
@@ -1694,6 +1776,8 @@ class BLDCMotorControlGUI(QMainWindow):
         """Initialize simulation with default values."""
         self.ctrl_mode.setCurrentText("V/f")
         self.foc_group.setVisible(False)
+        if hasattr(self, "pfc_mode"):
+            self.pfc_mode.setCurrentText("Disabled")
         # initialize supply controls visibility
         if hasattr(self, "supply_type"):
             self.supply_type.setCurrentText("Constant")
@@ -1758,6 +1842,14 @@ class BLDCMotorControlGUI(QMainWindow):
         # Create simulation engine
         self.engine = SimulationEngine(
             self.motor, load, dt=SIMULATION_PARAMS["dt"], supply_profile=supply
+        )
+        self.engine.configure_power_factor_control(
+            enabled=self.pfc_mode.currentText() == "Enabled",
+            target_pf=self.pfc_target_pf.value(),
+            kp=self.pfc_kp.value(),
+            ki=self.pfc_ki.value(),
+            max_compensation_var=self.pfc_max_var.value(),
+            window_samples=int(self.pfc_window_samples.value()),
         )
 
         # Create SVM generator (cartesian capable if needed later)
@@ -1921,6 +2013,11 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Pull advanced controller telemetry when FOC is active.
         ctrl_state = {}
+        pfc_state = (
+            state.get("pfc", {}) if isinstance(state.get("pfc", {}), dict) else {}
+        )
+        if not pfc_state and self.engine is not None:
+            pfc_state = self.engine.get_power_factor_control_state()
         observer_mode_code = 0.0
         if isinstance(self.controller, FOCController):
             ctrl_state = self.controller.get_state()
@@ -2023,6 +2120,24 @@ class BLDCMotorControlGUI(QMainWindow):
             )
             self.status_blocks["startup_handoff_stability_ratio"].update_value(
                 ctrl_state.get("startup_handoff_stability_ratio", 1.0)
+            )
+            self.status_blocks["pfc_enabled"].update_value(
+                1.0 if pfc_state.get("enabled", False) else 0.0
+            )
+            self.status_blocks["pfc_target_pf"].update_value(
+                float(pfc_state.get("target_pf", 0.0))
+            )
+            self.status_blocks["pfc_power_factor"].update_value(
+                float(pfc_state.get("power_factor", 0.0))
+            )
+            self.status_blocks["pfc_active_power_w"].update_value(
+                float(pfc_state.get("active_power_w", 0.0))
+            )
+            self.status_blocks["pfc_reactive_power_var"].update_value(
+                float(pfc_state.get("reactive_power_var", 0.0))
+            )
+            self.status_blocks["pfc_command_var"].update_value(
+                float(pfc_state.get("compensation_command_var", 0.0))
             )
             self.status_blocks["time"].update_value(time_val)
         else:
@@ -2247,7 +2362,8 @@ class BLDCMotorControlGUI(QMainWindow):
         """Update display (for manual updates)."""
         if self.engine:
             state = self.engine.get_current_state()
-            self._update_monitoring(state)
+            info = self.engine.get_simulation_info()
+            self._update_monitoring({**state, **info})
 
     def _on_simulation_finished(self):
         """Handle simulation thread completion."""
