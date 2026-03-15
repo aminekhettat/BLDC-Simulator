@@ -20,6 +20,12 @@ from .transforms import (
     inverse_concordia,
 )
 from .foc_controller import FOCController
+from .adaptive_tuning import (
+    AdaptiveFOCTuner,
+    AdaptiveTuningResult,
+    LoopDesignTargets,
+    MarginResult,
+)
 
 __all__ = [
     "SVMGenerator",
@@ -33,4 +39,8 @@ __all__ = [
     "concordia_transform",
     "inverse_concordia",
     "FOCController",
+    "AdaptiveFOCTuner",
+    "AdaptiveTuningResult",
+    "LoopDesignTargets",
+    "MarginResult",
 ]

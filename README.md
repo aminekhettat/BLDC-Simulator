@@ -22,6 +22,10 @@ Comprehensive Python GUI application for BLDC (Brushless DC) motor simulation wi
 - Space Vector Modulation (SVM) for 3-phase PWM generation
 - Frequency slew-rate limiting (soft-start capability)
 - Flexible control architecture for easy switching between algorithms
+- Advanced inverter realism with individually switchable blocks for:
+  device drop, current-dependent conduction loss, switching loss,
+  direction-aware dead-time distortion, freewheel diode loss,
+  minimum pulse suppression, DC-link ripple, thermal coupling, and phase mismatch
 
 ### Load Profiles
 
@@ -52,6 +56,8 @@ Comprehensive Python GUI application for BLDC (Brushless DC) motor simulation wi
   - 3-phase currents, voltages, back-EMF
   - Speed and torque profiles
   - Phase portraits
+  - Dedicated inverter analysis: DC-link voltage/ripple, loss breakdown,
+    junction temperature, and common-mode voltage
 - Custom multi-axis plotting for arbitrarily selected variables
 - Vocal assistance announcements for plot generation and simulation events
 
@@ -289,6 +295,7 @@ pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/
    - Release notes template: `RELEASE_NOTES_TEMPLATE.md`
 
 Policy references:
+
 - `CONTRIBUTING.md`
 - `docs/branch_protection.rst`
 

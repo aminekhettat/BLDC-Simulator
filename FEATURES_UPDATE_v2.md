@@ -2,6 +2,44 @@
 
 Welcome to **SPIN DOCTOR**, the advanced BLDC motor control simulator! This document highlights all the new features and improvements in v2.0.0.
 
+---
+
+## Addendum (March 2026) - Extended Simulation Stack
+
+The following capabilities were added after v2.0.0:
+
+1. Standard startup sequences
+
+- FOC startup phase-machine with align/open-loop/closed-loop flow.
+- V/f startup phase-machine with align/open-loop/run flow.
+- Expanded startup telemetry for monitoring and regression testing.
+
+2. Advanced inverter realism
+
+- Feature-level toggles for loss, dead-time, pulse suppression, thermal, and
+  DC-link effects.
+- Dedicated inverter telemetry channels and analysis plot.
+
+3. Hardware communication interface
+
+- Backend abstraction for command/feedback integration.
+- Mock DAQ backend for dry-run hardware integration tests.
+
+4. Timing and embedded feasibility tools
+
+- Control computation duration and CPU-load telemetry.
+- Host-to-MCU scaling estimator for quick embedded feasibility checks.
+
+5. Compute backend policy
+
+- Runtime backend selection (`auto`, `cpu`, `gpu`) with safe fallback.
+- Power metrics can use CuPy when GPU backend is active.
+
+6. Adaptive tuning and convergence scripts
+
+- Added margin-based adaptive PI tuning helper.
+- Added convergence and field-weakening search scripts with progress reporting.
+
 ## ⚡ What's New
 
 ### 1. **Fun Application Identity**

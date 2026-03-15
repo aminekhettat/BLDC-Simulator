@@ -18,11 +18,9 @@ import numpy as np
 from .base_controller import BaseController
 from .transforms import (
     clarke_transform,
-    inverse_clarke,
     park_transform,
     inverse_park,
     concordia_transform,
-    inverse_concordia,
 )
 from src.core.motor_model import BLDCMotor
 import logging
@@ -187,6 +185,24 @@ class FOCController(BaseController):
         self.startup_handoff_quality = 0.0
         self.startup_handoff_stability_ratio = 1.0
 
+        # Standard startup sequence: align -> open-loop ramp -> closed-loop.
+        self.startup_sequence_enabled = False
+        self.startup_phase = "closed_loop"
+        self.startup_sequence_elapsed_s = 0.0
+        self.startup_phase_elapsed_s = 0.0
+        self.startup_align_duration_s = 0.05
+        self.startup_align_current_a = 1.5
+        self.startup_align_angle = 0.0
+        self.startup_open_loop_initial_speed_rpm = 30.0
+        self.startup_open_loop_target_speed_rpm = 300.0
+        self.startup_open_loop_ramp_time_s = 0.2
+        self.startup_open_loop_id_ref_a = 0.0
+        self.startup_open_loop_iq_ref_a = 2.0
+        self.startup_open_loop_speed_rpm = 0.0
+        self.startup_open_loop_angle = 0.0
+        self.id_ref_command = 0.0
+        self.iq_ref_command = 0.0
+
         # Sensorless maturity: blend measured and observer angle at low confidence
         # to improve low-speed robustness and reduce abrupt phase behavior.
         self.sensorless_blend_enabled = True
@@ -277,6 +293,383 @@ class FOCController(BaseController):
             if self.startup_transition_enabled
             else self.observer_target_mode
         )
+
+    def set_startup_sequence(
+        self,
+        enabled: bool,
+        align_duration_s: float = 0.05,
+        align_current_a: float = 1.5,
+        align_angle_deg: float = 0.0,
+        open_loop_initial_speed_rpm: float = 30.0,
+        open_loop_target_speed_rpm: float = 300.0,
+        open_loop_ramp_time_s: float = 0.2,
+        open_loop_id_ref_a: float = 0.0,
+        open_loop_iq_ref_a: float = 2.0,
+    ) -> None:
+        """Configure a standard sensored/sensorless startup sequence."""
+        if align_duration_s < 0.0:
+            raise ValueError("align_duration_s must be non-negative")
+        if align_current_a < 0.0:
+            raise ValueError("align_current_a must be non-negative")
+        if open_loop_initial_speed_rpm < 0.0:
+            raise ValueError("open_loop_initial_speed_rpm must be non-negative")
+        if open_loop_target_speed_rpm < 0.0:
+            raise ValueError("open_loop_target_speed_rpm must be non-negative")
+        if open_loop_ramp_time_s < 0.0:
+            raise ValueError("open_loop_ramp_time_s must be non-negative")
+
+        self.startup_sequence_enabled = bool(enabled)
+        self.startup_align_duration_s = float(align_duration_s)
+        self.startup_align_current_a = float(align_current_a)
+        self.startup_align_angle = float(np.deg2rad(align_angle_deg) % (2 * np.pi))
+        self.startup_open_loop_initial_speed_rpm = float(open_loop_initial_speed_rpm)
+        self.startup_open_loop_target_speed_rpm = float(open_loop_target_speed_rpm)
+        self.startup_open_loop_ramp_time_s = float(open_loop_ramp_time_s)
+        self.startup_open_loop_id_ref_a = float(open_loop_id_ref_a)
+        self.startup_open_loop_iq_ref_a = float(open_loop_iq_ref_a)
+        self._reset_startup_sequence_runtime()
+
+    def _has_position_sensor(self) -> bool:
+        """Treat direct measured angle mode as sensored operation."""
+        return self.observer_target_mode == "Measured"
+
+    def _enter_startup_phase(self, phase: str) -> None:
+        """Switch startup phase and reset phase-local timers."""
+        self.startup_phase = phase
+        self.startup_phase_elapsed_s = 0.0
+        if phase == "align":
+            self.angle_observer_mode = "Alignment"
+            self.startup_open_loop_angle = self.startup_align_angle
+        elif phase == "open_loop":
+            self.angle_observer_mode = "OpenLoop"
+            measured_theta = (self.motor.theta * self.motor.params.poles_pairs) % (
+                2 * np.pi
+            )
+            self.startup_open_loop_angle = measured_theta
+            self.startup_open_loop_speed_rpm = self.startup_open_loop_initial_speed_rpm
+            self.startup_elapsed_s = 0.0
+            self.startup_confidence_elapsed_s = 0.0
+            self.startup_fallback_elapsed_s = 0.0
+            self.startup_ready_to_switch = False
+            self.startup_transition_done = False
+        else:
+            self.angle_observer_mode = self.observer_target_mode
+
+    def _reset_startup_sequence_runtime(self) -> None:
+        """Reset phase runtime for the standard startup sequence."""
+        self.startup_sequence_elapsed_s = 0.0
+        self.startup_phase_elapsed_s = 0.0
+        self.startup_open_loop_speed_rpm = self.startup_open_loop_initial_speed_rpm
+        self.startup_open_loop_angle = self.startup_align_angle
+        if not self.startup_sequence_enabled:
+            self.startup_phase = "closed_loop"
+            return
+        if self.startup_align_duration_s > 0.0:
+            self._enter_startup_phase("align")
+        elif self._has_position_sensor():
+            self._enter_startup_phase("closed_loop")
+        else:
+            self._enter_startup_phase("open_loop")
+
+    def _update_target_observer_theta(self, dt: float) -> Tuple[float, float, float]:
+        """Update target observer states and return measured/target angles."""
+        theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (
+            2 * np.pi
+        )
+
+        emf_a, emf_b, emf_c = self.motor.back_emf
+        if self.use_concordia:
+            emf_alpha, emf_beta = concordia_transform(emf_a, emf_b, emf_c)
+        else:
+            emf_alpha, emf_beta = clarke_transform(emf_a, emf_b, emf_c)
+
+        emf_mag = float(np.hypot(emf_alpha, emf_beta))
+        self.emf_observer_mag = emf_mag
+
+        if abs(emf_alpha) + abs(emf_beta) > 1e-12:
+            self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
+
+        if self.observer_target_mode == "PLL":
+            err = _wrap_angle(self.theta_meas_emf - self.theta_est_pll)
+            self.theta_error_pll = err
+            self.theta_error_smo = 0.0
+            self.pll["integral"] += err * dt
+            omega_correction = (
+                self.pll["kp"] * err + self.pll["ki"] * self.pll["integral"]
+            )
+            omega_base = self.motor.omega * self.motor.params.poles_pairs
+            self.theta_est_pll = (
+                self.theta_est_pll + (omega_base + omega_correction) * dt
+            ) % (2 * np.pi)
+            theta_target = self.theta_est_pll
+        elif self.observer_target_mode == "SMO":
+            err = _wrap_angle(self.theta_meas_emf - self.theta_est_smo)
+            self.theta_error_smo = err
+            self.theta_error_pll = 0.0
+            boundary = self.smo["boundary"]
+            slide = float(np.tanh(err / boundary))
+            omega_target = (
+                self.motor.omega * self.motor.params.poles_pairs
+                + self.smo["k_slide"] * slide
+            )
+            alpha = self.smo["lpf_alpha"]
+            self.smo["omega_est"] = (1.0 - alpha) * self.smo[
+                "omega_est"
+            ] + alpha * omega_target
+            self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (
+                2 * np.pi
+            )
+            theta_target = self.theta_est_smo
+        else:
+            self.theta_error_pll = 0.0
+            self.theta_error_smo = 0.0
+            theta_target = theta_measured
+
+        speed_norm = min(
+            abs(self.motor.speed_rpm) / max(self.startup_min_speed_rpm, 1e-9), 1.0
+        )
+        emf_norm = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
+        phase_err = abs(_wrap_angle(self.theta_meas_emf - theta_target))
+        coherence = 1.0 - min(phase_err / np.pi, 1.0)
+
+        self.observer_confidence_emf = float(np.clip(emf_norm, 0.0, 1.0))
+        self.observer_confidence_speed = float(np.clip(speed_norm, 0.0, 1.0))
+        self.observer_confidence_coherence = float(np.clip(coherence, 0.0, 1.0))
+        self.observer_confidence = float(
+            np.clip(
+                0.45 * self.observer_confidence_emf
+                + 0.35 * self.observer_confidence_speed
+                + 0.20 * self.observer_confidence_coherence,
+                0.0,
+                1.0,
+            )
+        )
+
+        conf_prev = self.observer_confidence_ema
+        conf_alpha = 0.15
+        self.observer_confidence_ema = float(
+            (1.0 - conf_alpha) * conf_prev + conf_alpha * self.observer_confidence
+        )
+        self.observer_confidence_trend = float(
+            np.clip(self.observer_confidence_ema - conf_prev, -1.0, 1.0)
+        )
+
+        conf_above = self.observer_confidence >= self.startup_min_confidence
+        if conf_above:
+            self.observer_confidence_above_threshold_time_s += dt
+        else:
+            self.observer_confidence_below_threshold_time_s += dt
+        if conf_above and not self.observer_confidence_prev_above:
+            self.observer_confidence_crossings_up += 1
+        elif (not conf_above) and self.observer_confidence_prev_above:
+            self.observer_confidence_crossings_down += 1
+        self.observer_confidence_prev_above = conf_above
+        self.theta_sensorless_raw = theta_target
+        return theta_measured, theta_target, emf_mag
+
+    def _apply_sensorless_blend(
+        self, theta_measured: float, theta_target: float
+    ) -> float:
+        """Blend measured and observer angles for low-speed robustness."""
+        if self.observer_target_mode == "Measured":
+            self.sensorless_blend_weight = 0.0
+            return theta_measured
+        if not self.sensorless_blend_enabled:
+            self.sensorless_blend_weight = 1.0
+            return theta_target
+
+        w_speed = np.clip(
+            abs(self.motor.speed_rpm) / max(self.sensorless_blend_min_speed_rpm, 1e-9),
+            0.0,
+            1.0,
+        )
+        w_conf = np.clip(
+            self.observer_confidence / max(self.sensorless_blend_min_confidence, 1e-9),
+            0.0,
+            1.0,
+        )
+        self.sensorless_blend_weight = float(w_speed * w_conf)
+        return _blend_angles(theta_measured, theta_target, self.sensorless_blend_weight)
+
+    def _evaluate_sensorless_handoff(
+        self, dt: float, emf_mag: float, confidence: float
+    ) -> bool:
+        """Evaluate when it is safe to leave forced open-loop startup."""
+        self.startup_elapsed_s += dt
+
+        conf_hi = self.startup_min_confidence
+        speed_mag = abs(self.motor.speed_rpm)
+        speed_ready = speed_mag >= self.startup_min_speed_rpm
+        time_ready = self.startup_elapsed_s >= self.startup_min_elapsed_s
+        emf_ready = emf_mag >= self.startup_min_emf_v
+        static_ready = bool(speed_ready and time_ready and emf_ready)
+
+        if confidence >= conf_hi:
+            self.startup_confidence_elapsed_s += dt
+        else:
+            self.startup_confidence_elapsed_s = 0.0
+
+        adaptive_ready = (
+            self.startup_confidence_elapsed_s >= self.startup_confidence_hold_s
+        )
+        self.startup_ready_to_switch = bool(static_ready and adaptive_ready)
+        self.startup_handoff_confidence_peak = max(
+            self.startup_handoff_confidence_peak, confidence
+        )
+        return self.startup_transition_enabled and self.startup_ready_to_switch
+
+    def _record_sensorless_handoff(self, confidence: float, emf_mag: float) -> None:
+        """Store open-loop to closed-loop handoff diagnostics."""
+        speed_mag = abs(self.motor.speed_rpm)
+        speed_score = min(speed_mag / max(self.startup_min_speed_rpm, 1e-9), 1.0)
+        emf_score = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
+        time_score = min(
+            self.startup_elapsed_s / max(self.startup_min_elapsed_s, 1e-9), 1.0
+        )
+        self.startup_handoff_quality = float(
+            np.clip(
+                0.5 * confidence
+                + 0.2 * speed_score
+                + 0.2 * emf_score
+                + 0.1 * time_score,
+                0.0,
+                1.0,
+            )
+        )
+        self.startup_handoff_count += 1
+        self.startup_last_handoff_time_s = self.startup_sequence_elapsed_s
+        self.startup_last_handoff_confidence = float(confidence)
+        self.startup_transition_done = True
+        self.startup_ready_to_switch = True
+        self.startup_fallback_elapsed_s = 0.0
+
+    def _maybe_apply_sensorless_fallback(
+        self, dt: float, emf_mag: float, confidence: float
+    ) -> bool:
+        """Return True when closed-loop should fall back to forced open-loop."""
+        if not self.startup_fallback_enabled:
+            return False
+
+        conf_lo = max(
+            0.0, self.startup_min_confidence - self.startup_confidence_hysteresis
+        )
+        speed_release = self.startup_min_speed_rpm * 0.9
+        emf_release = self.startup_min_emf_v * 0.9
+        degraded = (
+            confidence <= conf_lo
+            or abs(self.motor.speed_rpm) < speed_release
+            or emf_mag < emf_release
+        )
+        if degraded:
+            self.startup_fallback_elapsed_s += dt
+        else:
+            self.startup_fallback_elapsed_s = 0.0
+
+        if self.startup_fallback_elapsed_s < self.startup_fallback_hold_s:
+            return False
+
+        self.startup_fallback_elapsed_s = 0.0
+        self.startup_transition_done = False
+        self.startup_ready_to_switch = False
+        self.startup_elapsed_s = 0.0
+        self.startup_confidence_elapsed_s = 0.0
+        self.startup_fallback_event_count += 1
+        total_transitions = (
+            self.startup_handoff_count + self.startup_fallback_event_count
+        )
+        self.startup_handoff_stability_ratio = (
+            self.startup_handoff_count / total_transitions
+            if total_transitions > 0
+            else 1.0
+        )
+        return True
+
+    def _estimate_theta_with_startup_sequence(self, dt: float) -> float:
+        """Resolve control angle using the standard startup phase machine."""
+        theta_measured, theta_target, emf_mag = self._update_target_observer_theta(dt)
+        self.startup_sequence_elapsed_s += dt
+        self.startup_phase_elapsed_s += dt
+
+        if self.startup_phase == "align":
+            self.angle_observer_mode = "Alignment"
+            self.sensorless_blend_weight = 0.0
+            if self.startup_phase_elapsed_s >= self.startup_align_duration_s:
+                if self._has_position_sensor():
+                    self.startup_transition_done = True
+                    self.startup_ready_to_switch = True
+                    self._enter_startup_phase("closed_loop")
+                else:
+                    self.startup_transition_done = False
+                    self._enter_startup_phase("open_loop")
+            return self.startup_align_angle
+
+        if self.startup_phase == "open_loop":
+            self.angle_observer_mode = "OpenLoop"
+            self.sensorless_blend_weight = 0.0
+            sign = -1.0 if self.speed_ref < 0.0 else 1.0
+            if self.startup_open_loop_ramp_time_s <= 0.0:
+                ramp_ratio = 1.0
+            else:
+                ramp_ratio = min(
+                    self.startup_phase_elapsed_s / self.startup_open_loop_ramp_time_s,
+                    1.0,
+                )
+            self.startup_open_loop_speed_rpm = (
+                self.startup_open_loop_initial_speed_rpm
+                + (
+                    self.startup_open_loop_target_speed_rpm
+                    - self.startup_open_loop_initial_speed_rpm
+                )
+                * ramp_ratio
+            )
+            omega_elec = (
+                sign
+                * (self.startup_open_loop_speed_rpm / 60.0)
+                * (2 * np.pi)
+                * self.motor.params.poles_pairs
+            )
+            self.startup_open_loop_angle = (
+                self.startup_open_loop_angle + omega_elec * dt
+            ) % (2 * np.pi)
+
+            if self._evaluate_sensorless_handoff(dt, emf_mag, self.observer_confidence):
+                self._record_sensorless_handoff(self.observer_confidence, emf_mag)
+                self._enter_startup_phase("closed_loop")
+                return self._apply_sensorless_blend(theta_measured, theta_target)
+            return self.startup_open_loop_angle
+
+        self.startup_transition_done = True
+        self.startup_ready_to_switch = True
+        self.angle_observer_mode = self.observer_target_mode
+        if not self._has_position_sensor() and self._maybe_apply_sensorless_fallback(
+            dt, emf_mag, self.observer_confidence
+        ):
+            self._enter_startup_phase("open_loop")
+            return self.startup_open_loop_angle
+        return self._apply_sensorless_blend(theta_measured, theta_target)
+
+    def _get_active_references(self, dt: float) -> Tuple[float, float]:
+        """Return d/q references after applying startup phase overrides."""
+        id_ref = self.id_ref
+
+        if self.enable_speed_loop:
+            speed_ref_rad_s = (self.speed_ref / 60.0) * (2 * np.pi)
+            self.speed_error = speed_ref_rad_s - self.motor.omega
+            iq_ref = _pi_update_anti_windup(
+                self.pi_speed, self.speed_error, dt, limit=self.iq_limit_a
+            )
+        else:
+            iq_ref = (self.speed_ref / 60.0) * (2 * np.pi) * self.pi_q["kp"]
+            self.speed_error = 0.0
+
+        if not self.startup_sequence_enabled:
+            return id_ref, iq_ref
+
+        if self.startup_phase == "align":
+            return self.startup_align_current_a, 0.0
+        if self.startup_phase == "open_loop":
+            return self.startup_open_loop_id_ref_a, self.startup_open_loop_iq_ref_a
+        return id_ref, iq_ref
 
     def _resolve_observer_mode(
         self, dt: float, emf_mag: float, confidence: float
@@ -603,8 +996,11 @@ class FOCController(BaseController):
         :return: Either (magnitude, angle) or (v_alpha, v_beta) depending on
                  `output_cartesian` setting.
         """
-        # compute electrical angle from selected observer
-        self.theta = self._estimate_theta_electrical(dt)
+        # compute electrical angle from selected observer or startup sequencer
+        if self.startup_sequence_enabled:
+            self.theta = self._estimate_theta_with_startup_sequence(dt)
+        else:
+            self.theta = self._estimate_theta_electrical(dt)
 
         # read phase currents and transform
         ia, ib, ic = self.motor.currents
@@ -616,20 +1012,11 @@ class FOCController(BaseController):
         # park transform to get d/q currents
         id_val, iq_val = park_transform(v_alpha, v_beta, self.theta)
 
-        if self.enable_speed_loop:
-            speed_ref_rad_s = (self.speed_ref / 60.0) * (2 * np.pi)
-            self.speed_error = speed_ref_rad_s - self.motor.omega
-            self.iq_ref = _pi_update_anti_windup(
-                self.pi_speed, self.speed_error, dt, limit=self.iq_limit_a
-            )
-        else:
-            # Backward-compatible legacy mapping for existing scenarios.
-            self.iq_ref = (self.speed_ref / 60.0) * (2 * np.pi) * self.pi_q["kp"]
-            self.speed_error = 0.0
+        self.id_ref_command, self.iq_ref_command = self._get_active_references(dt)
 
         # compute errors
-        error_d = self.id_ref - id_val
-        error_q = self.iq_ref - iq_val
+        error_d = self.id_ref_command - id_val
+        error_q = self.iq_ref_command - iq_val
 
         # PI controller outputs Vd and Vq with anti-windup clamps.
         v_d = _pi_update_anti_windup(self.pi_d, error_d, dt, limit=self.vdq_limit)
@@ -716,13 +1103,20 @@ class FOCController(BaseController):
         self.startup_handoff_confidence_peak = 0.0
         self.startup_handoff_quality = 0.0
         self.startup_handoff_stability_ratio = 1.0
+        self.startup_sequence_elapsed_s = 0.0
+        self.startup_phase_elapsed_s = 0.0
+        self.startup_open_loop_speed_rpm = self.startup_open_loop_initial_speed_rpm
+        self.startup_open_loop_angle = self.startup_align_angle
         self.sensorless_blend_weight = 0.0
         self.theta_sensorless_raw = 0.0
+        self.id_ref_command = 0.0
+        self.iq_ref_command = 0.0
         self.angle_observer_mode = (
             self.startup_initial_mode
             if self.startup_transition_enabled
             else self.observer_target_mode
         )
+        self._reset_startup_sequence_runtime()
 
     def get_state(self) -> dict:
         """Return controller state variables."""
@@ -773,11 +1167,32 @@ class FOCController(BaseController):
             "startup_handoff_confidence_peak": self.startup_handoff_confidence_peak,
             "startup_handoff_quality": self.startup_handoff_quality,
             "startup_handoff_stability_ratio": self.startup_handoff_stability_ratio,
+            "startup_sequence_enabled": self.startup_sequence_enabled,
+            "startup_phase": self.startup_phase,
+            "startup_phase_code": {
+                "align": 1.0,
+                "open_loop": 2.0,
+                "closed_loop": 3.0,
+            }.get(self.startup_phase, 0.0),
+            "startup_sequence_elapsed_s": self.startup_sequence_elapsed_s,
+            "startup_phase_elapsed_s": self.startup_phase_elapsed_s,
+            "startup_has_position_sensor": self._has_position_sensor(),
+            "startup_align_duration_s": self.startup_align_duration_s,
+            "startup_align_current_a": self.startup_align_current_a,
+            "startup_align_angle_rad": self.startup_align_angle,
+            "startup_open_loop_initial_speed_rpm": self.startup_open_loop_initial_speed_rpm,
+            "startup_open_loop_target_speed_rpm": self.startup_open_loop_target_speed_rpm,
+            "startup_open_loop_ramp_time_s": self.startup_open_loop_ramp_time_s,
+            "startup_open_loop_id_ref_a": self.startup_open_loop_id_ref_a,
+            "startup_open_loop_iq_ref_a": self.startup_open_loop_iq_ref_a,
+            "startup_open_loop_speed_rpm": self.startup_open_loop_speed_rpm,
             "sensorless_blend_enabled": self.sensorless_blend_enabled,
             "sensorless_blend_min_speed_rpm": self.sensorless_blend_min_speed_rpm,
             "sensorless_blend_min_confidence": self.sensorless_blend_min_confidence,
             "sensorless_blend_weight": self.sensorless_blend_weight,
             "theta_sensorless_raw": self.theta_sensorless_raw,
+            "id_ref_command": self.id_ref_command,
+            "iq_ref_command": self.iq_ref_command,
             "v_d": self.pi_d,
             "v_q": self.pi_q,
             "v_d_cmd": self.last_v_d,

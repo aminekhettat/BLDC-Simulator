@@ -2,50 +2,88 @@
 SVM Generator Module
 ====================
 
-This module implements Space Vector Modulation (SVM) for 3-phase voltage generation.
+This module implements Space Vector Modulation (SVM) for 3-phase voltage
+generation and includes an optional stateful inverter-realism layer.
 
-SVM is used to generate modulated voltages to drive the motor with PWM signals.
-It provides efficient use of DC bus voltage and reduces harmonic distortion.
+The realism layer is deliberately lightweight compared to a switching-device
+transient simulator, but it captures the most important inverter effects used in
+drive-system studies:
 
-**SVM Principle:**
-The reference voltage vector is synthesized using the three active vectors
-(corresponding to 6 switch configurations) and zero vectors.
+- Constant semiconductor conduction drop
+- Current-dependent conduction loss
+- Switching-frequency-dependent voltage loss
+- Direction-aware dead-time distortion
+- Freewheel diode path loss
+- Minimum pulse suppression near zero voltage
+- DC-link capacitor/ESR/source-resistance dynamics
+- Junction-temperature-dependent parameter drift
+- Per-phase asymmetry and mismatch
 
-:author: BLDC Control Team
-:version: 1.0.0
-
-.. versionadded:: 1.0.0
-    Initial SVM implementation
+Each realism feature can be enabled or disabled independently so the simulator
+can be tuned from ideal-average behavior up to a more realistic reduced-order
+inverter model.
 """
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, Optional
 
 import numpy as np
 
 
+@dataclass
+class InverterRealismConfig:
+    """Configuration container for all switchable inverter-realism blocks."""
+
+    enable_device_drop: bool = False
+    device_drop_v: float = 0.0
+
+    enable_dead_time: bool = False
+    dead_time_fraction: float = 0.0
+
+    enable_conduction_drop: bool = False
+    conduction_resistance_ohm: float = 0.0
+
+    enable_switching_loss: bool = False
+    switching_frequency_hz: float = 0.0
+    switching_loss_coeff_v_per_a_khz: float = 0.0
+
+    enable_diode_freewheel: bool = False
+    diode_drop_v: float = 0.0
+    diode_resistance_ohm: float = 0.0
+
+    enable_min_pulse: bool = False
+    min_pulse_fraction: float = 0.0
+
+    enable_bus_ripple: bool = False
+    dc_link_capacitance_f: float = 0.0
+    dc_link_source_resistance_ohm: float = 0.0
+    dc_link_esr_ohm: float = 0.0
+
+    enable_thermal_coupling: bool = False
+    thermal_resistance_k_per_w: float = 0.0
+    thermal_capacitance_j_per_k: float = 1.0
+    ambient_temperature_c: float = 25.0
+    temp_coeff_resistance_per_c: float = 0.0
+    temp_coeff_drop_per_c: float = 0.0
+
+    enable_phase_asymmetry: bool = False
+    phase_voltage_scale_a: float = 1.0
+    phase_voltage_scale_b: float = 1.0
+    phase_voltage_scale_c: float = 1.0
+    phase_drop_scale_a: float = 1.0
+    phase_drop_scale_b: float = 1.0
+    phase_drop_scale_c: float = 1.0
+
+
 class SVMGenerator:
     """
-    Space Vector Modulation Generator
-    ==================================
+    Space Vector Modulation Generator.
 
-    Generates 3-phase PWM voltages using Space Vector Modulation technique.
-
-    **Features:**
-    - Efficient voltage utilization
-    - Reduced harmonic distortion
-    - Support for different DC bus voltages
-    - Real-time modulation calculation
-
-    **SVM Hexagon Sectors:**
-    - Sector 1: 0° to 60°
-    - Sector 2: 60° to 120°
-    - Sector 3: 120° to 180°
-    - Sector 4: 180° to 240°
-    - Sector 5: 240° to 300°
-    - Sector 6: 300° to 360°
-
-    Example:
-        >>> svm = SVMGenerator(dc_voltage=48.0)
-        >>> voltages = svm.modulate(magnitude=20.0, angle=np.pi/6)
-        >>> print(voltages)  # [v_a, v_b, v_c]
+    The core SVM implementation remains an averaged inverter model. Realism is
+    layered on top of that average model so users can independently enable or
+    disable each effect.
     """
 
     def __init__(
@@ -57,24 +95,49 @@ class SVMGenerator:
         switching_frequency_hz: float = 0.0,
         switching_loss_coeff_v_per_a_khz: float = 0.0,
     ):
-        """
-        Initialize SVM generator.
-
-        :param dc_voltage: DC bus voltage [V], defaults to 48.0
-        :type dc_voltage: float
-
-        :raises ValueError: If dc_voltage <= 0
-        """
-        if dc_voltage <= 0:
+        if dc_voltage <= 0.0:
             raise ValueError("DC voltage must be positive")
 
-        self.dc_voltage = dc_voltage
-        self.device_drop_v = 0.0
-        self.dead_time_fraction = 0.0
-        self.conduction_resistance_ohm = 0.0
-        self.switching_frequency_hz = 0.0
-        self.switching_loss_coeff_v_per_a_khz = 0.0
+        self.dc_voltage = float(dc_voltage)
+        self.source_dc_voltage = float(dc_voltage)
         self.phase_currents = np.zeros(3, dtype=np.float64)
+        self.sample_time_s = 1e-4
+        self.realism = InverterRealismConfig()
+
+        # Stateful realism blocks keep their own bus and temperature states.
+        self._cap_voltage = float(dc_voltage)
+        self._junction_temperature_c = float(self.realism.ambient_temperature_c)
+        self._last_telemetry: Dict[str, float | int | bool] = {}
+
+        # Preserve the legacy public attributes used by existing tests and any
+        # downstream analysis code.
+        self.sector_angles = np.array(
+            [
+                0.0,
+                np.pi / 3.0,
+                2.0 * np.pi / 3.0,
+                np.pi,
+                4.0 * np.pi / 3.0,
+                5.0 * np.pi / 3.0,
+                2.0 * np.pi,
+            ],
+            dtype=np.float64,
+        )
+        angles = np.array(
+            [
+                0.0,
+                np.pi / 3.0,
+                2.0 * np.pi / 3.0,
+                np.pi,
+                4.0 * np.pi / 3.0,
+                5.0 * np.pi / 3.0,
+            ],
+            dtype=np.float64,
+        )
+        self.vectors = np.array(
+            [[np.cos(angle), np.sin(angle)] for angle in angles], dtype=np.float64
+        )
+
         self.set_nonidealities(
             device_drop_v=device_drop_v,
             dead_time_fraction=dead_time_fraction,
@@ -83,160 +146,107 @@ class SVMGenerator:
             switching_loss_coeff_v_per_a_khz=switching_loss_coeff_v_per_a_khz,
         )
 
-        # Sector boundaries (in radians)
-        self.sector_angles = np.array(
-            [
-                0,
-                np.pi / 3,
-                2 * np.pi / 3,
-                np.pi,
-                4 * np.pi / 3,
-                5 * np.pi / 3,
-                2 * np.pi,
-            ]
-        )
+    def set_sample_time(self, sample_time_s: float) -> None:
+        """Set simulation step used by bus and thermal state updates."""
+        if sample_time_s <= 0.0:
+            raise ValueError("sample_time_s must be positive")
+        self.sample_time_s = float(sample_time_s)
 
-        # SVM vectors (unit vectors at 0°, 60°, 120°, 180°, 240°, 300°)
-        angles = np.array(
-            [0, np.pi / 3, 2 * np.pi / 3, np.pi, 4 * np.pi / 3, 5 * np.pi / 3]
-        )
-        self.vectors = np.array(
-            [[np.cos(angle), np.sin(angle)] for angle in angles], dtype=np.float64
+    def reset_realism_state(self) -> None:
+        """Reset capacitor voltage, temperature, and cached telemetry."""
+        self._cap_voltage = float(self.source_dc_voltage)
+        self._junction_temperature_c = float(self.realism.ambient_temperature_c)
+        self._last_telemetry = self._make_empty_telemetry(
+            self._compute_available_bus_voltage()
         )
 
     def modulate(self, magnitude: float, angle: float) -> np.ndarray:
-        """
-        Generate 3-phase SVM voltages.
+        """Generate 3-phase SVM voltages and apply enabled realism blocks."""
+        available_bus = self._compute_available_bus_voltage()
+        max_magnitude = (2.0 / 3.0) * available_bus
+        magnitude = float(np.clip(magnitude, 0.0, max_magnitude))
+        angle = float(angle % (2.0 * np.pi))
 
-        **Algorithm:**
-        1. Normalize reference vector to magnitude and angle
-        2. Identify sector based on angle
-        3. Calculate dwell times for active and zero vectors
-        4. Generate modulated voltages using timing
+        sector = int(np.floor(angle / (np.pi / 3.0))) + 1
+        sector = int(np.clip(sector, 1, 6))
 
-        :param magnitude: Reference voltage magnitude [V]
-        :type magnitude: float
-        :param angle: Reference voltage angle [radians, 0 to 2π]
-        :type angle: float
-        :return: 3-phase voltages [v_a, v_b, v_c] [V]
-        :rtype: np.ndarray
+        angle_in_sector = angle - (sector - 1) * (np.pi / 3.0)
+        if angle_in_sector < 0.0:
+            angle_in_sector += np.pi / 3.0
+        if angle_in_sector >= np.pi / 3.0:
+            angle_in_sector -= np.pi / 3.0
 
-        .. math::
-            V_{ref} = M \\cdot e^{j\\theta}
-
-        where:
-            - M: magnitude (0 to Vdc/√3)
-            - θ: angle (0 to 2π)
-
-        **Return voltages:**
-            - v_a: Phase A voltage [V]
-            - v_b: Phase B voltage [V]
-            - v_c: Phase C voltage [V]
-        """
-        # Clamp magnitude to maximum (2/3 * Vdc for linear mode)
-        max_magnitude = (2.0 / 3.0) * self.dc_voltage
-        magnitude = np.clip(magnitude, 0, max_magnitude)
-
-        # Normalize angle to [0, 2π)
-        angle = angle % (2 * np.pi)
-
-        # Determine sector (1-6)
-        sector = int(np.floor(angle / (np.pi / 3))) + 1
-        sector = np.clip(sector, 1, 6)
-
-        # Angle within sector [0, π/3)
-        angle_in_sector = angle - (sector - 1) * (np.pi / 3)
-
-        # Normalize angle to sector
-        if angle_in_sector < 0:
-            angle_in_sector += np.pi / 3
-        if angle_in_sector >= np.pi / 3:
-            angle_in_sector -= np.pi / 3
-
-        # Calculate dwell times using time-averaged approach
-        # T1*v1 + T2*v2 + T0*v0 = Vref
-        # where T1 + T2 + T0 = Ts
-
-        # Effective voltage using 2/√3 scaling
-        v_ref_norm = magnitude * np.sqrt(3) / self.dc_voltage
-
-        # Dwell time calculations (angle-based)
-        # no unused intermediates stored
-
-        t1 = v_ref_norm * np.sin(np.pi / 3 - angle_in_sector) / np.sin(np.pi / 3)
-        t2 = v_ref_norm * np.sin(angle_in_sector) / np.sin(np.pi / 3)
+        v_ref_norm = magnitude * np.sqrt(3.0) / max(available_bus, 1e-12)
+        t1 = v_ref_norm * np.sin(np.pi / 3.0 - angle_in_sector) / np.sin(np.pi / 3.0)
+        t2 = v_ref_norm * np.sin(angle_in_sector) / np.sin(np.pi / 3.0)
         t0 = 1.0 - t1 - t2
 
-        # Clamp to valid range
-        t1 = np.clip(t1, 0, 1)
-        t2 = np.clip(t2, 0, 1)
+        t1 = float(np.clip(t1, 0.0, 1.0))
+        t2 = float(np.clip(t2, 0.0, 1.0))
+        t0 = float(np.clip(t0, 0.0, 1.0))
 
-        # Generate modulated voltage (time-domain PWM)
-        # Using standard SVM switching sequence
-        voltages = self._generate_phase_voltages(sector, t1, t2, t0)
-        voltages = self._apply_nonidealities(voltages)
-
-        return voltages
+        ideal_voltages = self._generate_phase_voltages(
+            sector=sector,
+            t1=t1,
+            t2=t2,
+            t0=t0,
+            dc_voltage=available_bus,
+        )
+        return self._apply_nonidealities(ideal_voltages)
 
     def _generate_phase_voltages(
-        self, sector: int, t1: float, t2: float, t0: float
+        self,
+        sector: int,
+        t1: float,
+        t2: float,
+        t0: float,
+        dc_voltage: float,
     ) -> np.ndarray:
-        """
-        Generate phase voltages from dwell times and sector.
-
-        Maps SVM timing to 3-phase voltage outputs.
-
-        :param sector: Current sector (1-6)
-        :type sector: int
-        :param t1: Dwell time for first vector
-        :type t1: float
-        :param t2: Dwell time for second vector
-        :type t2: float
-        :param t0: Dwell time for zero vector
-        :type t0: float
-        :return: Phase voltages [v_a, v_b, v_c]
-        :rtype: np.ndarray
-        """
-        # SVM switching patterns for each sector
-        # Format: [v_a, v_b, v_c] voltages expressed as fraction of Vdc
-
+        """Generate averaged phase voltages from SVM dwell times."""
         sector_patterns = {
-            1: {"v1": [1, 0, 0], "v2": [1, 1, 0]},  # Sector 1 (0-60°)
-            2: {"v1": [1, 1, 0], "v2": [0, 1, 0]},  # Sector 2 (60-120°)
-            3: {"v1": [0, 1, 0], "v2": [0, 1, 1]},  # Sector 3 (120-180°)
-            4: {"v1": [0, 1, 1], "v2": [0, 0, 1]},  # Sector 4 (180-240°)
-            5: {"v1": [0, 0, 1], "v2": [1, 0, 1]},  # Sector 5 (240-300°)
-            6: {"v1": [1, 0, 1], "v2": [1, 0, 0]},  # Sector 6 (300-360°)
+            1: {"v1": [1, 0, 0], "v2": [1, 1, 0]},
+            2: {"v1": [1, 1, 0], "v2": [0, 1, 0]},
+            3: {"v1": [0, 1, 0], "v2": [0, 1, 1]},
+            4: {"v1": [0, 1, 1], "v2": [0, 0, 1]},
+            5: {"v1": [0, 0, 1], "v2": [1, 0, 1]},
+            6: {"v1": [1, 0, 1], "v2": [1, 0, 0]},
         }
-
         pattern = sector_patterns.get(sector, sector_patterns[1])
 
-        # Time-weighted voltage combination
-        # Normalize to [-Vdc/2, Vdc/2]
         v1 = np.array(pattern["v1"], dtype=np.float64)
         v2 = np.array(pattern["v2"], dtype=np.float64)
-
-        # Average voltage (time-domain average)
-        v_avg = t1 * v1 + t2 * v2 + (t0 / 2) * (np.ones(3))
-
-        # Convert to actual voltages centered on Vdc/2
-        voltages = (v_avg * self.dc_voltage) - (self.dc_voltage / 2)
-
+        v_avg = t1 * v1 + t2 * v2 + (t0 / 2.0) * np.ones(3, dtype=np.float64)
+        voltages = (v_avg * dc_voltage) - (dc_voltage / 2.0)
         return voltages.astype(np.float64)
 
     def get_maximum_voltage(self) -> float:
-        """
-        Get maximum achievable output voltage magnitude.
+        """Return presently available linear-range SVM voltage magnitude."""
+        return (2.0 / 3.0) * self._compute_available_bus_voltage()
 
-        For linear SVM mode:
+    @property
+    def device_drop_v(self) -> float:
+        """Backward-compatible access to configured device drop."""
+        return self.realism.device_drop_v
 
-        .. math::
-            V_{max} = \\frac{2}{3} V_{dc}
+    @property
+    def dead_time_fraction(self) -> float:
+        """Backward-compatible access to configured dead-time fraction."""
+        return self.realism.dead_time_fraction
 
-        :return: Maximum voltage [V]
-        :rtype: float
-        """
-        return (2.0 / 3.0) * self.dc_voltage
+    @property
+    def conduction_resistance_ohm(self) -> float:
+        """Backward-compatible access to conduction resistance."""
+        return self.realism.conduction_resistance_ohm
+
+    @property
+    def switching_frequency_hz(self) -> float:
+        """Backward-compatible access to switching frequency."""
+        return self.realism.switching_frequency_hz
+
+    @property
+    def switching_loss_coeff_v_per_a_khz(self) -> float:
+        """Backward-compatible access to switching-loss coefficient."""
+        return self.realism.switching_loss_coeff_v_per_a_khz
 
     def set_nonidealities(
         self,
@@ -245,158 +255,464 @@ class SVMGenerator:
         conduction_resistance_ohm: float = 0.0,
         switching_frequency_hz: float = 0.0,
         switching_loss_coeff_v_per_a_khz: float = 0.0,
+        enable_device_drop: Optional[bool] = None,
+        enable_dead_time: Optional[bool] = None,
+        enable_conduction_drop: Optional[bool] = None,
+        enable_switching_loss: Optional[bool] = None,
+        enable_diode_freewheel: bool = False,
+        diode_drop_v: float = 0.0,
+        diode_resistance_ohm: float = 0.0,
+        enable_min_pulse: bool = False,
+        min_pulse_fraction: float = 0.0,
+        enable_bus_ripple: bool = False,
+        dc_link_capacitance_f: float = 0.0,
+        dc_link_source_resistance_ohm: float = 0.0,
+        dc_link_esr_ohm: float = 0.0,
+        enable_thermal_coupling: bool = False,
+        thermal_resistance_k_per_w: float = 0.0,
+        thermal_capacitance_j_per_k: float = 1.0,
+        ambient_temperature_c: float = 25.0,
+        temp_coeff_resistance_per_c: float = 0.0,
+        temp_coeff_drop_per_c: float = 0.0,
+        enable_phase_asymmetry: bool = False,
+        phase_voltage_scale_a: float = 1.0,
+        phase_voltage_scale_b: float = 1.0,
+        phase_voltage_scale_c: float = 1.0,
+        phase_drop_scale_a: float = 1.0,
+        phase_drop_scale_b: float = 1.0,
+        phase_drop_scale_c: float = 1.0,
     ) -> None:
-        """Configure simple inverter non-idealities.
-
-        :param device_drop_v: Per-phase effective conduction voltage drop [V]
-        :param dead_time_fraction: Duty loss ratio due to dead-time [0..0.2]
-        :param conduction_resistance_ohm: Effective conduction path resistance [ohm]
-        :param switching_frequency_hz: Inverter switching frequency [Hz]
-        :param switching_loss_coeff_v_per_a_khz:
-            Voltage-loss coefficient per ampere and kHz [V/A/kHz]
-        """
-        if device_drop_v < 0:
+        """Configure inverter-realism parameters and explicit feature toggles."""
+        if device_drop_v < 0.0:
             raise ValueError("device_drop_v must be non-negative")
-        if dead_time_fraction < 0 or dead_time_fraction > 0.2:
+        if dead_time_fraction < 0.0 or dead_time_fraction > 0.2:
             raise ValueError("dead_time_fraction must be between 0 and 0.2")
-        if conduction_resistance_ohm < 0:
+        if conduction_resistance_ohm < 0.0:
             raise ValueError("conduction_resistance_ohm must be non-negative")
-        if switching_frequency_hz < 0:
+        if switching_frequency_hz < 0.0:
             raise ValueError("switching_frequency_hz must be non-negative")
-        if switching_loss_coeff_v_per_a_khz < 0:
+        if switching_loss_coeff_v_per_a_khz < 0.0:
             raise ValueError("switching_loss_coeff_v_per_a_khz must be non-negative")
+        if diode_drop_v < 0.0 or diode_resistance_ohm < 0.0:
+            raise ValueError("diode drop and resistance must be non-negative")
+        if min_pulse_fraction < 0.0 or min_pulse_fraction > 0.5:
+            raise ValueError("min_pulse_fraction must be between 0 and 0.5")
+        if dc_link_capacitance_f < 0.0:
+            raise ValueError("dc_link_capacitance_f must be non-negative")
+        if dc_link_source_resistance_ohm < 0.0 or dc_link_esr_ohm < 0.0:
+            raise ValueError("dc-link resistances must be non-negative")
+        if thermal_resistance_k_per_w < 0.0:
+            raise ValueError("thermal_resistance_k_per_w must be non-negative")
+        if thermal_capacitance_j_per_k <= 0.0:
+            raise ValueError("thermal_capacitance_j_per_k must be positive")
+        if temp_coeff_resistance_per_c < 0.0 or temp_coeff_drop_per_c < 0.0:
+            raise ValueError("temperature coefficients must be non-negative")
 
-        self.device_drop_v = float(device_drop_v)
-        self.dead_time_fraction = float(dead_time_fraction)
-        self.conduction_resistance_ohm = float(conduction_resistance_ohm)
-        self.switching_frequency_hz = float(switching_frequency_hz)
-        self.switching_loss_coeff_v_per_a_khz = float(switching_loss_coeff_v_per_a_khz)
+        phase_voltage_scales = (
+            phase_voltage_scale_a,
+            phase_voltage_scale_b,
+            phase_voltage_scale_c,
+        )
+        phase_drop_scales = (
+            phase_drop_scale_a,
+            phase_drop_scale_b,
+            phase_drop_scale_c,
+        )
+        if any(scale <= 0.0 for scale in phase_voltage_scales + phase_drop_scales):
+            raise ValueError("phase scale factors must be positive")
+
+        self.realism.enable_device_drop = (
+            bool(device_drop_v > 0.0)
+            if enable_device_drop is None
+            else bool(enable_device_drop)
+        )
+        self.realism.enable_dead_time = (
+            bool(dead_time_fraction > 0.0)
+            if enable_dead_time is None
+            else bool(enable_dead_time)
+        )
+        self.realism.enable_conduction_drop = (
+            bool(conduction_resistance_ohm > 0.0)
+            if enable_conduction_drop is None
+            else bool(enable_conduction_drop)
+        )
+        self.realism.enable_switching_loss = (
+            bool(
+                switching_frequency_hz > 0.0 and switching_loss_coeff_v_per_a_khz > 0.0
+            )
+            if enable_switching_loss is None
+            else bool(enable_switching_loss)
+        )
+
+        self.realism.device_drop_v = float(device_drop_v)
+        self.realism.dead_time_fraction = float(dead_time_fraction)
+        self.realism.conduction_resistance_ohm = float(conduction_resistance_ohm)
+        self.realism.switching_frequency_hz = float(switching_frequency_hz)
+        self.realism.switching_loss_coeff_v_per_a_khz = float(
+            switching_loss_coeff_v_per_a_khz
+        )
+
+        self.realism.enable_diode_freewheel = bool(enable_diode_freewheel)
+        self.realism.diode_drop_v = float(diode_drop_v)
+        self.realism.diode_resistance_ohm = float(diode_resistance_ohm)
+
+        self.realism.enable_min_pulse = bool(enable_min_pulse)
+        self.realism.min_pulse_fraction = float(min_pulse_fraction)
+
+        self.realism.enable_bus_ripple = bool(enable_bus_ripple)
+        self.realism.dc_link_capacitance_f = float(dc_link_capacitance_f)
+        self.realism.dc_link_source_resistance_ohm = float(
+            dc_link_source_resistance_ohm
+        )
+        self.realism.dc_link_esr_ohm = float(dc_link_esr_ohm)
+
+        self.realism.enable_thermal_coupling = bool(enable_thermal_coupling)
+        self.realism.thermal_resistance_k_per_w = float(thermal_resistance_k_per_w)
+        self.realism.thermal_capacitance_j_per_k = float(thermal_capacitance_j_per_k)
+        self.realism.ambient_temperature_c = float(ambient_temperature_c)
+        self.realism.temp_coeff_resistance_per_c = float(temp_coeff_resistance_per_c)
+        self.realism.temp_coeff_drop_per_c = float(temp_coeff_drop_per_c)
+
+        self.realism.enable_phase_asymmetry = bool(enable_phase_asymmetry)
+        self.realism.phase_voltage_scale_a = float(phase_voltage_scale_a)
+        self.realism.phase_voltage_scale_b = float(phase_voltage_scale_b)
+        self.realism.phase_voltage_scale_c = float(phase_voltage_scale_c)
+        self.realism.phase_drop_scale_a = float(phase_drop_scale_a)
+        self.realism.phase_drop_scale_b = float(phase_drop_scale_b)
+        self.realism.phase_drop_scale_c = float(phase_drop_scale_c)
+
+        self.reset_realism_state()
 
     def set_phase_currents(self, phase_currents: np.ndarray) -> None:
-        """Provide phase currents used for current-dependent voltage drops."""
+        """Provide phase currents used by current-dependent inverter effects."""
         arr = np.asarray(phase_currents, dtype=np.float64)
         if arr.shape != (3,):
             raise ValueError("phase_currents must be a 3-element array")
         self.phase_currents = arr
 
     def _apply_nonidealities(self, voltages: np.ndarray) -> np.ndarray:
-        """Apply lightweight inverter non-ideality effects to phase voltages."""
+        """Apply all enabled inverter-realism blocks and update telemetry."""
         out = np.array(voltages, dtype=np.float64, copy=True)
-        if (
-            self.device_drop_v > 0.0
-            or self.conduction_resistance_ohm > 0.0
-            or self.switching_loss_coeff_v_per_a_khz > 0.0
-        ):
-            total_drop = np.full(3, self.device_drop_v, dtype=np.float64)
-            if self.conduction_resistance_ohm > 0.0:
-                total_drop += self.conduction_resistance_ohm * np.abs(
-                    self.phase_currents
-                )
-            if (
-                self.switching_loss_coeff_v_per_a_khz > 0.0
-                and self.switching_frequency_hz > 0.0
-            ):
-                f_khz = self.switching_frequency_hz / 1000.0
-                total_drop += (
-                    self.switching_loss_coeff_v_per_a_khz
-                    * np.abs(self.phase_currents)
-                    * f_khz
-                )
+        current_abs = np.abs(self.phase_currents)
+        current_sign = np.sign(self.phase_currents)
 
-            signs = np.sign(out)
-            out = np.where(
-                np.abs(out) > total_drop,
-                out - signs * total_drop,
+        available_bus = self._compute_available_bus_voltage()
+        half_bus = max(available_bus / 2.0, 1e-12)
+        voltage_scales = self._phase_voltage_scales()
+        drop_scales = self._phase_drop_scales()
+
+        device_loss = 0.0
+        conduction_loss = 0.0
+        switching_loss = 0.0
+        dead_time_loss = 0.0
+        diode_loss = 0.0
+        min_pulse_events = 0
+
+        # Phase mismatch modifies each leg independently before loss blocks.
+        if self.realism.enable_phase_asymmetry:
+            out *= voltage_scales
+
+        # Minimum pulse suppression models pulse swallowing around zero output.
+        if self.realism.enable_min_pulse and self.realism.min_pulse_fraction > 0.0:
+            threshold = self.realism.min_pulse_fraction * half_bus
+            suppressed = np.abs(out) < threshold
+            min_pulse_events = int(np.count_nonzero(suppressed))
+            out = np.where(suppressed, 0.0, out)
+
+        # Dead-time distortion depends on the direction of phase current.
+        if self.realism.enable_dead_time and self.realism.dead_time_fraction > 0.0:
+            activity = np.clip(np.abs(out) / half_bus, 0.0, 1.0)
+            dead_time_error = (
+                current_sign
+                * self.realism.dead_time_fraction
+                * available_bus
+                * activity
+            )
+            out = out - dead_time_error
+            dead_time_loss = float(np.sum(np.abs(dead_time_error) * current_abs))
+
+        temp_delta_c = max(
+            self._junction_temperature_c - self.realism.ambient_temperature_c,
+            0.0,
+        )
+        resistance_temp_scale = 1.0 + (
+            self.realism.temp_coeff_resistance_per_c * temp_delta_c
+            if self.realism.enable_thermal_coupling
+            else 0.0
+        )
+        drop_temp_scale = 1.0 + (
+            self.realism.temp_coeff_drop_per_c * temp_delta_c
+            if self.realism.enable_thermal_coupling
+            else 0.0
+        )
+
+        total_drop = np.zeros(3, dtype=np.float64)
+
+        if self.realism.enable_device_drop and self.realism.device_drop_v > 0.0:
+            device_drop = self.realism.device_drop_v * drop_temp_scale * drop_scales
+            total_drop += device_drop
+            device_loss = float(np.sum(device_drop * current_abs))
+
+        if (
+            self.realism.enable_conduction_drop
+            and self.realism.conduction_resistance_ohm > 0.0
+        ):
+            conduction_res = (
+                self.realism.conduction_resistance_ohm
+                * resistance_temp_scale
+                * drop_scales
+            )
+            conduction_drop = conduction_res * current_abs
+            total_drop += conduction_drop
+            conduction_loss = float(np.sum(conduction_res * current_abs**2))
+
+        if (
+            self.realism.enable_switching_loss
+            and self.realism.switching_frequency_hz > 0.0
+            and self.realism.switching_loss_coeff_v_per_a_khz > 0.0
+        ):
+            f_khz = self.realism.switching_frequency_hz / 1000.0
+            switching_drop = (
+                self.realism.switching_loss_coeff_v_per_a_khz * current_abs * f_khz
+            )
+            total_drop += switching_drop
+            switching_loss = float(np.sum(switching_drop * current_abs))
+
+        phase_sign = np.sign(out)
+        freewheel_mask = np.logical_and(
+            self.realism.enable_diode_freewheel,
+            np.logical_and(current_abs > 1e-12, phase_sign * current_sign < 0.0),
+        )
+        if np.any(freewheel_mask):
+            diode_drop = np.where(
+                freewheel_mask,
+                self.realism.diode_drop_v
+                + self.realism.diode_resistance_ohm * current_abs,
                 0.0,
             )
+            total_drop += diode_drop
+            diode_loss = float(np.sum(diode_drop * current_abs))
 
-        if self.dead_time_fraction > 0.0:
-            out *= 1.0 - self.dead_time_fraction
+        out = np.where(
+            np.abs(out) > total_drop,
+            out - np.sign(out) * total_drop,
+            0.0,
+        )
+        out = np.clip(out, -half_bus, half_bus)
 
-        half_bus = self.dc_voltage / 2.0
-        return np.clip(out, -half_bus, half_bus)
+        total_inverter_loss = float(
+            device_loss + conduction_loss + switching_loss + dead_time_loss + diode_loss
+        )
+        motor_terminal_power = float(np.dot(out, self.phase_currents))
+        source_power = motor_terminal_power + total_inverter_loss
+        source_current = (
+            source_power / max(self.source_dc_voltage, 1e-12)
+            if abs(self.source_dc_voltage) > 1e-12
+            else 0.0
+        )
+
+        self._update_bus_ripple_state(source_current)
+        self._update_thermal_state(total_inverter_loss)
+
+        effective_bus_next = self._compute_available_bus_voltage()
+        self._last_telemetry = {
+            "source_dc_voltage": float(self.source_dc_voltage),
+            "effective_dc_voltage": float(available_bus),
+            "dc_link_cap_voltage": float(self._cap_voltage),
+            "dc_link_ripple_v": float(abs(self.source_dc_voltage - effective_bus_next)),
+            "dc_link_bus_current_a": float(source_current),
+            "motor_terminal_power_w": float(motor_terminal_power),
+            "device_loss_power_w": float(device_loss),
+            "conduction_loss_power_w": float(conduction_loss),
+            "switching_loss_power_w": float(switching_loss),
+            "dead_time_loss_power_w": float(dead_time_loss),
+            "diode_loss_power_w": float(diode_loss),
+            "total_inverter_loss_power_w": float(total_inverter_loss),
+            "junction_temperature_c": float(self._junction_temperature_c),
+            "common_mode_voltage": float(np.mean(out)),
+            "min_pulse_event_count": int(min_pulse_events),
+            "phase_voltage_scale_a": float(voltage_scales[0]),
+            "phase_voltage_scale_b": float(voltage_scales[1]),
+            "phase_voltage_scale_c": float(voltage_scales[2]),
+            "phase_drop_scale_a": float(drop_scales[0]),
+            "phase_drop_scale_b": float(drop_scales[1]),
+            "phase_drop_scale_c": float(drop_scales[2]),
+            "enable_device_drop": bool(self.realism.enable_device_drop),
+            "enable_dead_time": bool(self.realism.enable_dead_time),
+            "enable_conduction_drop": bool(self.realism.enable_conduction_drop),
+            "enable_switching_loss": bool(self.realism.enable_switching_loss),
+            "enable_diode_freewheel": bool(self.realism.enable_diode_freewheel),
+            "enable_min_pulse": bool(self.realism.enable_min_pulse),
+            "enable_bus_ripple": bool(self.realism.enable_bus_ripple),
+            "enable_thermal_coupling": bool(self.realism.enable_thermal_coupling),
+            "enable_phase_asymmetry": bool(self.realism.enable_phase_asymmetry),
+        }
+        return out
+
+    def _compute_available_bus_voltage(self) -> float:
+        """Return the bus voltage currently available to the bridge."""
+        if (
+            not self.realism.enable_bus_ripple
+            or self.realism.dc_link_capacitance_f <= 0.0
+        ):
+            return max(self.source_dc_voltage, 1e-9)
+
+        estimated_bus_current = float(
+            self._last_telemetry.get("dc_link_bus_current_a", 0.0)
+        )
+        effective_bus = self._cap_voltage - (
+            estimated_bus_current * self.realism.dc_link_esr_ohm
+        )
+        return max(effective_bus, 1e-9)
+
+    def _update_bus_ripple_state(self, source_current: float) -> None:
+        """Update reduced-order DC-link capacitor state for the next step."""
+        if (
+            not self.realism.enable_bus_ripple
+            or self.realism.dc_link_capacitance_f <= 0.0
+        ):
+            self._cap_voltage = float(self.source_dc_voltage)
+            return
+
+        c_dc = self.realism.dc_link_capacitance_f
+        source_r = self.realism.dc_link_source_resistance_ohm
+        dt = self.sample_time_s
+
+        if source_r <= 1e-12:
+            self._cap_voltage = float(self.source_dc_voltage)
+            return
+
+        recharge_current = (self.source_dc_voltage - self._cap_voltage) / source_r
+        capacitor_current = recharge_current - source_current
+        self._cap_voltage = max(
+            self._cap_voltage + (capacitor_current / c_dc) * dt,
+            0.0,
+        )
+
+    def _update_thermal_state(self, total_loss_power_w: float) -> None:
+        """Update reduced-order junction temperature state for the next step."""
+        if not self.realism.enable_thermal_coupling:
+            self._junction_temperature_c = float(self.realism.ambient_temperature_c)
+            return
+
+        r_th = self.realism.thermal_resistance_k_per_w
+        c_th = self.realism.thermal_capacitance_j_per_k
+        if r_th <= 1e-12 or c_th <= 1e-12:
+            self._junction_temperature_c = float(self.realism.ambient_temperature_c)
+            return
+
+        cooling_power = (
+            self._junction_temperature_c - self.realism.ambient_temperature_c
+        ) / r_th
+        d_temp = (total_loss_power_w - cooling_power) * self.sample_time_s / c_th
+        self._junction_temperature_c += d_temp
+
+    def _phase_voltage_scales(self) -> np.ndarray:
+        """Return per-phase voltage mismatch multipliers."""
+        if not self.realism.enable_phase_asymmetry:
+            return np.ones(3, dtype=np.float64)
+        return np.array(
+            [
+                self.realism.phase_voltage_scale_a,
+                self.realism.phase_voltage_scale_b,
+                self.realism.phase_voltage_scale_c,
+            ],
+            dtype=np.float64,
+        )
+
+    def _phase_drop_scales(self) -> np.ndarray:
+        """Return per-phase loss mismatch multipliers."""
+        if not self.realism.enable_phase_asymmetry:
+            return np.ones(3, dtype=np.float64)
+        return np.array(
+            [
+                self.realism.phase_drop_scale_a,
+                self.realism.phase_drop_scale_b,
+                self.realism.phase_drop_scale_c,
+            ],
+            dtype=np.float64,
+        )
+
+    def get_last_telemetry(self) -> Dict[str, float | int | bool]:
+        """Return telemetry from the last modulation step."""
+        if not self._last_telemetry:
+            self._last_telemetry = self._make_empty_telemetry(
+                self._compute_available_bus_voltage()
+            )
+        return dict(self._last_telemetry)
+
+    def get_realism_state(self) -> Dict[str, Any]:
+        """Return the complete inverter configuration and runtime state."""
+        return {
+            **self.get_last_telemetry(),
+            **asdict(self.realism),
+            "sample_time_s": float(self.sample_time_s),
+            "source_dc_voltage": float(self.source_dc_voltage),
+            "cap_voltage": float(self._cap_voltage),
+            "junction_temperature_c": float(self._junction_temperature_c),
+        }
+
+    def _make_empty_telemetry(
+        self,
+        effective_bus: float,
+    ) -> Dict[str, float | int | bool]:
+        """Build a zeroed telemetry packet used before the first modulation step."""
+        return {
+            "source_dc_voltage": float(self.source_dc_voltage),
+            "effective_dc_voltage": float(effective_bus),
+            "dc_link_cap_voltage": float(self._cap_voltage),
+            "dc_link_ripple_v": 0.0,
+            "dc_link_bus_current_a": 0.0,
+            "motor_terminal_power_w": 0.0,
+            "device_loss_power_w": 0.0,
+            "conduction_loss_power_w": 0.0,
+            "switching_loss_power_w": 0.0,
+            "dead_time_loss_power_w": 0.0,
+            "diode_loss_power_w": 0.0,
+            "total_inverter_loss_power_w": 0.0,
+            "junction_temperature_c": float(self._junction_temperature_c),
+            "common_mode_voltage": 0.0,
+            "min_pulse_event_count": 0,
+            "phase_voltage_scale_a": 1.0,
+            "phase_voltage_scale_b": 1.0,
+            "phase_voltage_scale_c": 1.0,
+            "phase_drop_scale_a": 1.0,
+            "phase_drop_scale_b": 1.0,
+            "phase_drop_scale_c": 1.0,
+            "enable_device_drop": bool(self.realism.enable_device_drop),
+            "enable_dead_time": bool(self.realism.enable_dead_time),
+            "enable_conduction_drop": bool(self.realism.enable_conduction_drop),
+            "enable_switching_loss": bool(self.realism.enable_switching_loss),
+            "enable_diode_freewheel": bool(self.realism.enable_diode_freewheel),
+            "enable_min_pulse": bool(self.realism.enable_min_pulse),
+            "enable_bus_ripple": bool(self.realism.enable_bus_ripple),
+            "enable_thermal_coupling": bool(self.realism.enable_thermal_coupling),
+            "enable_phase_asymmetry": bool(self.realism.enable_phase_asymmetry),
+        }
 
     def set_dc_voltage(self, dc_voltage: float) -> None:
-        """
-        Update DC bus voltage.
-
-        :param dc_voltage: New DC voltage [V]
-        :type dc_voltage: float
-
-        :raises ValueError: If dc_voltage <= 0
-        """
-        if dc_voltage <= 0:
+        """Update the source DC bus value seen by the inverter model."""
+        if dc_voltage <= 0.0:
             raise ValueError("DC voltage must be positive")
-        self.dc_voltage = dc_voltage
+        self.dc_voltage = float(dc_voltage)
+        self.source_dc_voltage = float(dc_voltage)
+        if not self.realism.enable_bus_ripple:
+            self._cap_voltage = float(dc_voltage)
 
 
 class CartesianSVMGenerator(SVMGenerator):
-    """
-    Cartesian SVM Generator
-    =======================
-
-    Extended SVM generator accepting Cartesian coordinates (Valpha, Vbeta)
-    instead of polar form (magnitude, angle).
-
-    Useful for direct FOC control outputs.
-
-    Example:
-        >>> svm = CartesianSVMGenerator(dc_voltage=48.0)
-        >>> voltages = svm.modulate_cartesian(valpha=15.0, vbeta=8.66)
-    """
+    """Extended SVM generator accepting Cartesian alpha-beta voltages."""
 
     def modulate_cartesian(self, valpha: float, vbeta: float) -> np.ndarray:
-        """
-        Generate SVM voltages from Cartesian coordinates.
-
-        **Clarke Transform inverse:**
-
-        .. math::
-            V_{\\alpha} = V_a - \\frac{1}{2}(V_b + V_c)
-
-        .. math::
-            V_{\\beta} = \\frac{\\sqrt{3}}{2}(V_b - V_c)
-
-        :param valpha: Alpha-axis voltage (direct axis) [V]
-        :type valpha: float
-        :param vbeta: Beta-axis voltage (quadrature axis) [V]
-        :type vbeta: float
-        :return: 3-phase voltages [v_a, v_b, v_c] [V]
-        :rtype: np.ndarray
-        """
-        # Convert Cartesian to polar
-        magnitude = np.sqrt(valpha**2 + vbeta**2)
-        angle = np.arctan2(vbeta, valpha)
-
-        # Use standard SVM
+        """Generate SVM voltages from Cartesian alpha-beta coordinates."""
+        magnitude = float(np.hypot(valpha, vbeta))
+        angle = float(np.arctan2(vbeta, valpha))
         return self.modulate(magnitude, angle)
 
     def cartesian_to_threephase(self, valpha: float, vbeta: float) -> np.ndarray:
-        """
-        Convert Cartesian (α-β) to 3-phase voltages directly.
-
-        Direct inverse Clarke transform:
-
-        .. math::
-            V_a = V_{\\alpha}
-
-        .. math::
-            V_b = -\\frac{1}{2}V_{\\alpha} + \\frac{\\sqrt{3}}{2}V_{\\beta}
-
-        .. math::
-            V_c = -\\frac{1}{2}V_{\\alpha} - \\frac{\\sqrt{3}}{2}V_{\\beta}
-
-        :param valpha: Alpha-axis voltage [V]
-        :type valpha: float
-        :param vbeta: Beta-axis voltage [V]
-        :type vbeta: float
-        :return: 3-phase voltages [v_a, v_b, v_c] [V]
-        :rtype: np.ndarray
-        """
-        sqrt3_2 = np.sqrt(3) / 2.0
-
+        """Convert Cartesian alpha-beta voltages to 3-phase quantities."""
+        sqrt3_2 = np.sqrt(3.0) / 2.0
         v_a = valpha
         v_b = -0.5 * valpha + sqrt3_2 * vbeta
         v_c = -0.5 * valpha - sqrt3_2 * vbeta
-
         return np.array([v_a, v_b, v_c], dtype=np.float64)

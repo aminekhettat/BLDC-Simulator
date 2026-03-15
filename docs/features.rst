@@ -38,6 +38,12 @@ Advanced Features
 - **PFC Telemetry Hook**: Optional closed-loop PF target tracking in simulation metadata/history (`pfc_command_var`, PF trend)
 - **Efficiency Telemetry**: Input power, mechanical output power, estimated total loss, and system efficiency tracked in simulation metadata/history
 - **Efficiency Tuning Suggestions**: Heuristic recommendations for switching-frequency and inverter-loss tradeoff tuning from measured efficiency/PF
+- **Standard Startup Sequencing**: Configurable alignment and open-loop startup flows for both FOC and V/f controllers
+- **Inverter Realism Blocks**: Independently switchable drop/loss/ripple/thermal/asymmetry effects with runtime telemetry
+- **Inverter Analysis Plot**: Dedicated multi-panel plotting for bus ripple, loss breakdown, junction temperature, and common-mode voltage
+- **Hardware Backend Abstraction**: Communication backend interface with mock DAQ support for dry-run hardware integration
+- **Control Timing Telemetry**: Control-cycle calculation duration and CPU-load metrics, including MCU load estimation helpers
+- **Compute Backend Policy**: Runtime backend selection (`auto`, `cpu`, `gpu`) with safe fallback and CuPy acceleration for power metrics when available
 
 User Interface
 --------------

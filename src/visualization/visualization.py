@@ -298,7 +298,9 @@ class SimulationPlotter:
         if time.size == 0:
             raise ValueError("history contains no samples")
 
-        pf = np.asarray(history.get("power_factor", np.zeros_like(time)), dtype=np.float64)
+        pf = np.asarray(
+            history.get("power_factor", np.zeros_like(time)), dtype=np.float64
+        )
         active_power = np.asarray(
             history.get("input_power", np.zeros_like(time)), dtype=np.float64
         )
@@ -413,6 +415,122 @@ class SimulationPlotter:
         axes[3].set_xlabel("Time (s)")
         axes[3].set_title("Estimated Total Loss", fontsize=11, fontweight="bold")
         _style_axis(axes[3])
+
+        plt.tight_layout()
+        return fig
+
+    @staticmethod
+    def create_inverter_analysis_plot(
+        history: Dict[str, np.ndarray],
+        figsize: tuple = (11, 11),
+        grid_on: bool = True,
+        grid_spacing: Optional[float] = None,
+        minor_grid: bool = False,
+        grid_spacing_y: Optional[float] = None,
+    ) -> Figure:
+        """Create a dedicated inverter-realism telemetry plot."""
+        from matplotlib.ticker import MultipleLocator
+
+        if "time" not in history:
+            raise KeyError("history must include 'time'")
+
+        time = np.asarray(history["time"], dtype=np.float64)
+        if time.size == 0:
+            raise ValueError("history contains no samples")
+
+        effective_bus = np.asarray(
+            history.get("effective_dc_voltage", np.zeros_like(time)), dtype=np.float64
+        )
+        ripple = np.asarray(
+            history.get("dc_link_ripple_v", np.zeros_like(time)), dtype=np.float64
+        )
+        bus_current = np.asarray(
+            history.get("dc_link_bus_current_a", np.zeros_like(time)), dtype=np.float64
+        )
+        total_loss = np.asarray(
+            history.get("inverter_total_loss_power", np.zeros_like(time)),
+            dtype=np.float64,
+        )
+        device_loss = np.asarray(
+            history.get("device_loss_power", np.zeros_like(time)), dtype=np.float64
+        )
+        conduction_loss = np.asarray(
+            history.get("conduction_loss_power", np.zeros_like(time)), dtype=np.float64
+        )
+        switching_loss = np.asarray(
+            history.get("switching_loss_power", np.zeros_like(time)), dtype=np.float64
+        )
+        dead_time_loss = np.asarray(
+            history.get("dead_time_loss_power", np.zeros_like(time)), dtype=np.float64
+        )
+        diode_loss = np.asarray(
+            history.get("diode_loss_power", np.zeros_like(time)), dtype=np.float64
+        )
+        junction_temp = np.asarray(
+            history.get("inverter_junction_temp_c", np.zeros_like(time)),
+            dtype=np.float64,
+        )
+        common_mode = np.asarray(
+            history.get("common_mode_voltage", np.zeros_like(time)), dtype=np.float64
+        )
+
+        fig, axes = plt.subplots(5, 1, figsize=figsize, sharex=True)
+
+        def _style_axis(ax):
+            ax.grid(grid_on, alpha=0.3)
+            if minor_grid:
+                ax.minorticks_on()
+                ax.grid(which="minor", alpha=0.1, linestyle=":")
+            if grid_spacing and grid_spacing > 0:
+                ax.xaxis.set_major_locator(MultipleLocator(grid_spacing))
+            if grid_spacing_y and grid_spacing_y > 0:
+                ax.yaxis.set_major_locator(MultipleLocator(grid_spacing_y))
+
+        axes[0].plot(time, effective_bus, color="#1565C0", linewidth=1.8)
+        axes[0].plot(time, ripple, color="#EF6C00", linewidth=1.4, linestyle="--")
+        axes[0].set_ylabel("V")
+        axes[0].set_title(
+            "DC-Link Effective Voltage and Ripple", fontsize=11, fontweight="bold"
+        )
+        axes[0].legend(["Effective Bus", "Ripple"], loc="best")
+        _style_axis(axes[0])
+
+        axes[1].plot(time, bus_current, color="#2E7D32", linewidth=1.8)
+        axes[1].set_ylabel("A")
+        axes[1].set_title("DC-Link Bus Current", fontsize=11, fontweight="bold")
+        _style_axis(axes[1])
+
+        axes[2].plot(time, total_loss, color="#C62828", linewidth=1.8)
+        axes[2].plot(time, device_loss, linewidth=1.2)
+        axes[2].plot(time, conduction_loss, linewidth=1.2)
+        axes[2].plot(time, switching_loss, linewidth=1.2)
+        axes[2].plot(time, dead_time_loss, linewidth=1.2)
+        axes[2].plot(time, diode_loss, linewidth=1.2)
+        axes[2].set_ylabel("W")
+        axes[2].set_title("Inverter Loss Breakdown", fontsize=11, fontweight="bold")
+        axes[2].legend(
+            [
+                "Total",
+                "Device",
+                "Conduction",
+                "Switching",
+                "Dead-Time",
+                "Diode",
+            ],
+            loc="best",
+        )
+        _style_axis(axes[2])
+
+        axes[3].plot(time, junction_temp, color="#6A1B9A", linewidth=1.8)
+        axes[3].set_ylabel("C")
+        axes[3].set_title("Junction Temperature", fontsize=11, fontweight="bold")
+        _style_axis(axes[3])
+
+        axes[4].plot(time, common_mode, color="#5D4037", linewidth=1.8)
+        axes[4].set_ylabel("V")
+        axes[4].set_xlabel("Time (s)")
+        axes[4].set_title("Common-Mode Voltage", fontsize=11, fontweight="bold")
+        _style_axis(axes[4])
 
         plt.tight_layout()
         return fig

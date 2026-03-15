@@ -36,8 +36,12 @@ DEFAULT_MOTOR_PARAMS = {
 }
 
 # Simulation parameters
+DEFAULT_PWM_FREQUENCY_HZ = 20000.0
+
 SIMULATION_PARAMS = {
-    "dt": 0.0001,  # Time step [s]
+    "pwm_frequency_hz": DEFAULT_PWM_FREQUENCY_HZ,
+    "dt": 1.0 / DEFAULT_PWM_FREQUENCY_HZ,  # Simulation/control step [s]
+    "compute_backend": "auto",  # auto -> gpu when available, else cpu
     "max_history": 100000,  # Maximum data points to store
     "dc_voltage": 48.0,  # DC bus voltage [V]
 }
@@ -49,6 +53,23 @@ VF_CONTROLLER_PARAMS = {
     "v_startup": 1.0,  # Startup voltage [V]
     "ramp_rate": 10.0,  # Voltage ramp [V/s]
     "frequency_slew_rate": 50.0,  # Frequency slew [Hz/s]
+    "startup_sequence_enabled": False,
+    "startup_align_duration_s": 0.05,
+    "startup_align_voltage_v": 1.5,
+    "startup_align_angle_deg": 0.0,
+    "startup_ramp_initial_frequency_hz": 2.0,
+}
+
+FOC_STARTUP_PARAMS = {
+    "startup_sequence_enabled": False,
+    "startup_align_duration_s": 0.05,
+    "startup_align_current_a": 1.5,
+    "startup_align_angle_deg": 0.0,
+    "startup_open_loop_initial_speed_rpm": 30.0,
+    "startup_open_loop_target_speed_rpm": 300.0,
+    "startup_open_loop_ramp_time_s": 0.2,
+    "startup_open_loop_id_ref_a": 0.0,
+    "startup_open_loop_iq_ref_a": 2.0,
 }
 
 # Load profile defaults

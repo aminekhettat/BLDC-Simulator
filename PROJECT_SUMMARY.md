@@ -2,6 +2,24 @@
 PROJECT SUMMARY - BLDC Motor Control GUI Application
 =====================================================
 
+## Latest Update (March 2026)
+
+- Added standard startup sequencers for both FOC and V/f controllers with
+  alignment, open-loop ramp, and transition telemetry.
+- Upgraded inverter simulation from basic average behavior to a switchable
+  realism model (device/conduction/switching loss, dead-time distortion,
+  diode path, minimum pulse suppression, DC-link ripple, thermal coupling,
+  and phase asymmetry).
+- Added communication backend abstraction with a mock DAQ implementation for
+  hardware-in-the-loop style command/feedback testing.
+- Added control-loop timing telemetry with host-to-MCU load estimation support
+  in the UI.
+- Added compute backend selection (`auto`/`cpu`/`gpu`) with safe GPU fallback;
+  power waveform metrics can now execute on CuPy when available.
+- Added adaptive PI loop tuning utilities based on gain/phase margin and
+  controllability/observability checks.
+- Added dedicated inverter analysis plotting and expanded exported telemetry.
+
 # COMPLETE PROJECT STRUCTURE CREATED
 
 ## Core Application Files

@@ -1,5 +1,14 @@
 # 📚 SPIN DOCTOR v2.0.0 - Complete Documentation Index
 
+## Latest Runtime Extension (March 2026)
+
+- Startup sequencing for FOC and V/f controllers
+- Advanced inverter realism blocks and inverter analysis plotting
+- Communication backend abstraction (Mock DAQ included)
+- Control-loop timing telemetry and MCU load estimator
+- Compute backend policy (`auto`/`cpu`/`gpu`) with safe fallback
+- Adaptive PI tuning module and convergence search scripts
+
 ## 🎯 Start Here
 
 Welcome to **⚡ SPIN DOCTOR**, your advanced BLDC motor control simulator! This document guides you through all available resources.
@@ -105,40 +114,48 @@ Welcome to **⚡ SPIN DOCTOR**, your advanced BLDC motor control simulator! This
 
 ### The 6 Major Features
 
-| # | Feature | Location | Doc |
-|---|---------|----------|-----|
-| 1 | ⚡ SPIN DOCTOR Branding v2.0.0 | Window title | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
-| 2 | Simulation Duration Control (0=infinite) | Control Tab | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md) |
-| 3 | Enhanced Monitoring (13 variables + speed curve) | Monitoring Tab | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md) |
-| 4 | Standard Menu Bar (File/Tools/Help) | Application Menu | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
-| 5 | Keyboard Shortcuts (F5-F7, Ctrl+S/Q) | Throughout App | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md) |
-| 6 | Live Speed Curve Plotting | Monitoring Tab | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md) |
+| #   | Feature                                          | Location         | Doc                                            |
+| --- | ------------------------------------------------ | ---------------- | ---------------------------------------------- |
+| 1   | ⚡ SPIN DOCTOR Branding v2.0.0                   | Window title     | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
+| 2   | Simulation Duration Control (0=infinite)         | Control Tab      | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
+| 3   | Enhanced Monitoring (13 variables + speed curve) | Monitoring Tab   | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
+| 4   | Standard Menu Bar (File/Tools/Help)              | Application Menu | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
+| 5   | Keyboard Shortcuts (F5-F7, Ctrl+S/Q)             | Throughout App   | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
+| 6   | Live Speed Curve Plotting                        | Monitoring Tab   | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
 
 ---
 
 ## 🎮 Common Workflows
 
 ### Workflow 1: 10-Second Test
+
 **Time:** 5 minutes  
 **Files:**
+
 - [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md) → "Workflow A: 10-Second Test"
 - [QUICKSTART.md](QUICKSTART.md) → "Running Your First Simulation"
 
 ### Workflow 2: Infinite Mode Exploration
+
 **Time:** 10 minutes  
 **Files:**
+
 - [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md) → "Workflow B: Infinite Mode"
 - [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) → "How to Use New Features"
 
 ### Workflow 3: Data Export & Analysis
+
 **Time:** 5 minutes  
 **Files:**
+
 - [QUICKSTART.md](QUICKSTART.md) → "Exporting Results"
 - [README.md](README.md) → "Data Logging"
 
 ### Workflow 4: FOC Control with Speed Curve
+
 **Time:** 15 minutes  
 **Files:**
+
 - [QUICKSTART.md](QUICKSTART.md) → "FOC Control"
 - [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) → "Live Speed Curve Plotting"
 - [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md) → "Feature 6"
@@ -148,35 +165,41 @@ Welcome to **⚡ SPIN DOCTOR**, your advanced BLDC motor control simulator! This
 ## 📊 Tab-by-Tab Guide
 
 ### Motor Parameters Tab
+
 - **Purpose:** Define motor electrical & mechanical properties
 - **Key Settings:** Voltage, resistance, inductance, poles, back-EMF constant
 - **Documentation:** [QUICKSTART.md](QUICKSTART.md) → "Motor Parameters Tab"
 
 ### Load Profile Tab
+
 - **Purpose:** Specify the load torque seen by motor
 - **Key Settings:** Load type (Constant/Ramp), torque values
 - **Documentation:** [QUICKSTART.md](QUICKSTART.md) → "Load Profile Tab"
 
 ### Supply Profile Tab (NEW!)
+
 - **Purpose:** Define DC bus voltage profile
 - **Key Settings:** Supply type, voltage values, ramp duration
 - **Documentation:** [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) → Section 1
 
 ### Control Tab (ENHANCED!)
+
 - **Purpose:** Select control algorithm and set references
 - **Key Settings:** Control mode (V/f/FOC), **duration (0=infinite!)**, speed/current references
 - **Documentation:** [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) → "Simulation Duration Control"
 - **New in v2.0:** Duration parameter!
 
 ### Monitoring Tab (COMPLETELY REDESIGNED!)
+
 - **Purpose:** Real-time visualization of motor state
-- **Key Display:** 
+- **Key Display:**
   - Left: 13 numerical variables (scrollable)
   - Right: Live speed curve (matplotlib plot)
 - **Documentation:** [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md) → "Feature 3 & 6"
 - **New in v2.0:** Speed curve, rotor position, simulation time!
 
 ### Plotting Tab
+
 - **Purpose:** Generate comprehensive analysis plots
 - **Key Options:** 3-phase overview, current analysis, custom variables
 - **Documentation:** [QUICKSTART.md](QUICKSTART.md) → "Plotting Tab"
@@ -200,6 +223,7 @@ Ctrl+Q      Quit Application
 ## 🧪 Testing & Validation
 
 ### Run All Tests
+
 ```bash
 cd c:\Users\akhettat\Documents\Projets\ Python\BLDC_motor_control
 python -m pytest -v
@@ -208,6 +232,7 @@ python -m pytest -v
 **Expected Result:** ✅ 29 passed
 
 **Test Coverage:**
+
 - Motor model: 22 tests
 - FOC & power: 7 tests
 - Plotting: 1 test
@@ -240,18 +265,22 @@ python -m pytest tests/test_baseline_integrity.py tests/test_regression_baseline
 ## 🚀 Launching the Application
 
 ### Option 1: GUI Application
+
 ```bash
 python main.py
 ```
+
 Then interact with the tabs and buttons visually.
 
 ### Option 2: Command Line Scripts
+
 ```bash
 python examples/example_vf_control.py
 python examples/example_foc_control.py
 ```
 
 ### Option 3: Python API
+
 ```python
 from src.core import BLDCMotor, SimulationEngine
 from src.control import VFController, SVMGenerator
@@ -265,21 +294,21 @@ from src.control import VFController, SVMGenerator
 
 ### I need to find information about... [Search Guide]
 
-| Topic | Best Resource | Section |
-|-------|---|---|
-| Duration control | VISUAL_GUIDE_v2 | Feature 2 |
-| Speed curve plotting | VISUAL_GUIDE_v2 | Feature 6 |
-| Monitoring variables | FEATURES_UPDATE_v2 | "Enhanced Monitoring" |
-| Menu bar | FEATURES_UPDATE_v2 | "Standard Menu Bar" |
-| Keyboard shortcuts | VISUAL_GUIDE_v2 | Feature 5 |
-| Application name | IMPLEMENTATION_COMPLETE_v2 | Feature Delivery |
-| FOC control | QUICKSTART | FOC Control Tab |
-| V/f control | QUICKSTART | V/f Control Tab |
-| Data export | QUICKSTART | Exporting Results |
-| Accessibility | README | Accessibility Features |
-| Code architecture | ARCHITECTURE | Module Descriptions |
-| Test status | IMPLEMENTATION_COMPLETE_v2 | Test Status |
-| Performance | IMPLEMENTATION_COMPLETE_v2 | Performance Metrics |
+| Topic                | Best Resource              | Section                |
+| -------------------- | -------------------------- | ---------------------- |
+| Duration control     | VISUAL_GUIDE_v2            | Feature 2              |
+| Speed curve plotting | VISUAL_GUIDE_v2            | Feature 6              |
+| Monitoring variables | FEATURES_UPDATE_v2         | "Enhanced Monitoring"  |
+| Menu bar             | FEATURES_UPDATE_v2         | "Standard Menu Bar"    |
+| Keyboard shortcuts   | VISUAL_GUIDE_v2            | Feature 5              |
+| Application name     | IMPLEMENTATION_COMPLETE_v2 | Feature Delivery       |
+| FOC control          | QUICKSTART                 | FOC Control Tab        |
+| V/f control          | QUICKSTART                 | V/f Control Tab        |
+| Data export          | QUICKSTART                 | Exporting Results      |
+| Accessibility        | README                     | Accessibility Features |
+| Code architecture    | ARCHITECTURE               | Module Descriptions    |
+| Test status          | IMPLEMENTATION_COMPLETE_v2 | Test Status            |
+| Performance          | IMPLEMENTATION_COMPLETE_v2 | Performance Metrics    |
 
 ---
 
@@ -324,14 +353,14 @@ BLDC_motor_control/
 
 ## 📊 Documentation Quick Stats
 
-| Document | Lines | Topics | Read Time |
-|----------|-------|--------|-----------|
-| VISUAL_GUIDE_v2.md | 500+ | 6 features + workflows | 10-15 min |
-| FEATURES_UPDATE_v2.md | 700+ | Detailed feature guide | 15-20 min |
-| IMPLEMENTATION_COMPLETE_v2.md | 600+ | Technical summary | 10-15 min |
-| README.md | 400+ | Complete guide | 20-30 min |
-| QUICKSTART.md | 300+ | Getting started | 15 min |
-| ARCHITECTURE.md | 600+ | System design | 20 min |
+| Document                      | Lines | Topics                 | Read Time |
+| ----------------------------- | ----- | ---------------------- | --------- |
+| VISUAL_GUIDE_v2.md            | 500+  | 6 features + workflows | 10-15 min |
+| FEATURES_UPDATE_v2.md         | 700+  | Detailed feature guide | 15-20 min |
+| IMPLEMENTATION_COMPLETE_v2.md | 600+  | Technical summary      | 10-15 min |
+| README.md                     | 400+  | Complete guide         | 20-30 min |
+| QUICKSTART.md                 | 300+  | Getting started        | 15 min    |
+| ARCHITECTURE.md               | 600+  | System design          | 20 min    |
 
 **Total:** 3000+ lines of comprehensive documentation ✅
 
@@ -380,30 +409,33 @@ BLDC_motor_control/
 
 ## 📞 Support Resources
 
-| Need | Resource | Action |
-|------|----------|--------|
-| Visual overview | VISUAL_GUIDE_v2.md | Read section "Feature Overview" |
-| Step-by-step guide | QUICKSTART.md | Follow tutorial |
-| Feature details | FEATURES_UPDATE_v2.md | Find feature in index |
-| Code help | ARCHITECTURE.md | Review module descriptions |
-| Troubleshooting | VISUAL_GUIDE_v2.md | Check "Troubleshooting" |
-| Test status | IMPLEMENTATION_COMPLETE_v2.md | Check "Test Status" |
+| Need               | Resource                      | Action                          |
+| ------------------ | ----------------------------- | ------------------------------- |
+| Visual overview    | VISUAL_GUIDE_v2.md            | Read section "Feature Overview" |
+| Step-by-step guide | QUICKSTART.md                 | Follow tutorial                 |
+| Feature details    | FEATURES_UPDATE_v2.md         | Find feature in index           |
+| Code help          | ARCHITECTURE.md               | Review module descriptions      |
+| Troubleshooting    | VISUAL_GUIDE_v2.md            | Check "Troubleshooting"         |
+| Test status        | IMPLEMENTATION_COMPLETE_v2.md | Check "Test Status"             |
 
 ---
 
 ## 🎓 Learning Path
 
 ### Beginner (30 minutes)
+
 1. VISUAL_GUIDE_v2.md (10 min)
 2. Launch & run application (10 min)
 3. QUICKSTART.md key sections (10 min)
 
 ### Intermediate (60 minutes)
+
 1. All of Beginner path
 2. FEATURES_UPDATE_v2.md (20 min)
 3. Try all 6 workflows (20 min)
 
 ### Advanced (90 minutes)
+
 1. All of Intermediate path
 2. ARCHITECTURE.md (20 min)
 3. Explore source code (20 min)
@@ -414,6 +446,7 @@ BLDC_motor_control/
 ## 📝 Version History
 
 ### v2.0.0 (Current) - March 4, 2026
+
 - ✅ New application branding (⚡ SPIN DOCTOR)
 - ✅ Simulation duration control
 - ✅ Enhanced monitoring (13 variables + live curve)
@@ -422,6 +455,7 @@ BLDC_motor_control/
 - ✅ Live speed curve plotting
 
 ### v1.0.0 - Previous Release
+
 - Basic motor simulation
 - V/f control only
 - Simple monitoring display
@@ -442,6 +476,7 @@ BLDC_motor_control/
 ## 🎉 Ready to Go!
 
 You now have:
+
 - ✅ Complete documentation
 - ✅ Tested codebase
 - ✅ Professional GUI
@@ -459,4 +494,3 @@ You now have:
 **Status:** ✅ Complete & Tested  
 **Version:** 2.0.0  
 **Maintainer:** BLDC Control Team
-

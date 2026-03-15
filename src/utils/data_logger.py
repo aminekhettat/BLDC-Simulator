@@ -130,6 +130,23 @@ class DataLogger:
             "voltages_a",
             "voltages_b",
             "voltages_c",
+            "supply_voltage",
+            "effective_dc_voltage",
+            "dc_link_ripple_v",
+            "dc_link_bus_current_a",
+            "device_loss_power",
+            "conduction_loss_power",
+            "switching_loss_power",
+            "dead_time_loss_power",
+            "diode_loss_power",
+            "inverter_total_loss_power",
+            "inverter_junction_temp_c",
+            "common_mode_voltage",
+            "min_pulse_event_count",
+            "input_power",
+            "mechanical_output_power",
+            "total_loss_power",
+            "efficiency",
         ]
 
         available_keys = [k for k in csv_keys if k in history]

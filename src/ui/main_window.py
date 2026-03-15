@@ -19,12 +19,14 @@ import numpy as np
 from typing import Optional
 import time
 import logging
+from threading import Lock
 
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
+    QCheckBox,
     QLabel,
     QMessageBox,
     QFileDialog,
@@ -72,8 +74,10 @@ from src.core import (
 )
 from src.control import SVMGenerator, VFController, BaseController, FOCController
 from src.control.transforms import inverse_clarke
+from src.hardware import MockDAQHardware
 from src.utils.config import (
     DEFAULT_MOTOR_PARAMS,
+    FOC_STARTUP_PARAMS,
     SIMULATION_PARAMS,
     VF_CONTROLLER_PARAMS,
     PLOT_STYLE,
@@ -212,7 +216,14 @@ class SimulationThread(QThread):
         self.controller: Optional[BaseController] = None
         self.update_interval = 0.1  # Update GUI every 100ms
         self.max_duration = 0.0  # 0 = infinite
+        self._latest_state_lock = Lock()
+        self._latest_state: dict = {}
         # start flag will be set when set_simulation is called
+
+    def get_latest_state(self) -> dict:
+        """Return the latest simulation snapshot without blocking control loop."""
+        with self._latest_state_lock:
+            return dict(self._latest_state)
 
     def set_simulation(
         self,
@@ -220,12 +231,18 @@ class SimulationThread(QThread):
         svm: SVMGenerator,
         controller: BaseController,
         max_duration: float = 0.0,
+        pwm_frequency_hz: Optional[float] = None,
     ):
         """Assign engine, svm and controller before running thread."""
         self.engine = engine
         self.svm = svm
         self.controller = controller
         self.max_duration = max_duration
+        self.svm.set_sample_time(engine.dt)
+        resolved_pwm_hz = (
+            float(pwm_frequency_hz) if pwm_frequency_hz else (1.0 / engine.dt)
+        )
+        self.engine.set_pwm_frequency(resolved_pwm_hz)
 
     def start_simulation(self):
         """Flag thread to begin executing the simulation loop."""
@@ -243,6 +260,12 @@ class SimulationThread(QThread):
             return
 
         dt = self.engine.dt
+        control_period_s = self.engine.get_control_timing_state().get(
+            "control_period_s", dt
+        )
+        control_period_s = max(float(control_period_s), dt)
+        next_control_time = self.engine.time
+        last_voltages = np.zeros(3, dtype=np.float64)
         last_update = time.time()
         step_count = 0
         sim_start_time = self.engine.time
@@ -267,42 +290,54 @@ class SimulationThread(QThread):
                 except AttributeError:
                     pass
 
-            # Get control output (could be polar or cartesian)
-            ctrl_out = self.controller.update(dt)
-            voltages = None
-            if isinstance(ctrl_out, tuple) and len(ctrl_out) == 2:
-                a, b = ctrl_out
-                # determine whether cartesian
-                if hasattr(self.controller, "output_cartesian") and getattr(
-                    self.controller, "output_cartesian"
-                ):
-                    # use cartesian modulate if available
-                    try:
-                        voltages = self.svm.modulate_cartesian(valpha=a, vbeta=b)
-                    except Exception:
-                        # fallback to manual inverse clarke
-                        va, vb, vc = inverse_clarke(a, b)
-                        voltages = np.array([va, vb, vc])
+            if self.engine.time >= (next_control_time - 1e-15):
+                calc_start = time.perf_counter()
+
+                # Get control output (could be polar or cartesian)
+                ctrl_out = self.controller.update(control_period_s)
+                voltages = None
+                if isinstance(ctrl_out, tuple) and len(ctrl_out) == 2:
+                    a, b = ctrl_out
+                    # determine whether cartesian
+                    if hasattr(self.controller, "output_cartesian") and getattr(
+                        self.controller, "output_cartesian"
+                    ):
+                        # use cartesian modulate if available
+                        try:
+                            voltages = self.svm.modulate_cartesian(valpha=a, vbeta=b)
+                        except Exception:
+                            # fallback to manual inverse clarke
+                            va, vb, vc = inverse_clarke(a, b)
+                            voltages = np.array([va, vb, vc])
+                    else:
+                        # polar
+                        voltages = self.svm.modulate(a, b)
                 else:
-                    # polar
-                    voltages = self.svm.modulate(a, b)
-            else:
-                raise ValueError("Controller returned unexpected output format")
+                    raise ValueError("Controller returned unexpected output format")
+
+                calc_duration_s = time.perf_counter() - calc_start
+                self.engine.record_control_timing(calc_duration_s, control_period_s)
+                last_voltages = voltages
+                next_control_time += control_period_s
+
+            if self.engine is not None:
+                self.engine.set_inverter_telemetry(self.svm.get_last_telemetry())
             # Execute motor step
-            self.engine.step(voltages, log_data=True)
+            self.engine.step(last_voltages, log_data=True)
 
             step_count += 1
 
-            # Periodic GUI update
+            # Periodic snapshot update for GUI polling.
             current_time = time.time()
             if (current_time - last_update) >= self.update_interval:
                 state = self.engine.get_current_state()
                 info = self.engine.get_simulation_info()
-                self.update_signal.emit({**state, **info})
+                with self._latest_state_lock:
+                    self._latest_state = {**state, **info}
                 last_update = current_time
 
-            # Real-time efficiency: small sleep to prevent 100% CPU
-            time.sleep(dt / 4)  # Sleep for 1/4 of simulation step
+            # No GUI operations are executed in this loop; keep the control
+            # path free from GUI timing jitter.
 
         self.finished_signal.emit()
 
@@ -362,7 +397,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Timer for GUI updates when not using thread
         self.update_timer = QTimer()
-        self.update_timer.timeout.connect(self._update_display)
+        self.update_timer.timeout.connect(self._poll_simulation_state)
 
     def _create_ui(self):
         """Create main UI layout."""
@@ -546,7 +581,9 @@ class BLDCMotorControlGUI(QMainWindow):
         except Exception:
             tau_m = None
 
+        pwm_hz = 1.0 / dt_val if dt_val > 0.0 else 0.0
         msg = f"Simulation time step (dt): {dt_val} s\n"
+        msg += f"PWM frequency: {pwm_hz:.1f} Hz\n"
         if tau_e is not None:
             msg += f"Electrical time constant (L/R): {tau_e:.6f} s\n"
         else:
@@ -1022,6 +1059,66 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.vf_group_layout.addWidget(self.vf_speed_ref)
 
+        self.vf_startup_sequence_mode = LabeledComboBox(
+            "Startup Sequence",
+            items=["Disabled", "Enabled"],
+            description="Apply a standard V/f startup with rotor alignment, open-loop ramp, then steady V/f operation.",
+        )
+        self.vf_startup_sequence_mode.setCurrentText(
+            "Enabled"
+            if VF_CONTROLLER_PARAMS["startup_sequence_enabled"]
+            else "Disabled"
+        )
+        self.vf_group_layout.addWidget(self.vf_startup_sequence_mode)
+
+        self.vf_align_time = LabeledSpinBox(
+            "Alignment Time",
+            min_val=0.0,
+            max_val=2.0,
+            initial=VF_CONTROLLER_PARAMS["startup_align_duration_s"],
+            step=0.005,
+            decimals=3,
+            suffix=" s",
+            description="Fixed-angle pre-magnetization time before the V/f ramp starts.",
+        )
+        self.vf_group_layout.addWidget(self.vf_align_time)
+
+        self.vf_align_voltage = LabeledSpinBox(
+            "Alignment Voltage",
+            min_val=0.0,
+            max_val=20.0,
+            initial=VF_CONTROLLER_PARAMS["startup_align_voltage_v"],
+            step=0.1,
+            decimals=2,
+            suffix=" V",
+            description="Voltage magnitude applied during rotor alignment.",
+        )
+        self.vf_group_layout.addWidget(self.vf_align_voltage)
+
+        self.vf_align_angle = LabeledSpinBox(
+            "Alignment Angle",
+            min_val=0.0,
+            max_val=360.0,
+            initial=VF_CONTROLLER_PARAMS["startup_align_angle_deg"],
+            step=1.0,
+            decimals=1,
+            suffix=" deg",
+            description="Electrical angle held during the alignment phase.",
+        )
+        self.vf_group_layout.addWidget(self.vf_align_angle)
+
+        self.vf_ramp_initial_frequency = LabeledSpinBox(
+            "Ramp Initial Frequency",
+            min_val=0.0,
+            max_val=100.0,
+            initial=VF_CONTROLLER_PARAMS["startup_ramp_initial_frequency_hz"],
+            step=0.5,
+            decimals=2,
+            suffix=" Hz",
+            description="Initial forced frequency used immediately after alignment.",
+        )
+        self.vf_group_layout.addWidget(self.vf_ramp_initial_frequency)
+
         self.vf_group.setLayout(self.vf_group_layout)
         layout.addWidget(self.vf_group)
 
@@ -1253,10 +1350,116 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.foc_group_layout.addWidget(self.foc_smo_boundary)
 
+        self.foc_startup_sequence_mode = LabeledComboBox(
+            "Startup Sequence",
+            items=["Disabled", "Enabled"],
+            description="Apply a standard FOC startup: align rotor, use open-loop ramp if sensorless, then hand off to closed-loop observer control.",
+        )
+        self.foc_startup_sequence_mode.setCurrentText(
+            "Enabled" if FOC_STARTUP_PARAMS["startup_sequence_enabled"] else "Disabled"
+        )
+        self.foc_group_layout.addWidget(self.foc_startup_sequence_mode)
+
+        self.foc_align_time = LabeledSpinBox(
+            "Alignment Time",
+            min_val=0.0,
+            max_val=2.0,
+            initial=FOC_STARTUP_PARAMS["startup_align_duration_s"],
+            step=0.005,
+            decimals=3,
+            suffix=" s",
+            description="Duration of the initial rotor alignment phase.",
+        )
+        self.foc_group_layout.addWidget(self.foc_align_time)
+
+        self.foc_align_current = LabeledSpinBox(
+            "Alignment Current",
+            min_val=0.0,
+            max_val=20.0,
+            initial=FOC_STARTUP_PARAMS["startup_align_current_a"],
+            step=0.1,
+            decimals=2,
+            suffix=" A",
+            description="d-axis current used to lock the rotor before acceleration.",
+        )
+        self.foc_group_layout.addWidget(self.foc_align_current)
+
+        self.foc_align_angle = LabeledSpinBox(
+            "Alignment Angle",
+            min_val=0.0,
+            max_val=360.0,
+            initial=FOC_STARTUP_PARAMS["startup_align_angle_deg"],
+            step=1.0,
+            decimals=1,
+            suffix=" deg",
+            description="Electrical angle held during rotor alignment.",
+        )
+        self.foc_group_layout.addWidget(self.foc_align_angle)
+
+        self.foc_open_loop_initial_speed = LabeledSpinBox(
+            "Open-Loop Initial Speed",
+            min_val=0.0,
+            max_val=5000.0,
+            initial=FOC_STARTUP_PARAMS["startup_open_loop_initial_speed_rpm"],
+            step=5.0,
+            decimals=1,
+            suffix=" RPM",
+            description="Forced mechanical speed used at the beginning of the sensorless ramp.",
+        )
+        self.foc_group_layout.addWidget(self.foc_open_loop_initial_speed)
+
+        self.foc_open_loop_target_speed = LabeledSpinBox(
+            "Open-Loop Target Speed",
+            min_val=0.0,
+            max_val=10000.0,
+            initial=FOC_STARTUP_PARAMS["startup_open_loop_target_speed_rpm"],
+            step=10.0,
+            decimals=1,
+            suffix=" RPM",
+            description="Forced mechanical speed reached before closed-loop observer takeover.",
+        )
+        self.foc_group_layout.addWidget(self.foc_open_loop_target_speed)
+
+        self.foc_open_loop_ramp_time = LabeledSpinBox(
+            "Open-Loop Ramp Time",
+            min_val=0.0,
+            max_val=5.0,
+            initial=FOC_STARTUP_PARAMS["startup_open_loop_ramp_time_s"],
+            step=0.01,
+            decimals=3,
+            suffix=" s",
+            description="Duration of the forced-angle acceleration ramp.",
+        )
+        self.foc_group_layout.addWidget(self.foc_open_loop_ramp_time)
+
+        self.foc_open_loop_id_ref = LabeledSpinBox(
+            "Open-Loop d-axis Ref",
+            min_val=-20.0,
+            max_val=20.0,
+            initial=FOC_STARTUP_PARAMS["startup_open_loop_id_ref_a"],
+            step=0.1,
+            decimals=2,
+            suffix=" A",
+            description="d-axis current reference used during forced open-loop acceleration.",
+        )
+        self.foc_group_layout.addWidget(self.foc_open_loop_id_ref)
+
+        self.foc_open_loop_iq_ref = LabeledSpinBox(
+            "Open-Loop q-axis Ref",
+            min_val=-20.0,
+            max_val=20.0,
+            initial=FOC_STARTUP_PARAMS["startup_open_loop_iq_ref_a"],
+            step=0.1,
+            decimals=2,
+            suffix=" A",
+            description="q-axis current reference used to generate torque during the forced ramp.",
+        )
+        self.foc_group_layout.addWidget(self.foc_open_loop_iq_ref)
+
         self.foc_startup_transition_mode = LabeledComboBox(
             "Observer Startup Transition",
             items=["Disabled", "Enabled"],
-            description="When enabled, start with an initial observer mode and automatically hand off to selected observer when startup conditions are met.",
+            description="Automatic observer takeover criteria used after the forced open-loop ramp or for legacy observer-only startup mode.",
         )
         self.foc_group_layout.addWidget(self.foc_startup_transition_mode)
 
@@ -1379,6 +1582,44 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         inverter_layout = QVBoxLayout()
 
+        # Feature toggles let the user dial the realism level up or down without
+        # losing any tuned numerical parameters.
+        self.inverter_enable_device_drop = QCheckBox("Enable Device Drop")
+        self.inverter_enable_device_drop.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_device_drop)
+
+        self.inverter_enable_dead_time = QCheckBox("Enable Dead-Time Distortion")
+        self.inverter_enable_dead_time.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_dead_time)
+
+        self.inverter_enable_conduction = QCheckBox("Enable Conduction Loss")
+        self.inverter_enable_conduction.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_conduction)
+
+        self.inverter_enable_switching = QCheckBox("Enable Switching Loss")
+        self.inverter_enable_switching.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_switching)
+
+        self.inverter_enable_diode = QCheckBox("Enable Freewheel Diode Path")
+        self.inverter_enable_diode.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_diode)
+
+        self.inverter_enable_min_pulse = QCheckBox("Enable Minimum Pulse Suppression")
+        self.inverter_enable_min_pulse.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_min_pulse)
+
+        self.inverter_enable_bus_ripple = QCheckBox("Enable DC-Link Ripple")
+        self.inverter_enable_bus_ripple.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_bus_ripple)
+
+        self.inverter_enable_thermal = QCheckBox("Enable Thermal Coupling")
+        self.inverter_enable_thermal.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_thermal)
+
+        self.inverter_enable_phase_asymmetry = QCheckBox("Enable Phase Asymmetry")
+        self.inverter_enable_phase_asymmetry.setChecked(False)
+        inverter_layout.addWidget(self.inverter_enable_phase_asymmetry)
+
         self.inverter_device_drop = LabeledSpinBox(
             "Device Drop",
             min_val=0.0,
@@ -1419,11 +1660,11 @@ class BLDCMotorControlGUI(QMainWindow):
             "Switching Frequency",
             min_val=0.0,
             max_val=200000.0,
-            initial=0.0,
+            initial=SIMULATION_PARAMS.get("pwm_frequency_hz", 20000.0),
             step=500.0,
             decimals=1,
             suffix=" Hz",
-            description="PWM switching frequency used by switching-loss approximation (0 disables).",
+            description="PWM switching frequency; also sets control update period for FOC and V/f loops.",
         )
         inverter_layout.addWidget(self.inverter_switching_frequency)
 
@@ -1439,8 +1680,281 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         inverter_layout.addWidget(self.inverter_switching_loss_coeff)
 
+        self.inverter_diode_drop = LabeledSpinBox(
+            "Diode Drop",
+            min_val=0.0,
+            max_val=10.0,
+            initial=0.0,
+            step=0.01,
+            decimals=3,
+            suffix=" V",
+            description="Additional freewheel diode drop when current polarity opposes commanded phase voltage.",
+        )
+        inverter_layout.addWidget(self.inverter_diode_drop)
+
+        self.inverter_diode_resistance = LabeledSpinBox(
+            "Diode Resistance",
+            min_val=0.0,
+            max_val=5.0,
+            initial=0.0,
+            step=0.001,
+            decimals=4,
+            suffix=" Ohm",
+            description="Series resistance used in the freewheel diode path model.",
+        )
+        inverter_layout.addWidget(self.inverter_diode_resistance)
+
+        self.inverter_min_pulse_fraction = LabeledSpinBox(
+            "Min Pulse Fraction",
+            min_val=0.0,
+            max_val=0.5,
+            initial=0.0,
+            step=0.001,
+            decimals=4,
+            suffix=" pu",
+            description="Commands smaller than this fraction of half-bus voltage are suppressed to emulate minimum PWM on-time.",
+        )
+        inverter_layout.addWidget(self.inverter_min_pulse_fraction)
+
+        self.inverter_dc_link_capacitance = LabeledSpinBox(
+            "DC-Link Capacitance",
+            min_val=0.0,
+            max_val=1.0,
+            initial=0.0,
+            step=0.0001,
+            decimals=5,
+            suffix=" F",
+            description="Capacitance used by the reduced-order DC-link ripple model.",
+        )
+        inverter_layout.addWidget(self.inverter_dc_link_capacitance)
+
+        self.inverter_dc_link_source_resistance = LabeledSpinBox(
+            "DC-Link Source Resistance",
+            min_val=0.0,
+            max_val=5.0,
+            initial=0.0,
+            step=0.001,
+            decimals=4,
+            suffix=" Ohm",
+            description="Source resistance that recharges the DC-link capacitor in the ripple model.",
+        )
+        inverter_layout.addWidget(self.inverter_dc_link_source_resistance)
+
+        self.inverter_dc_link_esr = LabeledSpinBox(
+            "DC-Link ESR",
+            min_val=0.0,
+            max_val=5.0,
+            initial=0.0,
+            step=0.001,
+            decimals=4,
+            suffix=" Ohm",
+            description="Equivalent series resistance used to compute instantaneous DC-link sag.",
+        )
+        inverter_layout.addWidget(self.inverter_dc_link_esr)
+
+        self.inverter_thermal_resistance = LabeledSpinBox(
+            "Thermal Resistance",
+            min_val=0.0,
+            max_val=20.0,
+            initial=0.0,
+            step=0.01,
+            decimals=3,
+            suffix=" K/W",
+            description="Equivalent junction-to-ambient thermal resistance for inverter devices.",
+        )
+        inverter_layout.addWidget(self.inverter_thermal_resistance)
+
+        self.inverter_thermal_capacitance = LabeledSpinBox(
+            "Thermal Capacitance",
+            min_val=0.001,
+            max_val=10000.0,
+            initial=1.0,
+            step=0.1,
+            decimals=3,
+            suffix=" J/K",
+            description="Thermal capacitance used by the reduced-order junction temperature model.",
+        )
+        inverter_layout.addWidget(self.inverter_thermal_capacitance)
+
+        self.inverter_ambient_temp = LabeledSpinBox(
+            "Ambient Temperature",
+            min_val=-40.0,
+            max_val=200.0,
+            initial=25.0,
+            step=1.0,
+            decimals=1,
+            suffix=" C",
+            description="Ambient temperature used by the inverter thermal model.",
+        )
+        inverter_layout.addWidget(self.inverter_ambient_temp)
+
+        self.inverter_temp_coeff_resistance = LabeledSpinBox(
+            "Resistance Temp Coeff",
+            min_val=0.0,
+            max_val=0.05,
+            initial=0.0,
+            step=0.0005,
+            decimals=5,
+            suffix=" 1/C",
+            description="Relative resistance increase per degree C in the thermal coupling model.",
+        )
+        inverter_layout.addWidget(self.inverter_temp_coeff_resistance)
+
+        self.inverter_temp_coeff_drop = LabeledSpinBox(
+            "Drop Temp Coeff",
+            min_val=0.0,
+            max_val=0.05,
+            initial=0.0,
+            step=0.0005,
+            decimals=5,
+            suffix=" 1/C",
+            description="Relative device-drop increase per degree C in the thermal coupling model.",
+        )
+        inverter_layout.addWidget(self.inverter_temp_coeff_drop)
+
+        self.inverter_phase_voltage_scale_a = LabeledSpinBox(
+            "Phase A Voltage Scale",
+            min_val=0.5,
+            max_val=1.5,
+            initial=1.0,
+            step=0.001,
+            decimals=4,
+            suffix="",
+            description="Phase A mismatch multiplier applied to commanded phase voltage.",
+        )
+        inverter_layout.addWidget(self.inverter_phase_voltage_scale_a)
+
+        self.inverter_phase_voltage_scale_b = LabeledSpinBox(
+            "Phase B Voltage Scale",
+            min_val=0.5,
+            max_val=1.5,
+            initial=1.0,
+            step=0.001,
+            decimals=4,
+            suffix="",
+            description="Phase B mismatch multiplier applied to commanded phase voltage.",
+        )
+        inverter_layout.addWidget(self.inverter_phase_voltage_scale_b)
+
+        self.inverter_phase_voltage_scale_c = LabeledSpinBox(
+            "Phase C Voltage Scale",
+            min_val=0.5,
+            max_val=1.5,
+            initial=1.0,
+            step=0.001,
+            decimals=4,
+            suffix="",
+            description="Phase C mismatch multiplier applied to commanded phase voltage.",
+        )
+        inverter_layout.addWidget(self.inverter_phase_voltage_scale_c)
+
+        self.inverter_phase_drop_scale_a = LabeledSpinBox(
+            "Phase A Drop Scale",
+            min_val=0.5,
+            max_val=1.5,
+            initial=1.0,
+            step=0.001,
+            decimals=4,
+            suffix="",
+            description="Phase A mismatch multiplier applied to inverter loss/drop terms.",
+        )
+        inverter_layout.addWidget(self.inverter_phase_drop_scale_a)
+
+        self.inverter_phase_drop_scale_b = LabeledSpinBox(
+            "Phase B Drop Scale",
+            min_val=0.5,
+            max_val=1.5,
+            initial=1.0,
+            step=0.001,
+            decimals=4,
+            suffix="",
+            description="Phase B mismatch multiplier applied to inverter loss/drop terms.",
+        )
+        inverter_layout.addWidget(self.inverter_phase_drop_scale_b)
+
+        self.inverter_phase_drop_scale_c = LabeledSpinBox(
+            "Phase C Drop Scale",
+            min_val=0.5,
+            max_val=1.5,
+            initial=1.0,
+            step=0.001,
+            decimals=4,
+            suffix="",
+            description="Phase C mismatch multiplier applied to inverter loss/drop terms.",
+        )
+        inverter_layout.addWidget(self.inverter_phase_drop_scale_c)
+
         self.inverter_group.setLayout(inverter_layout)
         layout.addWidget(self.inverter_group)
+
+        self.mcu_budget_group = AccessibleGroupBox(
+            "MCU Budget Estimator",
+            "Estimate target MCU control-loop load from measured calculation duration.",
+        )
+        mcu_layout = QVBoxLayout()
+
+        self.mcu_perf_ratio = LabeledSpinBox(
+            "Host-to-MCU Slowdown",
+            min_val=0.1,
+            max_val=1000.0,
+            initial=40.0,
+            step=0.5,
+            decimals=2,
+            suffix=" x",
+            description="Estimated slowdown from host runtime to target MCU runtime.",
+        )
+        mcu_layout.addWidget(self.mcu_perf_ratio)
+
+        self.mcu_reference_clock_mhz = LabeledSpinBox(
+            "Reference Clock",
+            min_val=1.0,
+            max_val=1000.0,
+            initial=120.0,
+            step=1.0,
+            decimals=1,
+            suffix=" MHz",
+            description="Reference clock used for slowdown normalization.",
+        )
+        mcu_layout.addWidget(self.mcu_reference_clock_mhz)
+
+        self.mcu_target_clock_1_mhz = LabeledSpinBox(
+            "Target Clock 1",
+            min_val=1.0,
+            max_val=1000.0,
+            initial=48.0,
+            step=1.0,
+            decimals=1,
+            suffix=" MHz",
+            description="First target MCU clock for load estimation.",
+        )
+        mcu_layout.addWidget(self.mcu_target_clock_1_mhz)
+
+        self.mcu_target_clock_2_mhz = LabeledSpinBox(
+            "Target Clock 2",
+            min_val=1.0,
+            max_val=1000.0,
+            initial=72.0,
+            step=1.0,
+            decimals=1,
+            suffix=" MHz",
+            description="Second target MCU clock for load estimation.",
+        )
+        mcu_layout.addWidget(self.mcu_target_clock_2_mhz)
+
+        self.mcu_target_clock_3_mhz = LabeledSpinBox(
+            "Target Clock 3",
+            min_val=1.0,
+            max_val=1000.0,
+            initial=120.0,
+            step=1.0,
+            decimals=1,
+            suffix=" MHz",
+            description="Third target MCU clock for load estimation.",
+        )
+        mcu_layout.addWidget(self.mcu_target_clock_3_mhz)
+
+        self.mcu_budget_group.setLayout(mcu_layout)
+        layout.addWidget(self.mcu_budget_group)
 
         self.pfc_group = AccessibleGroupBox(
             "Power Factor Correction",
@@ -1517,6 +2031,50 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.pfc_group.setLayout(pfc_layout)
         layout.addWidget(self.pfc_group)
+
+        self.hardware_group = AccessibleGroupBox(
+            "Communication Interface",
+            "Optional communication backend settings (for example CAN/LIN style I/O). Disable to run pure software simulation.",
+        )
+        hardware_layout = QVBoxLayout()
+
+        self.hardware_enable_backend = QCheckBox("Enable Communication Backend")
+        self.hardware_enable_backend.setChecked(False)
+        hardware_layout.addWidget(self.hardware_enable_backend)
+
+        self.hardware_backend_type = LabeledComboBox(
+            "Communication Backend",
+            items=["Mock DAQ"],
+            description="Communication backend implementation used for command/feedback I/O.",
+        )
+        hardware_layout.addWidget(self.hardware_backend_type)
+
+        self.hardware_noise_std = LabeledSpinBox(
+            "Mock Noise Std",
+            min_val=0.0,
+            max_val=10.0,
+            initial=0.0,
+            step=0.001,
+            decimals=4,
+            suffix=" V",
+            description="Standard deviation of Gaussian feedback voltage noise for the Mock DAQ backend.",
+        )
+        hardware_layout.addWidget(self.hardware_noise_std)
+
+        self.hardware_seed = LabeledSpinBox(
+            "Mock Random Seed",
+            min_val=0,
+            max_val=1000000,
+            initial=0,
+            step=1,
+            decimals=0,
+            suffix="",
+            description="Deterministic random seed used by the Mock DAQ noise generator.",
+        )
+        hardware_layout.addWidget(self.hardware_seed)
+
+        self.hardware_group.setLayout(hardware_layout)
+        layout.addWidget(self.hardware_group)
 
         layout.addStretch()
 
@@ -1604,6 +2162,10 @@ class BLDCMotorControlGUI(QMainWindow):
                 "Confidence Crossings Down",
                 "count",
             ),
+            ("startup_sequence_enabled", "Startup Sequence Enabled", "0/1"),
+            ("startup_phase_code", "Startup Phase Code", "0/1/2/3"),
+            ("startup_sequence_elapsed_s", "Startup Sequence Elapsed", "s"),
+            ("startup_phase_elapsed_s", "Startup Phase Elapsed", "s"),
             ("startup_handoff_count", "Startup Handoff Count", "count"),
             (
                 "startup_last_handoff_time_s",
@@ -1635,6 +2197,24 @@ class BLDCMotorControlGUI(QMainWindow):
             ("efficiency", "System Efficiency", "0-1"),
             ("mechanical_output_power_w", "Mechanical Output Power", "W"),
             ("total_loss_power_w", "Estimated Total Loss", "W"),
+            ("effective_dc_voltage", "Effective DC-Link Voltage", "V"),
+            ("dc_link_ripple_v", "DC-Link Ripple", "V"),
+            ("dc_link_bus_current_a", "DC-Link Bus Current", "A"),
+            ("inverter_total_loss_power_w", "Inverter Total Loss", "W"),
+            ("junction_temperature_c", "Inverter Junction Temp", "C"),
+            ("common_mode_voltage", "Common-Mode Voltage", "V"),
+            ("control_calc_duration_us", "Control Calc Duration", "us"),
+            ("control_cpu_load_pct", "Control CPU Load", "%"),
+            ("control_cpu_load_avg_pct", "Control CPU Load Avg", "%"),
+            ("mcu_load_target_1_pct", "MCU Load @ Target 1", "%"),
+            ("mcu_load_target_2_pct", "MCU Load @ Target 2", "%"),
+            ("mcu_load_target_3_pct", "MCU Load @ Target 3", "%"),
+            ("hardware_enabled", "Communication Enabled", "0/1"),
+            ("hardware_connected", "Communication Connected", "0/1"),
+            ("hardware_backend_code", "Communication Backend Code", "0/1/2"),
+            ("hardware_write_count", "Communication Write Count", "count"),
+            ("hardware_read_count", "Communication Read Count", "count"),
+            ("hardware_io_error_flag", "Communication I/O Error Flag", "0/1"),
             ("time", "Simulation Time", "s"),
         ]
 
@@ -1775,6 +2355,13 @@ class BLDCMotorControlGUI(QMainWindow):
         btn_plot_efficiency.clicked.connect(self._plot_efficiency_analysis)
         button_layout.addWidget(btn_plot_efficiency)
 
+        btn_plot_inverter = AccessibleButton(
+            "Plot Inverter Analysis",
+            "Generate bus voltage, inverter loss, temperature, and common-mode trends",
+        )
+        btn_plot_inverter.clicked.connect(self._plot_inverter_analysis)
+        button_layout.addWidget(btn_plot_inverter)
+
         btn_efficiency_tips = AccessibleButton(
             "Suggest Efficiency Tuning",
             "Show heuristic efficiency recommendations from current settings",
@@ -1807,10 +2394,17 @@ class BLDCMotorControlGUI(QMainWindow):
         if hasattr(self, "supply_type"):
             self.supply_type.setCurrentText("Constant")
             self._on_supply_type_changed("Constant")
+        if hasattr(self, "hardware_enable_backend"):
+            self.hardware_enable_backend.setChecked(False)
         self._apply_to_simulation()
 
     def _apply_to_simulation(self):
         """Apply current UI parameters to simulation."""
+        requested_pwm_hz = float(self.inverter_switching_frequency.value())
+        if requested_pwm_hz <= 0.0:
+            requested_pwm_hz = float(SIMULATION_PARAMS.get("pwm_frequency_hz", 20000.0))
+        pwm_period_s = 1.0 / requested_pwm_hz
+
         # Create motor
         params = MotorParameters(
             nominal_voltage=self.param_voltage.value(),
@@ -1828,7 +2422,7 @@ class BLDCMotorControlGUI(QMainWindow):
             emf_shape=self.param_emf_shape.currentText(),
         )
 
-        self.motor = BLDCMotor(params, dt=SIMULATION_PARAMS["dt"])
+        self.motor = BLDCMotor(params, dt=pwm_period_s)
         # If Ld/Lq provided in UI, update params
         try:
             params.ld = float(getattr(self, "param_ld", None).value())
@@ -1864,9 +2458,32 @@ class BLDCMotorControlGUI(QMainWindow):
 
             supply = ConstantSupply(voltage=self.supply_constant_voltage.value())
 
+        hardware_interface = None
+        if (
+            hasattr(self, "hardware_enable_backend")
+            and self.hardware_enable_backend.isChecked()
+            and getattr(self, "hardware_backend_type", None)
+            and self.hardware_backend_type.currentText() == "Mock DAQ"
+        ):
+            hardware_interface = MockDAQHardware(
+                noise_std=self.hardware_noise_std.value(),
+                seed=int(self.hardware_seed.value()),
+            )
+
         # Create simulation engine
         self.engine = SimulationEngine(
-            self.motor, load, dt=SIMULATION_PARAMS["dt"], supply_profile=supply
+            self.motor,
+            load,
+            dt=pwm_period_s,
+            supply_profile=supply,
+            hardware_interface=hardware_interface,
+        )
+        self.engine.set_pwm_frequency(requested_pwm_hz)
+        self.engine.configure_hardware_interface(
+            enabled=bool(
+                hasattr(self, "hardware_enable_backend")
+                and self.hardware_enable_backend.isChecked()
+            )
         )
         self.engine.configure_power_factor_control(
             enabled=self.pfc_mode.currentText() == "Enabled",
@@ -1879,12 +2496,39 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Create SVM generator (cartesian capable if needed later)
         self.svm = SVMGenerator(dc_voltage=SIMULATION_PARAMS["dc_voltage"])
+        self.svm.set_sample_time(self.engine.dt)
         self.svm.set_nonidealities(
             device_drop_v=self.inverter_device_drop.value(),
             dead_time_fraction=self.inverter_dead_time_fraction.value(),
             conduction_resistance_ohm=self.inverter_conduction_resistance.value(),
-            switching_frequency_hz=self.inverter_switching_frequency.value(),
+            switching_frequency_hz=requested_pwm_hz,
             switching_loss_coeff_v_per_a_khz=self.inverter_switching_loss_coeff.value(),
+            enable_device_drop=self.inverter_enable_device_drop.isChecked(),
+            enable_dead_time=self.inverter_enable_dead_time.isChecked(),
+            enable_conduction_drop=self.inverter_enable_conduction.isChecked(),
+            enable_switching_loss=self.inverter_enable_switching.isChecked(),
+            enable_diode_freewheel=self.inverter_enable_diode.isChecked(),
+            diode_drop_v=self.inverter_diode_drop.value(),
+            diode_resistance_ohm=self.inverter_diode_resistance.value(),
+            enable_min_pulse=self.inverter_enable_min_pulse.isChecked(),
+            min_pulse_fraction=self.inverter_min_pulse_fraction.value(),
+            enable_bus_ripple=self.inverter_enable_bus_ripple.isChecked(),
+            dc_link_capacitance_f=self.inverter_dc_link_capacitance.value(),
+            dc_link_source_resistance_ohm=self.inverter_dc_link_source_resistance.value(),
+            dc_link_esr_ohm=self.inverter_dc_link_esr.value(),
+            enable_thermal_coupling=self.inverter_enable_thermal.isChecked(),
+            thermal_resistance_k_per_w=self.inverter_thermal_resistance.value(),
+            thermal_capacitance_j_per_k=self.inverter_thermal_capacitance.value(),
+            ambient_temperature_c=self.inverter_ambient_temp.value(),
+            temp_coeff_resistance_per_c=self.inverter_temp_coeff_resistance.value(),
+            temp_coeff_drop_per_c=self.inverter_temp_coeff_drop.value(),
+            enable_phase_asymmetry=self.inverter_enable_phase_asymmetry.isChecked(),
+            phase_voltage_scale_a=self.inverter_phase_voltage_scale_a.value(),
+            phase_voltage_scale_b=self.inverter_phase_voltage_scale_b.value(),
+            phase_voltage_scale_c=self.inverter_phase_voltage_scale_c.value(),
+            phase_drop_scale_a=self.inverter_phase_drop_scale_a.value(),
+            phase_drop_scale_b=self.inverter_phase_drop_scale_b.value(),
+            phase_drop_scale_c=self.inverter_phase_drop_scale_c.value(),
         )
 
         # Determine controller type
@@ -1898,6 +2542,13 @@ class BLDCMotorControlGUI(QMainWindow):
             )
             self.controller.set_frequency_slew_rate(self.vf_freq_slew.value())
             self.controller.set_speed_reference(self.vf_speed_ref.value())
+            self.controller.set_startup_sequence(
+                enable=self.vf_startup_sequence_mode.currentText() == "Enabled",
+                align_duration_s=self.vf_align_time.value(),
+                align_voltage_v=self.vf_align_voltage.value(),
+                align_angle_deg=self.vf_align_angle.value(),
+                ramp_initial_frequency_hz=self.vf_ramp_initial_frequency.value(),
+            )
         else:
             # FOC controller configuration
             use_conc = self.foc_transform.currentText() == "Concordia"
@@ -1945,6 +2596,17 @@ class BLDCMotorControlGUI(QMainWindow):
                 lpf_alpha=self.foc_smo_lpf_alpha.value(),
                 boundary=self.foc_smo_boundary.value(),
             )
+            self.controller.set_startup_sequence(
+                enabled=self.foc_startup_sequence_mode.currentText() == "Enabled",
+                align_duration_s=self.foc_align_time.value(),
+                align_current_a=self.foc_align_current.value(),
+                align_angle_deg=self.foc_align_angle.value(),
+                open_loop_initial_speed_rpm=self.foc_open_loop_initial_speed.value(),
+                open_loop_target_speed_rpm=self.foc_open_loop_target_speed.value(),
+                open_loop_ramp_time_s=self.foc_open_loop_ramp_time.value(),
+                open_loop_id_ref_a=self.foc_open_loop_id_ref.value(),
+                open_loop_iq_ref_a=self.foc_open_loop_iq_ref.value(),
+            )
             self.controller.set_startup_transition(
                 enabled=self.foc_startup_transition_mode.currentText() == "Enabled",
                 initial_mode=self.foc_startup_initial_observer.currentText(),
@@ -1979,11 +2641,15 @@ class BLDCMotorControlGUI(QMainWindow):
         self.sim_thread = SimulationThread()
         duration = self.sim_duration.value()
         self.sim_thread.set_simulation(
-            self.engine, self.svm, self.controller, max_duration=duration
+            self.engine,
+            self.svm,
+            self.controller,
+            max_duration=duration,
+            pwm_frequency_hz=float(1.0 / self.engine.dt),
         )
-        self.sim_thread.update_signal.connect(self._update_monitoring)
         self.sim_thread.finished_signal.connect(self._on_simulation_finished)
         self.sim_thread.start_simulation()
+        self.update_timer.start(int(self.sim_thread.update_interval * 1000.0))
 
         msg = f"Simulation started. Duration: {'∞ (infinite)' if duration == 0 else f'{duration}s'}"
         speak(msg)
@@ -1998,6 +2664,7 @@ class BLDCMotorControlGUI(QMainWindow):
         if self.sim_thread:
             self.sim_thread.stop_simulation()
             self.sim_thread.wait()
+        self.update_timer.stop()
 
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
@@ -2046,16 +2713,80 @@ class BLDCMotorControlGUI(QMainWindow):
             if isinstance(state.get("efficiency_metrics", {}), dict)
             else {}
         )
+        inverter_state = (
+            state.get("inverter", {})
+            if isinstance(state.get("inverter", {}), dict)
+            else {}
+        )
+        control_timing_state = (
+            state.get("control_timing", {})
+            if isinstance(state.get("control_timing", {}), dict)
+            else {}
+        )
+        hardware_state = (
+            state.get("hardware", {})
+            if isinstance(state.get("hardware", {}), dict)
+            else {}
+        )
         if not pfc_state and self.engine is not None:
             pfc_state = self.engine.get_power_factor_control_state()
         if not efficiency_state and self.engine is not None:
             efficiency_state = self.engine.get_efficiency_state()
+        if not inverter_state and self.engine is not None:
+            inverter_state = self.engine.get_inverter_state()
+        if not control_timing_state and self.engine is not None:
+            control_timing_state = self.engine.get_control_timing_state()
+
+        calc_duration_s = float(control_timing_state.get("calc_duration_s", 0.0))
+        control_period_s = max(
+            float(
+                control_timing_state.get(
+                    "control_period_s", self.engine.dt if self.engine else 1e-4
+                )
+            ),
+            1e-12,
+        )
+        slowdown = max(float(self.mcu_perf_ratio.value()), 1e-9)
+        ref_clock = max(float(self.mcu_reference_clock_mhz.value()), 1e-9)
+        target_1 = max(float(self.mcu_target_clock_1_mhz.value()), 1e-9)
+        target_2 = max(float(self.mcu_target_clock_2_mhz.value()), 1e-9)
+        target_3 = max(float(self.mcu_target_clock_3_mhz.value()), 1e-9)
+
+        def _mcu_load_pct(target_clock_mhz: float) -> float:
+            scaled_duration = (
+                calc_duration_s * slowdown * (ref_clock / target_clock_mhz)
+            )
+            return 100.0 * scaled_duration / control_period_s
+
+        mcu_load_1 = _mcu_load_pct(target_1)
+        mcu_load_2 = _mcu_load_pct(target_2)
+        mcu_load_3 = _mcu_load_pct(target_3)
+        if not hardware_state and self.engine is not None:
+            hardware_state = self.engine.get_hardware_state()
         observer_mode_code = 0.0
+        startup_phase_code = 0.0
         if isinstance(self.controller, FOCController):
             ctrl_state = self.controller.get_state()
             observer_mode = str(ctrl_state.get("angle_observer_mode", "Measured"))
-            mode_to_code = {"Measured": 0.0, "PLL": 1.0, "SMO": 2.0}
+            startup_phase_code = float(ctrl_state.get("startup_phase_code", 0.0))
+            mode_to_code = {
+                "Measured": 0.0,
+                "PLL": 1.0,
+                "SMO": 2.0,
+                "Alignment": 3.0,
+                "OpenLoop": 4.0,
+            }
             observer_mode_code = mode_to_code.get(observer_mode, -1.0)
+        elif self.controller is not None:
+            ctrl_state = self.controller.get_state()
+            startup_phase_code = float(ctrl_state.get("startup_phase_code", 0.0))
+
+        backend_name = str(hardware_state.get("backend", "none")).lower()
+        backend_code_map = {"none": 0.0, "mock-daq": 1.0}
+        hardware_backend_code = backend_code_map.get(backend_name, 2.0)
+        hardware_io_error_flag = (
+            1.0 if str(hardware_state.get("last_io_error", "")) else 0.0
+        )
 
         # Update accessible text blocks with new values
         if hasattr(self, "status_blocks"):
@@ -2069,8 +2800,12 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["back_emf_a"].update_value(state.get("back_emf_a", 0))
             self.status_blocks["back_emf_b"].update_value(state.get("back_emf_b", 0))
             self.status_blocks["back_emf_c"].update_value(state.get("back_emf_c", 0))
-            self.status_blocks["id_ref"].update_value(ctrl_state.get("id_ref", 0.0))
-            self.status_blocks["iq_ref"].update_value(ctrl_state.get("iq_ref", 0.0))
+            self.status_blocks["id_ref"].update_value(
+                ctrl_state.get("id_ref_command", ctrl_state.get("id_ref", 0.0))
+            )
+            self.status_blocks["iq_ref"].update_value(
+                ctrl_state.get("iq_ref_command", ctrl_state.get("iq_ref", 0.0))
+            )
             self.status_blocks["speed_error"].update_value(
                 ctrl_state.get("speed_error", 0.0)
             )
@@ -2135,6 +2870,16 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["observer_confidence_crossings_down"].update_value(
                 ctrl_state.get("observer_confidence_crossings_down", 0.0)
             )
+            self.status_blocks["startup_sequence_enabled"].update_value(
+                1.0 if ctrl_state.get("startup_sequence_enabled", False) else 0.0
+            )
+            self.status_blocks["startup_phase_code"].update_value(startup_phase_code)
+            self.status_blocks["startup_sequence_elapsed_s"].update_value(
+                ctrl_state.get("startup_sequence_elapsed_s", 0.0)
+            )
+            self.status_blocks["startup_phase_elapsed_s"].update_value(
+                ctrl_state.get("startup_phase_elapsed_s", 0.0)
+            )
             self.status_blocks["startup_handoff_count"].update_value(
                 ctrl_state.get("startup_handoff_count", 0.0)
             )
@@ -2179,6 +2924,54 @@ class BLDCMotorControlGUI(QMainWindow):
             )
             self.status_blocks["total_loss_power_w"].update_value(
                 float(efficiency_state.get("total_loss_power_w", 0.0))
+            )
+            self.status_blocks["effective_dc_voltage"].update_value(
+                float(inverter_state.get("effective_dc_voltage", 0.0))
+            )
+            self.status_blocks["dc_link_ripple_v"].update_value(
+                float(inverter_state.get("dc_link_ripple_v", 0.0))
+            )
+            self.status_blocks["dc_link_bus_current_a"].update_value(
+                float(inverter_state.get("dc_link_bus_current_a", 0.0))
+            )
+            self.status_blocks["inverter_total_loss_power_w"].update_value(
+                float(inverter_state.get("total_inverter_loss_power_w", 0.0))
+            )
+            self.status_blocks["junction_temperature_c"].update_value(
+                float(inverter_state.get("junction_temperature_c", 0.0))
+            )
+            self.status_blocks["common_mode_voltage"].update_value(
+                float(inverter_state.get("common_mode_voltage", 0.0))
+            )
+            self.status_blocks["control_calc_duration_us"].update_value(
+                1e6 * float(control_timing_state.get("calc_duration_s", 0.0))
+            )
+            self.status_blocks["control_cpu_load_pct"].update_value(
+                float(control_timing_state.get("cpu_load_pct", 0.0))
+            )
+            self.status_blocks["control_cpu_load_avg_pct"].update_value(
+                float(control_timing_state.get("cpu_load_avg_pct", 0.0))
+            )
+            self.status_blocks["mcu_load_target_1_pct"].update_value(mcu_load_1)
+            self.status_blocks["mcu_load_target_2_pct"].update_value(mcu_load_2)
+            self.status_blocks["mcu_load_target_3_pct"].update_value(mcu_load_3)
+            self.status_blocks["hardware_enabled"].update_value(
+                1.0 if hardware_state.get("enabled", False) else 0.0
+            )
+            self.status_blocks["hardware_connected"].update_value(
+                1.0 if hardware_state.get("connected", False) else 0.0
+            )
+            self.status_blocks["hardware_backend_code"].update_value(
+                hardware_backend_code
+            )
+            self.status_blocks["hardware_write_count"].update_value(
+                float(hardware_state.get("write_count", 0.0))
+            )
+            self.status_blocks["hardware_read_count"].update_value(
+                float(hardware_state.get("read_count", 0.0))
+            )
+            self.status_blocks["hardware_io_error_flag"].update_value(
+                hardware_io_error_flag
             )
             self.status_blocks["time"].update_value(time_val)
         else:
@@ -2312,6 +3105,60 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_labels["total_loss_power_w"].setText(
                 f"Estimated Total Loss: {efficiency_state.get('total_loss_power_w', 0.0):.3f} W"
             )
+            self.status_labels["effective_dc_voltage"].setText(
+                f"Effective DC-Link Voltage: {inverter_state.get('effective_dc_voltage', 0.0):.3f} V"
+            )
+            self.status_labels["dc_link_ripple_v"].setText(
+                f"DC-Link Ripple: {inverter_state.get('dc_link_ripple_v', 0.0):.3f} V"
+            )
+            self.status_labels["dc_link_bus_current_a"].setText(
+                f"DC-Link Bus Current: {inverter_state.get('dc_link_bus_current_a', 0.0):.3f} A"
+            )
+            self.status_labels["inverter_total_loss_power_w"].setText(
+                f"Inverter Total Loss: {inverter_state.get('total_inverter_loss_power_w', 0.0):.3f} W"
+            )
+            self.status_labels["junction_temperature_c"].setText(
+                f"Inverter Junction Temp: {inverter_state.get('junction_temperature_c', 0.0):.3f} C"
+            )
+            self.status_labels["common_mode_voltage"].setText(
+                f"Common-Mode Voltage: {inverter_state.get('common_mode_voltage', 0.0):.3f} V"
+            )
+            self.status_labels["control_calc_duration_us"].setText(
+                f"Control Calc Duration: {1e6 * float(control_timing_state.get('calc_duration_s', 0.0)):.3f} us"
+            )
+            self.status_labels["control_cpu_load_pct"].setText(
+                f"Control CPU Load: {float(control_timing_state.get('cpu_load_pct', 0.0)):.3f} %"
+            )
+            self.status_labels["control_cpu_load_avg_pct"].setText(
+                f"Control CPU Load Avg: {float(control_timing_state.get('cpu_load_avg_pct', 0.0)):.3f} %"
+            )
+            self.status_labels["mcu_load_target_1_pct"].setText(
+                f"MCU Load @ Target 1: {mcu_load_1:.3f} %"
+            )
+            self.status_labels["mcu_load_target_2_pct"].setText(
+                f"MCU Load @ Target 2: {mcu_load_2:.3f} %"
+            )
+            self.status_labels["mcu_load_target_3_pct"].setText(
+                f"MCU Load @ Target 3: {mcu_load_3:.3f} %"
+            )
+            self.status_labels["hardware_enabled"].setText(
+                f"Communication Enabled: {1 if hardware_state.get('enabled', False) else 0}"
+            )
+            self.status_labels["hardware_connected"].setText(
+                f"Communication Connected: {1 if hardware_state.get('connected', False) else 0}"
+            )
+            self.status_labels["hardware_backend_code"].setText(
+                f"Communication Backend Code: {hardware_backend_code:.0f}"
+            )
+            self.status_labels["hardware_write_count"].setText(
+                f"Communication Write Count: {int(hardware_state.get('write_count', 0))}"
+            )
+            self.status_labels["hardware_read_count"].setText(
+                f"Communication Read Count: {int(hardware_state.get('read_count', 0))}"
+            )
+            self.status_labels["hardware_io_error_flag"].setText(
+                f"Communication I/O Error Flag: {int(hardware_io_error_flag)}"
+            )
             self.status_labels["time"].setText(f"Simulation Time: {time_val:.3f} s")
 
             # Update accessible descriptions
@@ -2415,11 +3262,20 @@ class BLDCMotorControlGUI(QMainWindow):
             info = self.engine.get_simulation_info()
             self._update_monitoring({**state, **info})
 
+    def _poll_simulation_state(self):
+        """Poll latest simulation snapshot without coupling GUI to control timing."""
+        if self.sim_thread is None:
+            return
+        snapshot = self.sim_thread.get_latest_state()
+        if snapshot:
+            self._update_monitoring(snapshot)
+
     def _on_simulation_finished(self):
         """Handle simulation thread completion."""
         self.is_running = False
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
+        self.update_timer.stop()
 
     def _on_load_type_changed(self):
         """Handle load type change."""
@@ -2449,6 +3305,38 @@ class BLDCMotorControlGUI(QMainWindow):
                 "control_params": {
                     "v_nominal": self.vf_v_nominal.value(),
                     "f_nominal": self.vf_f_nominal.value(),
+                    "vf_startup_sequence_enabled": self.vf_startup_sequence_mode.currentText()
+                    == "Enabled",
+                    "vf_align_duration_s": self.vf_align_time.value(),
+                    "vf_align_voltage_v": self.vf_align_voltage.value(),
+                    "vf_align_angle_deg": self.vf_align_angle.value(),
+                    "vf_ramp_initial_frequency_hz": self.vf_ramp_initial_frequency.value(),
+                    "foc_startup_sequence_enabled": self.foc_startup_sequence_mode.currentText()
+                    == "Enabled",
+                    "foc_align_duration_s": self.foc_align_time.value(),
+                    "foc_align_current_a": self.foc_align_current.value(),
+                    "foc_align_angle_deg": self.foc_align_angle.value(),
+                    "foc_open_loop_initial_speed_rpm": self.foc_open_loop_initial_speed.value(),
+                    "foc_open_loop_target_speed_rpm": self.foc_open_loop_target_speed.value(),
+                    "foc_open_loop_ramp_time_s": self.foc_open_loop_ramp_time.value(),
+                    "foc_open_loop_id_ref_a": self.foc_open_loop_id_ref.value(),
+                    "foc_open_loop_iq_ref_a": self.foc_open_loop_iq_ref.value(),
+                },
+                "inverter_params": self.svm.get_realism_state() if self.svm else {},
+                "communication_params": {
+                    "enabled": bool(
+                        hasattr(self, "hardware_enable_backend")
+                        and self.hardware_enable_backend.isChecked()
+                    ),
+                    "backend": self.hardware_backend_type.currentText()
+                    if hasattr(self, "hardware_backend_type")
+                    else "none",
+                    "mock_noise_std": self.hardware_noise_std.value()
+                    if hasattr(self, "hardware_noise_std")
+                    else 0.0,
+                    "mock_seed": int(self.hardware_seed.value())
+                    if hasattr(self, "hardware_seed")
+                    else 0,
                 },
             }
 
@@ -2593,6 +3481,38 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         figure.show()
         speak("Efficiency analysis plot generated.")
+
+    def _plot_inverter_analysis(self):
+        """Generate dedicated inverter-realism telemetry plot."""
+        if not self.engine or len(self.engine.get_history()["time"]) == 0:
+            QMessageBox.warning(self, "Warning", "No data to plot!")
+            return
+
+        history = self.engine.get_history()
+        grid_on = (
+            getattr(self, "plot_grid_checkbox", None)
+            and self.plot_grid_checkbox.isChecked()
+        )
+        grid_spacing = (
+            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
+        )
+        minor_grid = (
+            getattr(self, "plot_minor_grid_checkbox", None)
+            and self.plot_minor_grid_checkbox.isChecked()
+        )
+        grid_spacing_y = (
+            getattr(self, "plot_grid_spacing_y", None)
+            and self.plot_grid_spacing_y.value()
+        )
+        figure = SimulationPlotter.create_inverter_analysis_plot(
+            history,
+            grid_on=grid_on,
+            grid_spacing=grid_spacing,
+            minor_grid=minor_grid,
+            grid_spacing_y=grid_spacing_y,
+        )
+        figure.show()
+        speak("Inverter analysis plot generated.")
 
     def _show_efficiency_recommendations(self):
         """Show heuristic efficiency tuning suggestions for the current setup."""

@@ -388,6 +388,25 @@ FOC Observer and Inverter Tuning Guide
 Recent control updates add selectable angle observers and non-ideal inverter terms.
 Use the guidance below as practical starting points before fine tuning.
 
+Advanced inverter realism blocks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The inverter model now supports individually switchable realism blocks so the
+simulation can be tuned from ideal-average behavior to a higher-fidelity
+reduced-order bridge model.
+
+Available feature toggles:
+
+- Device drop
+- Dead-time distortion
+- Conduction loss
+- Switching loss
+- Freewheel diode path loss
+- Minimum pulse suppression
+- DC-link ripple
+- Thermal coupling
+- Phase asymmetry
+
 Observer mode selection
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -410,6 +429,16 @@ Suggested inverter non-ideality starting points
 - Device Drop: `0.2` to `1.0` V
 - Dead-Time Loss: `0.005` to `0.03` pu
 - Conduction Resistance: `0.005` to `0.05` ohm
+- Switching Frequency: `8000` to `20000` Hz
+- Switching Loss Coeff: `0.002` to `0.02` V/A/kHz
+- Diode Drop: `0.2` to `1.0` V
+- Minimum Pulse Fraction: `0.002` to `0.03` pu
+- DC-Link Capacitance: `500e-6` to `5e-3` F
+- DC-Link Source Resistance: `0.01` to `0.2` ohm
+- DC-Link ESR: `0.001` to `0.05` ohm
+- Thermal Resistance: `0.5` to `3.0` K/W
+- Thermal Capacitance: `10` to `200` J/K
+- Phase Mismatch Scales: `0.98` to `1.02`
 
 Tuning workflow (recommended)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -419,7 +448,25 @@ Tuning workflow (recommended)
 - Switch to `PLL`, tune Kp then Ki to remove steady-state phase error.
 - Switch to `SMO` if robust disturbance rejection is needed, then tune `Kslide` and `LPF Alpha`.
 - Introduce inverter non-idealities one at a time: device drop, dead-time, then conduction resistance.
+- Add switching and diode losses after the base current-loop tuning is stable.
+- Enable DC-link ripple only after voltage-loop behavior is understood, because it couples supply and modulation limits.
+- Enable thermal coupling for long-duration sweeps, not for first-pass controller tuning.
+- Use phase asymmetry only when studying mismatch sensitivity or fault-like drift.
 - Re-freeze baseline only after expected drift is verified and documented.
+
+Telemetry exposed by the inverter model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The simulation history and inverter state now include:
+
+- Effective DC-link voltage
+- DC-link ripple magnitude
+- DC-link bus current
+- Device, conduction, switching, dead-time, and diode loss components
+- Total inverter loss power
+- Junction temperature
+- Common-mode voltage
+- Minimum pulse event count
 
 Sensorless low-speed maturity enhancement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

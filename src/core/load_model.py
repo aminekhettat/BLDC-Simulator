@@ -20,7 +20,7 @@ Supported load types:
 
 import numpy as np
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, List, Tuple
+from typing import Optional, Callable, List
 
 
 class LoadProfile(ABC):

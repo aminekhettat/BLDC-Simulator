@@ -18,7 +18,11 @@ from abc import ABC, abstractmethod
 from typing import Optional, Callable, List, Dict
 
 
-def compute_power_metrics(voltage: np.ndarray, current: np.ndarray) -> Dict[str, float]:
+def compute_power_metrics(
+    voltage: np.ndarray,
+    current: np.ndarray,
+    backend: str = "cpu",
+) -> Dict[str, float]:
     """Compute basic power-quality metrics from voltage/current waveforms.
 
     Parameters
@@ -33,18 +37,41 @@ def compute_power_metrics(voltage: np.ndarray, current: np.ndarray) -> Dict[str,
     dict
         Active/apparent/reactive power, RMS values, and power factor.
     """
-    v = np.asarray(voltage, dtype=np.float64)
-    i = np.asarray(current, dtype=np.float64)
+    use_gpu = str(backend).lower() == "gpu"
 
-    if v.shape != i.shape:
-        raise ValueError("voltage and current arrays must have the same shape")
-    if v.size == 0:
-        raise ValueError("voltage and current arrays must be non-empty")
+    if use_gpu:
+        try:
+            import cupy as cp  # type: ignore
 
-    v_rms = float(np.sqrt(np.mean(v * v)))
-    i_rms = float(np.sqrt(np.mean(i * i)))
-    active_power = float(np.mean(v * i))
-    apparent_power = float(v_rms * i_rms)
+            v = cp.asarray(voltage, dtype=cp.float64)
+            i = cp.asarray(current, dtype=cp.float64)
+
+            if v.shape != i.shape:
+                raise ValueError("voltage and current arrays must have the same shape")
+            if v.size == 0:
+                raise ValueError("voltage and current arrays must be non-empty")
+
+            v_rms = float(cp.sqrt(cp.mean(v * v)).item())
+            i_rms = float(cp.sqrt(cp.mean(i * i)).item())
+            active_power = float(cp.mean(v * i).item())
+            apparent_power = float(v_rms * i_rms)
+        except Exception:
+            # Safe fallback to CPU path if GPU backend fails at runtime.
+            use_gpu = False
+
+    if not use_gpu:
+        v = np.asarray(voltage, dtype=np.float64)
+        i = np.asarray(current, dtype=np.float64)
+
+        if v.shape != i.shape:
+            raise ValueError("voltage and current arrays must have the same shape")
+        if v.size == 0:
+            raise ValueError("voltage and current arrays must be non-empty")
+
+        v_rms = float(np.sqrt(np.mean(v * v)))
+        i_rms = float(np.sqrt(np.mean(i * i)))
+        active_power = float(np.mean(v * i))
+        apparent_power = float(v_rms * i_rms)
 
     if apparent_power <= 1e-12:
         power_factor = 0.0

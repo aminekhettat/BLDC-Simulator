@@ -6,25 +6,24 @@ FOC controller returns correctly formatted outputs.
 
 import numpy as np
 import pytest
-from PyQt6.QtWidgets import QApplication
 import sys
+from PyQt6.QtWidgets import QApplication
 
-# ensure QApplication instance for GUI tests
-app = QApplication.instance() or QApplication(sys.argv)
-
+from src.control import FOCController, VFController, SVMGenerator, CartesianSVMGenerator
+from src.core.load_model import ConstantLoad
+from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.power_model import (
-    SupplyProfile,
     ConstantSupply,
-    compute_efficiency_metrics,
     PowerFactorController,
+    compute_efficiency_metrics,
     compute_power_metrics,
     recommend_efficiency_adjustments,
     required_reactive_compensation,
 )
 from src.core.simulation_engine import SimulationEngine
-from src.core.motor_model import BLDCMotor, MotorParameters
-from src.core.load_model import ConstantLoad
-from src.control import FOCController, SVMGenerator, CartesianSVMGenerator
+
+# ensure QApplication instance for GUI tests
+app = QApplication.instance() or QApplication(sys.argv)
 
 
 def test_supply_profile_basic():
@@ -159,6 +158,44 @@ def test_engine_applies_supply_voltage():
     engine.step(np.zeros(3), log_data=True)
     hist = engine.get_history()
     assert hist["supply_voltage"][0] == pytest.approx(12.0)
+
+
+def test_engine_control_timing_metrics_and_history():
+    motor = BLDCMotor(MotorParameters())
+    load = ConstantLoad(0.0)
+    engine = SimulationEngine(motor, load, dt=1.0 / 20000.0)
+
+    engine.set_pwm_frequency(20000.0)
+    engine.record_control_timing(calc_duration_s=8.0e-6)
+    engine.step(np.zeros(3), log_data=True)
+
+    info = engine.get_simulation_info()
+    timing = info["control_timing"]
+    assert timing["pwm_frequency_hz"] == pytest.approx(20000.0)
+    assert timing["control_period_s"] == pytest.approx(50e-6)
+    assert timing["calc_duration_s"] == pytest.approx(8.0e-6)
+    assert timing["cpu_load_pct"] == pytest.approx(16.0)
+    assert timing["sample_count"] == pytest.approx(1.0)
+
+    hist = engine.get_history()
+    assert hist["control_calc_duration_s"].size == hist["time"].size
+    assert hist["control_cpu_load_pct"].size == hist["time"].size
+    assert hist["control_calc_duration_s"][0] == pytest.approx(8.0e-6)
+    assert hist["control_cpu_load_pct"][0] == pytest.approx(16.0)
+
+
+def test_engine_compute_backend_info_auto_fallback():
+    motor = BLDCMotor(MotorParameters())
+    load = ConstantLoad(0.0)
+    engine = SimulationEngine(motor, load, dt=1.0 / 20000.0, compute_backend="auto")
+
+    info = engine.get_simulation_info()
+    backend = info["compute_backend"]
+
+    assert backend["requested"] == "auto"
+    assert backend["selected"] in {"cpu", "gpu"}
+    assert isinstance(backend["gpu_available"], bool)
+    assert isinstance(backend["reason"], str)
 
 
 def test_foc_controller_polar_output():
@@ -453,6 +490,119 @@ def test_foc_observer_startup_transition_can_fallback_on_degraded_conditions():
     assert degraded["startup_handoff_stability_ratio"] < 1.0
 
 
+def test_foc_standard_startup_sequence_skips_open_loop_when_measured_angle_exists():
+    motor = BLDCMotor(MotorParameters())
+    ctrl = FOCController(motor=motor)
+    ctrl.set_angle_observer("Measured")
+    ctrl.set_startup_sequence(
+        enabled=True,
+        align_duration_s=0.003,
+        align_current_a=1.4,
+        align_angle_deg=25.0,
+        open_loop_initial_speed_rpm=40.0,
+        open_loop_target_speed_rpm=250.0,
+        open_loop_ramp_time_s=0.05,
+        open_loop_id_ref_a=0.2,
+        open_loop_iq_ref_a=1.8,
+    )
+
+    ctrl.update(0.001)
+    during_align = ctrl.get_state()
+    assert during_align["startup_phase"] == "align"
+    assert during_align["angle_observer_mode"] == "Alignment"
+    assert during_align["id_ref_command"] == pytest.approx(1.4)
+    assert during_align["iq_ref_command"] == pytest.approx(0.0)
+
+    for _ in range(5):
+        motor._last_emf = motor._calculate_back_emf(motor.theta)
+        ctrl.update(0.001)
+
+    after_align = ctrl.get_state()
+    assert after_align["startup_phase"] == "closed_loop"
+    assert after_align["startup_has_position_sensor"] is True
+    assert after_align["angle_observer_mode"] == "Measured"
+    assert after_align["startup_open_loop_speed_rpm"] == pytest.approx(40.0)
+
+
+def test_foc_standard_startup_sequence_handoffs_from_open_loop_to_closed_loop():
+    motor = BLDCMotor(MotorParameters())
+    ctrl = FOCController(motor=motor)
+    ctrl.set_angle_observer("SMO")
+    ctrl.set_startup_sequence(
+        enabled=True,
+        align_duration_s=0.002,
+        align_current_a=1.2,
+        align_angle_deg=10.0,
+        open_loop_initial_speed_rpm=30.0,
+        open_loop_target_speed_rpm=180.0,
+        open_loop_ramp_time_s=0.01,
+        open_loop_id_ref_a=0.1,
+        open_loop_iq_ref_a=1.6,
+    )
+    ctrl.set_startup_transition(
+        enabled=True,
+        initial_mode="Measured",
+        min_speed_rpm=80.0,
+        min_elapsed_s=0.003,
+        min_emf_v=0.05,
+        min_confidence=0.0,
+        confidence_hold_s=0.0,
+        confidence_hysteresis=0.1,
+        fallback_enabled=True,
+        fallback_hold_s=0.01,
+    )
+
+    ctrl.update(0.001)
+    assert ctrl.get_state()["startup_phase"] == "align"
+
+    for _ in range(15):
+        motor.state[3] = 120.0
+        motor.state[4] = 0.7
+        motor._last_emf = motor._calculate_back_emf(motor.theta)
+        ctrl.update(0.001)
+
+    state = ctrl.get_state()
+    assert state["startup_phase"] == "closed_loop"
+    assert state["startup_transition_done"] is True
+    assert state["angle_observer_mode"] == "SMO"
+    assert state["startup_handoff_count"] >= 1
+    assert state["startup_open_loop_speed_rpm"] >= 30.0
+    assert state["id_ref_command"] == pytest.approx(ctrl.id_ref)
+
+
+def test_vf_standard_startup_sequence_aligns_then_ramps_then_runs():
+    controller = VFController(
+        v_nominal=48.0, f_nominal=100.0, dc_voltage=48.0, v_startup=1.0
+    )
+    controller.set_speed_reference(20.0)
+    controller.set_startup_sequence(
+        enable=True,
+        align_duration_s=0.01,
+        align_voltage_v=1.8,
+        align_angle_deg=30.0,
+        ramp_initial_frequency_hz=2.0,
+    )
+
+    voltage_align, angle_align = controller.update(0.005)
+    state_align = controller.get_state()
+    assert state_align["startup_phase"] == "align"
+    assert voltage_align == pytest.approx(1.8)
+    assert angle_align == pytest.approx(np.deg2rad(30.0))
+
+    saw_open_loop = False
+    for _ in range(200):
+        controller.update(0.005)
+        if controller.get_state()["startup_phase"] == "open_loop":
+            saw_open_loop = True
+        if controller.get_state()["startup_phase"] == "run":
+            break
+
+    state_run = controller.get_state()
+    assert saw_open_loop is True
+    assert state_run["startup_phase"] == "run"
+    assert state_run["frequency_actual"] > 0.0
+
+
 def test_svm_cartesian_conversion():
     svm = CartesianSVMGenerator(dc_voltage=48.0)
     # test simple vector along alpha axis
@@ -509,6 +659,130 @@ def test_svm_switching_frequency_loss_reduces_voltage():
     v_sw = svm_sw.modulate(magnitude=16.0, angle=0.6)
 
     assert np.linalg.norm(v_sw) < np.linalg.norm(v_base)
+
+
+def test_svm_diode_freewheel_loss_activates_on_opposing_current_direction():
+    svm = SVMGenerator(dc_voltage=48.0)
+    svm.set_nonidealities(
+        enable_diode_freewheel=True,
+        diode_drop_v=0.8,
+        diode_resistance_ohm=0.05,
+    )
+    svm.set_phase_currents(np.array([-5.0, 3.0, 2.0]))
+
+    volts = svm.modulate(magnitude=12.0, angle=0.0)
+    telemetry = svm.get_last_telemetry()
+
+    assert volts.shape == (3,)
+    assert telemetry["diode_loss_power_w"] > 0.0
+
+
+def test_svm_minimum_pulse_suppression_zeros_small_commands():
+    svm = SVMGenerator(dc_voltage=48.0)
+    svm.set_nonidealities(enable_min_pulse=True, min_pulse_fraction=0.12)
+    svm.set_phase_currents(np.array([0.0, 0.0, 0.0]))
+
+    volts = svm.modulate(magnitude=1.0, angle=0.15)
+
+    assert np.count_nonzero(np.abs(volts) < 1e-12) >= 1
+    assert svm.get_last_telemetry()["min_pulse_event_count"] >= 1
+
+
+def test_svm_bus_ripple_reduces_effective_bus_voltage_over_time():
+    svm = SVMGenerator(dc_voltage=48.0)
+    svm.set_sample_time(0.001)
+    svm.set_nonidealities(
+        enable_bus_ripple=True,
+        dc_link_capacitance_f=0.002,
+        dc_link_source_resistance_ohm=0.2,
+        dc_link_esr_ohm=0.05,
+    )
+    svm.set_phase_currents(np.array([10.0, -5.0, -5.0]))
+
+    for _ in range(20):
+        _ = svm.modulate(magnitude=18.0, angle=0.3)
+
+    telemetry = svm.get_last_telemetry()
+    assert telemetry["effective_dc_voltage"] < 48.0
+    assert telemetry["dc_link_ripple_v"] > 0.0
+
+
+def test_svm_thermal_coupling_raises_junction_temperature():
+    svm = SVMGenerator(dc_voltage=48.0)
+    svm.set_sample_time(0.001)
+    svm.set_nonidealities(
+        enable_device_drop=True,
+        device_drop_v=1.0,
+        enable_conduction_drop=True,
+        conduction_resistance_ohm=0.05,
+        enable_thermal_coupling=True,
+        thermal_resistance_k_per_w=2.0,
+        thermal_capacitance_j_per_k=20.0,
+        ambient_temperature_c=25.0,
+        temp_coeff_resistance_per_c=0.003,
+        temp_coeff_drop_per_c=0.001,
+    )
+    svm.set_phase_currents(np.array([8.0, -4.0, -4.0]))
+
+    for _ in range(50):
+        _ = svm.modulate(magnitude=16.0, angle=0.25)
+
+    assert svm.get_last_telemetry()["junction_temperature_c"] > 25.0
+
+
+def test_svm_phase_asymmetry_changes_phase_voltage_distribution():
+    ideal = SVMGenerator(dc_voltage=48.0)
+    v_ideal = ideal.modulate(magnitude=14.0, angle=0.2)
+
+    skewed = SVMGenerator(dc_voltage=48.0)
+    skewed.set_nonidealities(
+        enable_phase_asymmetry=True,
+        phase_voltage_scale_a=1.05,
+        phase_voltage_scale_b=0.95,
+        phase_voltage_scale_c=1.02,
+        phase_drop_scale_a=1.1,
+        phase_drop_scale_b=0.9,
+        phase_drop_scale_c=1.0,
+    )
+    v_skewed = skewed.modulate(magnitude=14.0, angle=0.2)
+
+    assert not np.allclose(v_ideal, v_skewed)
+
+
+def test_engine_records_inverter_telemetry_in_history_and_info():
+    motor = BLDCMotor(MotorParameters())
+    load = ConstantLoad(0.05)
+    engine = SimulationEngine(
+        motor, load, dt=0.001, supply_profile=ConstantSupply(48.0)
+    )
+    svm = SVMGenerator(dc_voltage=48.0)
+    svm.set_sample_time(engine.dt)
+    svm.set_nonidealities(
+        enable_device_drop=True,
+        device_drop_v=0.8,
+        enable_bus_ripple=True,
+        dc_link_capacitance_f=0.002,
+        dc_link_source_resistance_ohm=0.1,
+        dc_link_esr_ohm=0.02,
+        enable_thermal_coupling=True,
+        thermal_resistance_k_per_w=1.5,
+        thermal_capacitance_j_per_k=10.0,
+    )
+    svm.set_phase_currents(motor.currents)
+
+    for _ in range(10):
+        svm.set_phase_currents(motor.currents)
+        volts = svm.modulate(magnitude=12.0, angle=0.2)
+        engine.set_inverter_telemetry(svm.get_last_telemetry())
+        engine.step(volts, log_data=True)
+
+    hist = engine.get_history()
+    info = engine.get_simulation_info()
+    assert hist["effective_dc_voltage"].size == hist["time"].size
+    assert hist["inverter_total_loss_power"].size == hist["time"].size
+    assert "inverter" in info
+    assert info["inverter"]["total_inverter_loss_power_w"] >= 0.0
+    assert info["efficiency_metrics"]["inverter_total_loss_power_w"] >= 0.0
 
 
 def test_gui_supply_profile():
@@ -577,6 +851,15 @@ def test_gui_foc_angle_observer_wiring():
     gui.foc_smo_k_slide.setValue(700.0)
     gui.foc_smo_lpf_alpha.setValue(0.12)
     gui.foc_smo_boundary.setValue(0.08)
+    gui.foc_startup_sequence_mode.setCurrentText("Enabled")
+    gui.foc_align_time.setValue(0.015)
+    gui.foc_align_current.setValue(1.8)
+    gui.foc_align_angle.setValue(40.0)
+    gui.foc_open_loop_initial_speed.setValue(45.0)
+    gui.foc_open_loop_target_speed.setValue(320.0)
+    gui.foc_open_loop_ramp_time.setValue(0.12)
+    gui.foc_open_loop_id_ref.setValue(0.25)
+    gui.foc_open_loop_iq_ref.setValue(1.9)
     gui.foc_startup_transition_mode.setCurrentText("Enabled")
     gui.foc_startup_initial_observer.setCurrentText("Measured")
     gui.foc_startup_min_speed.setValue(250.0)
@@ -597,6 +880,15 @@ def test_gui_foc_angle_observer_wiring():
     assert gui.controller.smo["k_slide"] == pytest.approx(700.0)
     assert gui.controller.smo["lpf_alpha"] == pytest.approx(0.12)
     assert gui.controller.smo["boundary"] == pytest.approx(0.08)
+    assert gui.controller.startup_sequence_enabled is True
+    assert gui.controller.startup_align_duration_s == pytest.approx(0.015)
+    assert gui.controller.startup_align_current_a == pytest.approx(1.8)
+    assert gui.controller.startup_align_angle == pytest.approx(np.deg2rad(40.0))
+    assert gui.controller.startup_open_loop_initial_speed_rpm == pytest.approx(45.0)
+    assert gui.controller.startup_open_loop_target_speed_rpm == pytest.approx(320.0)
+    assert gui.controller.startup_open_loop_ramp_time_s == pytest.approx(0.12)
+    assert gui.controller.startup_open_loop_id_ref_a == pytest.approx(0.25)
+    assert gui.controller.startup_open_loop_iq_ref_a == pytest.approx(1.9)
     assert gui.controller.startup_transition_enabled is True
     assert gui.controller.startup_initial_mode == "Measured"
     assert gui.controller.startup_min_speed_rpm == pytest.approx(250.0)
@@ -609,15 +901,77 @@ def test_gui_foc_angle_observer_wiring():
     assert gui.controller.startup_fallback_hold_s == pytest.approx(0.04)
 
 
+def test_gui_vf_startup_sequence_wiring():
+    from src.ui.main_window import BLDCMotorControlGUI
+
+    gui = BLDCMotorControlGUI()
+    gui.ctrl_mode.setCurrentText("V/f")
+    gui._on_control_mode_changed("V/f")
+
+    gui.vf_startup_sequence_mode.setCurrentText("Enabled")
+    gui.vf_align_time.setValue(0.02)
+    gui.vf_align_voltage.setValue(2.2)
+    gui.vf_align_angle.setValue(35.0)
+    gui.vf_ramp_initial_frequency.setValue(3.5)
+    gui.vf_speed_ref.setValue(18.0)
+    gui._apply_to_simulation()
+
+    assert isinstance(gui.controller, VFController)
+    assert gui.controller.startup_sequence_enabled is True
+    assert gui.controller.startup_align_duration_s == pytest.approx(0.02)
+    assert gui.controller.startup_align_voltage_v == pytest.approx(2.2)
+    assert gui.controller.startup_align_angle == pytest.approx(np.deg2rad(35.0))
+    assert gui.controller.startup_ramp_initial_frequency_hz == pytest.approx(3.5)
+    assert gui.controller.frequency_ref == pytest.approx(18.0)
+
+
+def test_gui_pwm_frequency_default_and_engine_dt_sync():
+    from src.ui.main_window import BLDCMotorControlGUI
+
+    gui = BLDCMotorControlGUI()
+    assert gui.inverter_switching_frequency.value() == pytest.approx(20000.0)
+
+    gui._apply_to_simulation()
+    assert gui.engine.dt == pytest.approx(1.0 / 20000.0)
+    timing = gui.engine.get_control_timing_state()
+    assert timing["pwm_frequency_hz"] == pytest.approx(20000.0)
+
+
 def test_gui_inverter_nonidealities_wiring():
     from src.ui.main_window import BLDCMotorControlGUI
 
     gui = BLDCMotorControlGUI()
+    gui.inverter_enable_device_drop.setChecked(True)
+    gui.inverter_enable_dead_time.setChecked(True)
+    gui.inverter_enable_conduction.setChecked(True)
+    gui.inverter_enable_switching.setChecked(True)
+    gui.inverter_enable_diode.setChecked(True)
+    gui.inverter_enable_min_pulse.setChecked(True)
+    gui.inverter_enable_bus_ripple.setChecked(True)
+    gui.inverter_enable_thermal.setChecked(True)
+    gui.inverter_enable_phase_asymmetry.setChecked(True)
     gui.inverter_device_drop.setValue(0.8)
     gui.inverter_dead_time_fraction.setValue(0.015)
     gui.inverter_conduction_resistance.setValue(0.02)
     gui.inverter_switching_frequency.setValue(10000.0)
     gui.inverter_switching_loss_coeff.setValue(0.006)
+    gui.inverter_diode_drop.setValue(0.7)
+    gui.inverter_diode_resistance.setValue(0.03)
+    gui.inverter_min_pulse_fraction.setValue(0.02)
+    gui.inverter_dc_link_capacitance.setValue(0.002)
+    gui.inverter_dc_link_source_resistance.setValue(0.1)
+    gui.inverter_dc_link_esr.setValue(0.02)
+    gui.inverter_thermal_resistance.setValue(1.8)
+    gui.inverter_thermal_capacitance.setValue(25.0)
+    gui.inverter_ambient_temp.setValue(30.0)
+    gui.inverter_temp_coeff_resistance.setValue(0.003)
+    gui.inverter_temp_coeff_drop.setValue(0.001)
+    gui.inverter_phase_voltage_scale_a.setValue(1.03)
+    gui.inverter_phase_voltage_scale_b.setValue(0.98)
+    gui.inverter_phase_voltage_scale_c.setValue(1.01)
+    gui.inverter_phase_drop_scale_a.setValue(1.04)
+    gui.inverter_phase_drop_scale_b.setValue(0.97)
+    gui.inverter_phase_drop_scale_c.setValue(1.02)
     gui._apply_to_simulation()
 
     assert gui.svm.device_drop_v == pytest.approx(0.8)
@@ -625,6 +979,20 @@ def test_gui_inverter_nonidealities_wiring():
     assert gui.svm.conduction_resistance_ohm == pytest.approx(0.02)
     assert gui.svm.switching_frequency_hz == pytest.approx(10000.0)
     assert gui.svm.switching_loss_coeff_v_per_a_khz == pytest.approx(0.006)
+    inverter_state = gui.svm.get_realism_state()
+    assert inverter_state["enable_device_drop"] is True
+    assert inverter_state["enable_dead_time"] is True
+    assert inverter_state["enable_conduction_drop"] is True
+    assert inverter_state["enable_switching_loss"] is True
+    assert inverter_state["enable_diode_freewheel"] is True
+    assert inverter_state["enable_min_pulse"] is True
+    assert inverter_state["enable_bus_ripple"] is True
+    assert inverter_state["enable_thermal_coupling"] is True
+    assert inverter_state["enable_phase_asymmetry"] is True
+    assert inverter_state["diode_drop_v"] == pytest.approx(0.7)
+    assert inverter_state["dc_link_capacitance_f"] == pytest.approx(0.002)
+    assert inverter_state["thermal_resistance_k_per_w"] == pytest.approx(1.8)
+    assert inverter_state["phase_voltage_scale_a"] == pytest.approx(1.03)
 
 
 def test_gui_pfc_wiring_to_engine_configuration():
@@ -646,6 +1014,27 @@ def test_gui_pfc_wiring_to_engine_configuration():
     assert gui.engine.pfc_controller.ki == pytest.approx(1.8)
     assert gui.engine.pfc_controller.max_compensation_var == pytest.approx(4500.0)
     assert gui.engine.pfc_window_samples == 96
+
+
+def test_gui_hardware_backend_wiring_to_engine_configuration():
+    from src.ui.main_window import BLDCMotorControlGUI
+
+    gui = BLDCMotorControlGUI()
+    gui.hardware_enable_backend.setChecked(True)
+    gui.hardware_backend_type.setCurrentText("Mock DAQ")
+    gui.hardware_noise_std.setValue(0.015)
+    gui.hardware_seed.setValue(42)
+    gui._apply_to_simulation()
+
+    hw_state = gui.engine.get_hardware_state()
+    assert hw_state["enabled"] is True
+    assert hw_state["connected"] is True
+    assert hw_state["backend"] == "mock-daq"
+
+    gui.hardware_enable_backend.setChecked(False)
+    gui._apply_to_simulation()
+    hw_state_disabled = gui.engine.get_hardware_state()
+    assert hw_state_disabled["enabled"] is False
 
 
 def test_gui_monitoring_updates_pfc_status_blocks():
@@ -707,6 +1096,41 @@ def test_gui_monitoring_updates_efficiency_status_blocks():
     assert gui.status_blocks["total_loss_power_w"].current_value == pytest.approx(38.0)
 
 
+def test_gui_monitoring_updates_hardware_status_blocks():
+    from src.ui.main_window import BLDCMotorControlGUI
+
+    gui = BLDCMotorControlGUI()
+    gui._update_monitoring(
+        {
+            "speed_rpm": 920.0,
+            "omega": 96.0,
+            "theta": 0.55,
+            "time": 0.3,
+            "hardware": {
+                "enabled": True,
+                "connected": True,
+                "backend": "mock-daq",
+                "write_count": 14,
+                "read_count": 14,
+                "last_io_error": "",
+            },
+        }
+    )
+
+    assert gui.status_blocks["hardware_enabled"].current_value == pytest.approx(1.0)
+    assert gui.status_blocks["hardware_connected"].current_value == pytest.approx(1.0)
+    assert gui.status_blocks["hardware_backend_code"].current_value == pytest.approx(
+        1.0
+    )
+    assert gui.status_blocks["hardware_write_count"].current_value == pytest.approx(
+        14.0
+    )
+    assert gui.status_blocks["hardware_read_count"].current_value == pytest.approx(14.0)
+    assert gui.status_blocks["hardware_io_error_flag"].current_value == pytest.approx(
+        0.0
+    )
+
+
 def test_gui_monitoring_updates_advanced_foc_status_blocks():
     from src.ui.main_window import BLDCMotorControlGUI
 
@@ -747,10 +1171,10 @@ def test_gui_monitoring_updates_advanced_foc_status_blocks():
 
     ctrl_state = gui.controller.get_state()
     assert gui.status_blocks["id_ref"].current_value == pytest.approx(
-        ctrl_state["id_ref"]
+        ctrl_state["id_ref_command"]
     )
     assert gui.status_blocks["iq_ref"].current_value == pytest.approx(
-        ctrl_state["iq_ref"]
+        ctrl_state["iq_ref_command"]
     )
     assert gui.status_blocks["speed_error"].current_value == pytest.approx(
         ctrl_state["speed_error"]
@@ -807,6 +1231,18 @@ def test_gui_monitoring_updates_advanced_foc_status_blocks():
         "observer_confidence_below_threshold_time_s"
     ].current_value == pytest.approx(
         ctrl_state["observer_confidence_below_threshold_time_s"]
+    )
+    assert gui.status_blocks["startup_sequence_enabled"].current_value == pytest.approx(
+        0.0
+    )
+    assert gui.status_blocks["startup_phase_code"].current_value == pytest.approx(
+        ctrl_state["startup_phase_code"]
+    )
+    assert gui.status_blocks[
+        "startup_sequence_elapsed_s"
+    ].current_value == pytest.approx(ctrl_state["startup_sequence_elapsed_s"])
+    assert gui.status_blocks["startup_phase_elapsed_s"].current_value == pytest.approx(
+        ctrl_state["startup_phase_elapsed_s"]
     )
     assert gui.status_blocks["startup_handoff_quality"].current_value == pytest.approx(
         ctrl_state["startup_handoff_quality"]

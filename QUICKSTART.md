@@ -29,6 +29,16 @@ python main.py
 
 You should see the main application window with tabs for motor configuration.
 
+### 3. Optional: Verify GPU Backend Availability
+
+GPU support is optional and safely falls back to CPU.
+
+- Backend policy is configured in `src/utils/config.py` via
+  `SIMULATION_PARAMS["compute_backend"]`.
+- Valid values: `auto`, `cpu`, `gpu`.
+- In `auto` mode, the simulator selects GPU only if CuPy and a CUDA device are
+  available; otherwise CPU is used automatically.
+
 ---
 
 ## Your First Simulation (5 minutes)
@@ -69,6 +79,22 @@ For V/f mode:
 
 For FOC mode you can set d/q current references, choose output mode (polar vs
 Cartesian) and auto‑tune the PI controllers with the provided buttons.
+
+You can also enable startup sequencing for both modes:
+
+- V/f: alignment + open-loop ramp + run
+- FOC: alignment + forced open-loop ramp + observer handoff
+
+These startup options are useful for robust low-speed behavior and reproducible
+sensorless bring-up studies.
+
+### Step 3b: Inverter and Timing (Control Tab)
+
+Configure inverter realism and control-loop timing from the same tab:
+
+- Enable/disable each inverter realism block independently.
+- Set switching frequency (also defines control update period).
+- Use MCU budget estimator fields to map host compute time to target MCU load.
 
 These set up the voltage-to-frequency characteristic.
 

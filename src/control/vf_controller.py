@@ -119,6 +119,90 @@ class VFController(BaseController):
         self.startup_boost_time = 0.5  # Duration to apply boost [s]
         self.startup_timer = 0.0
 
+        # Standard V/f startup sequence: align -> ramp -> steady run.
+        self.startup_sequence_enabled = False
+        self.startup_phase = "run"
+        self.startup_sequence_elapsed_s = 0.0
+        self.startup_phase_elapsed_s = 0.0
+        self.startup_align_duration_s = 0.05
+        self.startup_align_voltage_v = max(v_startup, 1.5)
+        self.startup_align_angle = 0.0
+        self.startup_ramp_initial_frequency_hz = 2.0
+
+    def set_startup_sequence(
+        self,
+        enable: bool = True,
+        align_duration_s: float = 0.05,
+        align_voltage_v: float = 1.5,
+        align_angle_deg: float = 0.0,
+        ramp_initial_frequency_hz: float = 2.0,
+    ) -> None:
+        """Configure the standard V/f startup sequence."""
+        if align_duration_s < 0.0:
+            raise ValueError("align_duration_s must be non-negative")
+        if align_voltage_v < 0.0:
+            raise ValueError("align_voltage_v must be non-negative")
+        if ramp_initial_frequency_hz < 0.0:
+            raise ValueError("ramp_initial_frequency_hz must be non-negative")
+
+        self.startup_sequence_enabled = bool(enable)
+        self.startup_align_duration_s = float(align_duration_s)
+        self.startup_align_voltage_v = float(align_voltage_v)
+        self.startup_align_angle = float(np.deg2rad(align_angle_deg) % (2.0 * np.pi))
+        self.startup_ramp_initial_frequency_hz = float(ramp_initial_frequency_hz)
+        self._reset_startup_sequence_runtime()
+
+    def _enter_startup_phase(self, phase: str) -> None:
+        """Switch V/f startup phase and reset phase-local timers."""
+        self.startup_phase = phase
+        self.startup_phase_elapsed_s = 0.0
+        if phase == "align":
+            self.angle = self.startup_align_angle
+            self.angle_velocity = 0.0
+        elif phase == "open_loop":
+            sign = -1.0 if self.frequency_ref < 0.0 else 1.0
+            self.frequency_actual = sign * self.startup_ramp_initial_frequency_hz
+        else:
+            self.startup_phase = "run"
+
+    def _reset_startup_sequence_runtime(self) -> None:
+        """Reset V/f startup runtime state."""
+        self.startup_sequence_elapsed_s = 0.0
+        self.startup_phase_elapsed_s = 0.0
+        if not self.startup_sequence_enabled:
+            self.startup_phase = "run"
+            return
+        if self.startup_align_duration_s > 0.0:
+            self._enter_startup_phase("align")
+        else:
+            self._enter_startup_phase("open_loop")
+
+    def _compute_vf_voltage(self, dt: float) -> float:
+        """Compute V/f voltage magnitude including startup boost."""
+        if abs(self.frequency_actual) <= 1e-12:
+            voltage = 0.0
+        else:
+            voltage = self.v_startup + self.kv_f * np.abs(self.frequency_actual)
+            if self.use_startup_boost and self.startup_timer < self.startup_boost_time:
+                boost = (self.v_startup * 0.2) * (
+                    1.0 - self.startup_timer / self.startup_boost_time
+                )
+                voltage += boost
+                self.startup_timer += dt
+            else:
+                self.startup_timer = 0.0
+        voltage = float(np.clip(voltage, 0.0, self.max_voltage))
+        self.voltage_actual = voltage
+        return voltage
+
+    def _update_open_loop_frequency(self, dt: float) -> None:
+        """Advance frequency reference toward its target with slew limiting."""
+        delta_f_max = self.frequency_slew_rate * dt
+        delta_f = np.clip(
+            self.frequency_ref - self.frequency_actual, -delta_f_max, delta_f_max
+        )
+        self.frequency_actual += delta_f
+
     def set_speed_reference(self, frequency: float) -> None:
         """
         Set reference frequency (speed).
@@ -164,34 +248,33 @@ class VFController(BaseController):
         .. math::
             \\theta(t+dt) = \\theta(t) + 2\\pi \\cdot f_{actual} \\cdot dt
         """
-        # Apply frequency slew-rate limiting
-        delta_f_max = self.frequency_slew_rate * dt
-        delta_f = np.clip(
-            self.frequency_ref - self.frequency_actual, -delta_f_max, delta_f_max
-        )
-        self.frequency_actual += delta_f
+        self.startup_sequence_elapsed_s += dt
+        self.startup_phase_elapsed_s += dt
 
-        # Calculate V/f voltage
-        if self.frequency_actual == 0:
-            voltage = 0.0
-        else:
-            # V = V0 + kv_f * |f|
-            voltage = self.v_startup + self.kv_f * np.abs(self.frequency_actual)
+        if self.startup_sequence_enabled and self.startup_phase == "align":
+            self.voltage_actual = float(
+                np.clip(self.startup_align_voltage_v, 0.0, self.max_voltage)
+            )
+            self.angle = self.startup_align_angle
+            self.angle_velocity = 0.0
+            if self.startup_phase_elapsed_s >= self.startup_align_duration_s:
+                self._enter_startup_phase("open_loop")
+            return self.voltage_actual, self.angle
 
-            # Apply startup boost (optional)
-            if self.use_startup_boost and self.startup_timer < self.startup_boost_time:
-                # Add extra voltage during startup
-                boost = (self.v_startup * 0.2) * (
-                    1.0 - self.startup_timer / self.startup_boost_time
-                )
-                voltage += boost
-                self.startup_timer += dt
-            else:
-                self.startup_timer = 0.0
+        if self.startup_sequence_enabled and self.startup_phase in {"open_loop", "run"}:
+            self._update_open_loop_frequency(dt)
+            voltage = self._compute_vf_voltage(dt)
+            self.angle_velocity = 2.0 * np.pi * self.frequency_actual
+            self.angle = (self.angle + self.angle_velocity * dt) % (2.0 * np.pi)
 
-        # Clamp voltage to maximum
-        voltage = np.clip(voltage, 0, self.max_voltage)
-        self.voltage_actual = voltage
+            if self.startup_phase == "open_loop":
+                tol_hz = max(0.5, 0.02 * max(abs(self.frequency_ref), 1.0))
+                if abs(self.frequency_actual - self.frequency_ref) <= tol_hz:
+                    self._enter_startup_phase("run")
+            return voltage, self.angle
+
+        self._update_open_loop_frequency(dt)
+        voltage = self._compute_vf_voltage(dt)
 
         # Update phase angle
         self.angle_velocity = 2.0 * np.pi * self.frequency_actual
@@ -274,6 +357,7 @@ class VFController(BaseController):
         self.angle = 0.0
         self.angle_velocity = 0.0
         self.startup_timer = 0.0
+        self._reset_startup_sequence_runtime()
 
     def get_state(self) -> dict:
         """
@@ -293,4 +377,15 @@ class VFController(BaseController):
             "frequency_actual": self.frequency_actual,
             "voltage": self.voltage_actual,
             "angle": self.angle,
+            "startup_sequence_enabled": self.startup_sequence_enabled,
+            "startup_phase": self.startup_phase,
+            "startup_phase_code": {"align": 1.0, "open_loop": 2.0, "run": 3.0}.get(
+                self.startup_phase, 0.0
+            ),
+            "startup_sequence_elapsed_s": self.startup_sequence_elapsed_s,
+            "startup_phase_elapsed_s": self.startup_phase_elapsed_s,
+            "startup_align_duration_s": self.startup_align_duration_s,
+            "startup_align_voltage_v": self.startup_align_voltage_v,
+            "startup_align_angle_rad": self.startup_align_angle,
+            "startup_ramp_initial_frequency_hz": self.startup_ramp_initial_frequency_hz,
         }

@@ -22,6 +22,7 @@ __all__ = [
     "ui",
     "utils",
     "visualization",
+    "hardware",
 ]
 
 

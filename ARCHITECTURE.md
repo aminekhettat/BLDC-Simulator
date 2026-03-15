@@ -4,6 +4,35 @@
 
 This document provides insights into the project architecture and design decisions.
 
+## 2026 Runtime Architecture Extension
+
+The simulator architecture now includes four additional runtime layers:
+
+1. Startup Sequencing Layer
+
+- FOC and V/f controllers each expose a phase-machine startup flow.
+- FOC sequence supports: align -> open-loop -> closed-loop handoff.
+- V/f sequence supports: align -> open-loop ramp -> run.
+
+2. Inverter Realism Layer
+
+- SVM remains the modulation core and is now wrapped by optional realism blocks.
+- Each block is independently switchable and stateful where needed.
+- Runtime telemetry includes effective bus voltage, loss breakdown,
+  junction temperature, common-mode voltage, and minimum pulse events.
+
+3. Communication Backend Layer
+
+- SimulationEngine can route voltage commands through a hardware interface.
+- A mock DAQ backend is provided for dry-run and integration testing.
+- Fail-safe fallback keeps simulation running even if backend I/O fails.
+
+4. Compute Backend Layer
+
+- Compute backend policy is selectable (`auto`, `cpu`, `gpu`).
+- GPU probing and fallback metadata are tracked in simulation state.
+- Power metric evaluation can execute via CuPy when GPU backend is active.
+
 ## Core Components Interaction
 
 ```
