@@ -1,0 +1,39 @@
+{
+  "script": "examples/run_12v_pmsm_convergence_check.py",
+  "motor_dataset": "FAULHABER 1218E012B",
+  "motor_parameters": {
+    "phase_resistance_ohm": 12.0,
+    "phase_inductance_h": 0.000132,
+    "torque_constant_nm_per_a": 0.00351,
+    "back_emf_constant_vs_per_rad": 0.00351,
+    "rotor_inertia_kg_m2": 8e-09,
+    "friction_coeff_nms_per_rad": 5.001103040356186e-08,
+    "num_poles": 2,
+    "poles_pairs": 1
+  },
+  "adaptive_tuning_diagnostics": {
+    "current_loop_gain_margin_db": "inf",
+    "current_loop_phase_margin_deg": 114.62371172916265,
+    "speed_loop_gain_margin_db": "inf",
+    "speed_loop_phase_margin_deg": 100.26893822029386,
+    "current_loop_controllable": true,
+    "current_loop_observable": true,
+    "speed_loop_controllable": true,
+    "speed_loop_observable": true
+  },
+  "selected_controller_candidate": {
+    "dt_s": 5e-05,
+    "steps": 16000,
+    "speed_ref_rpm": 6000.0,
+    "load_torque_nm": 0.0002,
+    "iq_limit_a": 0.08,
+    "speed_kp": 2.513210629792361e-05,
+    "speed_ki": 0.0001,
+    "current_kp": 5.000000000000001,
+    "current_ki": 12.258324480531913
+  },
+  "convergence_metrics": {
+    "stable": false,
+    "reason": "insufficient_history"
+  }
+}
