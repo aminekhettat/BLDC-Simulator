@@ -203,6 +203,13 @@ class FOCController(BaseController):
         self.id_ref_command = 0.0
         self.iq_ref_command = 0.0
 
+        # Optional field-weakening scheduler (independent feature toggle).
+        self.field_weakening_enabled = False
+        self.field_weakening_start_speed_rpm = 0.0
+        self.field_weakening_gain = 1.0
+        self.field_weakening_max_negative_id_a = 0.0
+        self.field_weakening_id_injection_a = 0.0
+
         # Sensorless maturity: blend measured and observer angle at low confidence
         # to improve low-speed robustness and reduce abrupt phase behavior.
         self.sensorless_blend_enabled = True
@@ -650,7 +657,7 @@ class FOCController(BaseController):
 
     def _get_active_references(self, dt: float) -> Tuple[float, float]:
         """Return d/q references after applying startup phase overrides."""
-        id_ref = self.id_ref
+        id_ref = self.id_ref + self._compute_field_weakening_id_injection()
 
         if self.enable_speed_loop:
             speed_ref_rad_s = (self.speed_ref / 60.0) * (2 * np.pi)
@@ -973,6 +980,51 @@ class FOCController(BaseController):
         """Set speed reference (rpm). qi reference will be derived from it."""
         self.speed_ref = speed_rpm
 
+    def set_field_weakening(
+        self,
+        enabled: bool,
+        start_speed_rpm: float = 0.0,
+        gain: float = 1.0,
+        max_negative_id_a: float = 0.0,
+    ) -> None:
+        """Configure optional field-weakening d-axis current injection."""
+        if start_speed_rpm < 0.0:
+            raise ValueError("start_speed_rpm must be non-negative")
+        if gain < 0.0:
+            raise ValueError("gain must be non-negative")
+        if max_negative_id_a < 0.0:
+            raise ValueError("max_negative_id_a must be non-negative")
+
+        self.field_weakening_enabled = bool(enabled)
+        self.field_weakening_start_speed_rpm = float(start_speed_rpm)
+        self.field_weakening_gain = float(gain)
+        self.field_weakening_max_negative_id_a = float(max_negative_id_a)
+        self.field_weakening_id_injection_a = 0.0
+
+    def _compute_field_weakening_id_injection(self) -> float:
+        """Compute additional negative d-axis current from field-weakening."""
+        if (
+            not self.field_weakening_enabled
+            or self.field_weakening_max_negative_id_a <= 0.0
+            or self.field_weakening_gain <= 0.0
+        ):
+            self.field_weakening_id_injection_a = 0.0
+            return 0.0
+
+        speed_abs = abs(self.motor.speed_rpm)
+        start = self.field_weakening_start_speed_rpm
+        if speed_abs <= start:
+            self.field_weakening_id_injection_a = 0.0
+            return 0.0
+
+        span = max(abs(self.speed_ref) - start, 1.0)
+        ratio = (speed_abs - start) / span
+        injection = -self.field_weakening_max_negative_id_a * float(
+            np.clip(self.field_weakening_gain * ratio, 0.0, 1.0)
+        )
+        self.field_weakening_id_injection_a = injection
+        return injection
+
     def auto_tune_pi(self, axis: str = "q", bandwidth: float = 50.0) -> None:
         """Auto-tune PI parameters for given axis ('d' or 'q').
 
@@ -1111,6 +1163,7 @@ class FOCController(BaseController):
         self.theta_sensorless_raw = 0.0
         self.id_ref_command = 0.0
         self.iq_ref_command = 0.0
+        self.field_weakening_id_injection_a = 0.0
         self.angle_observer_mode = (
             self.startup_initial_mode
             if self.startup_transition_enabled
@@ -1193,6 +1246,11 @@ class FOCController(BaseController):
             "theta_sensorless_raw": self.theta_sensorless_raw,
             "id_ref_command": self.id_ref_command,
             "iq_ref_command": self.iq_ref_command,
+            "field_weakening_enabled": self.field_weakening_enabled,
+            "field_weakening_start_speed_rpm": self.field_weakening_start_speed_rpm,
+            "field_weakening_gain": self.field_weakening_gain,
+            "field_weakening_max_negative_id_a": self.field_weakening_max_negative_id_a,
+            "field_weakening_id_injection_a": self.field_weakening_id_injection_a,
             "v_d": self.pi_d,
             "v_q": self.pi_q,
             "v_d_cmd": self.last_v_d,

@@ -490,6 +490,35 @@ def test_foc_observer_startup_transition_can_fallback_on_degraded_conditions():
     assert degraded["startup_handoff_stability_ratio"] < 1.0
 
 
+def test_foc_field_weakening_is_independent_toggle():
+    motor = BLDCMotor(MotorParameters())
+    ctrl = FOCController(motor=motor, enable_speed_loop=False)
+    ctrl.set_speed_reference(2000.0)
+    ctrl.set_current_references(id_ref=0.4, iq_ref=0.0)
+
+    motor.state[3] = 1800.0
+
+    ctrl.set_field_weakening(
+        enabled=False,
+        start_speed_rpm=1200.0,
+        gain=1.2,
+        max_negative_id_a=3.0,
+    )
+    id_disabled, _ = ctrl._get_active_references(1e-4)
+    assert id_disabled == pytest.approx(0.4)
+    assert ctrl.field_weakening_id_injection_a == pytest.approx(0.0)
+
+    ctrl.set_field_weakening(
+        enabled=True,
+        start_speed_rpm=1200.0,
+        gain=1.2,
+        max_negative_id_a=3.0,
+    )
+    id_enabled, _ = ctrl._get_active_references(1e-4)
+    assert id_enabled < 0.4
+    assert ctrl.field_weakening_id_injection_a < 0.0
+
+
 def test_foc_standard_startup_sequence_skips_open_loop_when_measured_angle_exists():
     motor = BLDCMotor(MotorParameters())
     ctrl = FOCController(motor=motor)
@@ -899,6 +928,26 @@ def test_gui_foc_angle_observer_wiring():
     assert gui.controller.startup_confidence_hysteresis == pytest.approx(0.12)
     assert gui.controller.startup_fallback_enabled is True
     assert gui.controller.startup_fallback_hold_s == pytest.approx(0.04)
+
+
+def test_gui_foc_field_weakening_wiring():
+    from src.ui.main_window import BLDCMotorControlGUI
+
+    gui = BLDCMotorControlGUI()
+    gui.ctrl_mode.setCurrentText("FOC")
+    gui._on_control_mode_changed("FOC")
+
+    gui.foc_field_weakening_mode.setCurrentText("Enabled")
+    gui.foc_field_weakening_start_speed.setValue(1500.0)
+    gui.foc_field_weakening_gain.setValue(1.25)
+    gui.foc_field_weakening_max_id.setValue(4.5)
+    gui._apply_to_simulation()
+
+    assert isinstance(gui.controller, FOCController)
+    assert gui.controller.field_weakening_enabled is True
+    assert gui.controller.field_weakening_start_speed_rpm == pytest.approx(1500.0)
+    assert gui.controller.field_weakening_gain == pytest.approx(1.25)
+    assert gui.controller.field_weakening_max_negative_id_a == pytest.approx(4.5)
 
 
 def test_gui_vf_startup_sequence_wiring():

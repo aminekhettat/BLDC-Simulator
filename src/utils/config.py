@@ -72,6 +72,13 @@ FOC_STARTUP_PARAMS = {
     "startup_open_loop_iq_ref_a": 2.0,
 }
 
+FOC_FIELD_WEAKENING_PARAMS = {
+    "enabled": False,
+    "start_speed_rpm": 12000.0,
+    "gain": 1.0,
+    "max_negative_id_a": 8.0,
+}
+
 # Load profile defaults
 DEFAULT_LOAD_PROFILE = {
     "type": "constant",  # 'constant', 'ramp', 'variable', 'cyclic'

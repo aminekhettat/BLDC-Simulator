@@ -33,6 +33,7 @@ class Candidate:
     current_kp: float
     current_ki: float
     iq_limit_a: float
+    field_weakening_enabled: bool
     fw_start_rpm: float
     fw_gain: float
     fw_id_max_a: float
@@ -114,6 +115,12 @@ def run_candidate(
     )
     ctrl.set_speed_reference(speed_ref_rpm)
     ctrl.set_angle_observer("Measured")
+    ctrl.set_field_weakening(
+        enabled=cand.field_weakening_enabled,
+        start_speed_rpm=cand.fw_start_rpm,
+        gain=cand.fw_gain,
+        max_negative_id_a=cand.fw_id_max_a,
+    )
 
     svm = SVMGenerator(dc_voltage=params.nominal_voltage)
     svm.set_sample_time(cand.dt)
@@ -123,17 +130,6 @@ def run_candidate(
     neg_speed = False
 
     for k in range(steps):
-        # Field weakening schedule: inject negative id as speed approaches high values.
-        speed_abs = abs(motor.speed_rpm)
-        if speed_abs <= cand.fw_start_rpm:
-            id_fw = 0.0
-        else:
-            ratio = (speed_abs - cand.fw_start_rpm) / max(
-                speed_ref_rpm - cand.fw_start_rpm, 1.0
-            )
-            id_fw = -cand.fw_id_max_a * float(np.clip(cand.fw_gain * ratio, 0.0, 1.0))
-        ctrl.id_ref = id_fw
-
         svm.set_phase_currents(motor.currents)
         mag, ang = ctrl.update(cand.dt)
         vabc = svm.modulate(mag, ang)
@@ -212,16 +208,35 @@ def main() -> None:
     params = build_params()
     speed_ref_rpm = 31500.0
     load_torque_nm = 0.0
+    enable_field_weakening = True
 
     # Stage 1: phase order check
     phase_cands = [
-        Candidate(seq, 2e-5, 8e-4, 2e-2, 5.0, 50.0, 8.0, 14000.0, 1.0, 12.0)
+        Candidate(
+            seq,
+            2e-5,
+            8e-4,
+            2e-2,
+            5.0,
+            50.0,
+            8.0,
+            False,
+            14000.0,
+            1.0,
+            12.0,
+        )
         for seq in ["UVW", "UWV", "VUW", "VWU", "WUV", "WVU"]
     ]
 
     print("Starting rated-speed field-weakening search", flush=True)
     print(
-        json.dumps({"target_rpm": speed_ref_rpm, "phase_candidates": len(phase_cands)}),
+        json.dumps(
+            {
+                "target_rpm": speed_ref_rpm,
+                "phase_candidates": len(phase_cands),
+                "field_weakening_enabled": enable_field_weakening,
+            }
+        ),
         flush=True,
     )
 
@@ -267,6 +282,7 @@ def main() -> None:
                                                 ckp,
                                                 cki,
                                                 iql,
+                                                enable_field_weakening,
                                                 fw_start,
                                                 fw_gain,
                                                 fw_idmax,

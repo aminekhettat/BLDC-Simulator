@@ -77,6 +77,7 @@ from src.control.transforms import inverse_clarke
 from src.hardware import MockDAQHardware
 from src.utils.config import (
     DEFAULT_MOTOR_PARAMS,
+    FOC_FIELD_WEAKENING_PARAMS,
     FOC_STARTUP_PARAMS,
     SIMULATION_PARAMS,
     VF_CONTROLLER_PARAMS,
@@ -1177,6 +1178,52 @@ class BLDCMotorControlGUI(QMainWindow):
             description="Speed reference for closed-loop control (mapped to iq).",
         )
         self.foc_group_layout.addWidget(self.foc_speed_ref)
+
+        self.foc_field_weakening_mode = LabeledComboBox(
+            "Field Weakening",
+            items=["Disabled", "Enabled"],
+            description="Independent field-weakening feature toggle. When enabled, additional negative d-axis current is injected above the configured speed threshold.",
+        )
+        self.foc_field_weakening_mode.setCurrentText(
+            "Enabled" if FOC_FIELD_WEAKENING_PARAMS["enabled"] else "Disabled"
+        )
+        self.foc_group_layout.addWidget(self.foc_field_weakening_mode)
+
+        self.foc_field_weakening_start_speed = LabeledSpinBox(
+            "FW Start Speed",
+            min_val=0.0,
+            max_val=100000.0,
+            initial=FOC_FIELD_WEAKENING_PARAMS["start_speed_rpm"],
+            step=50.0,
+            decimals=1,
+            suffix=" RPM",
+            description="Speed threshold above which field weakening begins injecting negative d-axis current.",
+        )
+        self.foc_group_layout.addWidget(self.foc_field_weakening_start_speed)
+
+        self.foc_field_weakening_gain = LabeledSpinBox(
+            "FW Gain",
+            min_val=0.0,
+            max_val=10.0,
+            initial=FOC_FIELD_WEAKENING_PARAMS["gain"],
+            step=0.05,
+            decimals=3,
+            suffix="",
+            description="Scaling factor used by the field-weakening scheduler.",
+        )
+        self.foc_group_layout.addWidget(self.foc_field_weakening_gain)
+
+        self.foc_field_weakening_max_id = LabeledSpinBox(
+            "FW Max Negative Id",
+            min_val=0.0,
+            max_val=100.0,
+            initial=FOC_FIELD_WEAKENING_PARAMS["max_negative_id_a"],
+            step=0.1,
+            decimals=2,
+            suffix=" A",
+            description="Maximum additional negative d-axis current magnitude injected by field weakening.",
+        )
+        self.foc_group_layout.addWidget(self.foc_field_weakening_max_id)
 
         self.foc_speed_loop_mode = LabeledComboBox(
             "Speed Loop Mode",
@@ -2566,6 +2613,12 @@ class BLDCMotorControlGUI(QMainWindow):
                 iq_ref=self.foc_iq_ref.value(),
             )
             self.controller.set_speed_reference(self.foc_speed_ref.value())
+            self.controller.set_field_weakening(
+                enabled=self.foc_field_weakening_mode.currentText() == "Enabled",
+                start_speed_rpm=self.foc_field_weakening_start_speed.value(),
+                gain=self.foc_field_weakening_gain.value(),
+                max_negative_id_a=self.foc_field_weakening_max_id.value(),
+            )
             self.controller.set_cascaded_speed_loop(
                 enabled=speed_loop_enabled,
                 iq_limit_a=self.foc_iq_limit.value(),
@@ -3321,6 +3374,11 @@ class BLDCMotorControlGUI(QMainWindow):
                     "foc_open_loop_ramp_time_s": self.foc_open_loop_ramp_time.value(),
                     "foc_open_loop_id_ref_a": self.foc_open_loop_id_ref.value(),
                     "foc_open_loop_iq_ref_a": self.foc_open_loop_iq_ref.value(),
+                    "foc_field_weakening_enabled": self.foc_field_weakening_mode.currentText()
+                    == "Enabled",
+                    "foc_field_weakening_start_speed_rpm": self.foc_field_weakening_start_speed.value(),
+                    "foc_field_weakening_gain": self.foc_field_weakening_gain.value(),
+                    "foc_field_weakening_max_negative_id_a": self.foc_field_weakening_max_id.value(),
                 },
                 "inverter_params": self.svm.get_realism_state() if self.svm else {},
                 "communication_params": {
