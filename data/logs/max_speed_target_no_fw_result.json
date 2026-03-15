@@ -1,0 +1,43 @@
+{
+  "target": {
+    "mode": "max_speed_no_field_weakening",
+    "estimated_max_speed_rpm": 17906.408569254785,
+    "field_weakening_enabled": false
+  },
+  "adaptive_seed": {
+    "current_kp": 5.000000000000001,
+    "current_ki": 48.431254296349884,
+    "speed_kp": 6.3138503555892e-05,
+    "speed_ki": 0.0001,
+    "current_margin_phase_deg": 114.62172724887068,
+    "speed_margin_phase_deg": 99.66663907322747
+  },
+  "best_candidate": {
+    "dt": 2.5e-05,
+    "speed_kp": 0.000252554014223568,
+    "speed_ki": 0.0004,
+    "current_kp": 10.000000000000002,
+    "current_ki": 96.86250859269977,
+    "iq_limit_a": 4.0
+  },
+  "coarse_metrics": {
+    "stable": true,
+    "converged": false,
+    "final_speed_rpm": 15295.176321461448,
+    "final_err_rpm": 2611.2322477933376,
+    "tail_abs_mean_err_rpm": 2815.677281173403,
+    "tail_abs_max_err_rpm": 3096.5219332290035,
+    "first_half_abs_mean_err_rpm": 8382.76129011451,
+    "second_half_abs_mean_err_rpm": 3976.126601808568
+  },
+  "strict_metrics": {
+    "stable": true,
+    "converged": true,
+    "final_speed_rpm": 18168.05809606265,
+    "final_err_rpm": -261.6495268078652,
+    "tail_abs_mean_err_rpm": 270.2898272015693,
+    "tail_abs_max_err_rpm": 387.9978064358911,
+    "first_half_abs_mean_err_rpm": 5507.430453977297,
+    "second_half_abs_mean_err_rpm": 492.3694809233354
+  }
+}
