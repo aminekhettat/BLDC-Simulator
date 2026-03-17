@@ -104,11 +104,11 @@
 
 All three available motor profiles successfully calibrated and validated for field-weakening operation:
 
-| Motor Profile | Speed (RPM) | Target | Error | Load (Nm) | Efficiency | FW Injection (A) | Status |
-|---|---|---|---|---|---|---|---|
-| Motenergy ME1718 48V | 4010.5 | 4000 | +0.26% | 10.0 | 82.3% | -18.5 | ✅ PASS |
-| Motenergy ME1719 48V | 4012.3 | 4000 | +0.31% | 10.5 | 83.1% | -19.2 | ✅ PASS |
-| Innotec 255-EZS48-160 | 3995.8 | 4000 | -0.10% | 9.8 | 81.5% | -17.8 | ✅ PASS |
+| Motor Profile         | Speed (RPM) | Target | Error  | Load (Nm) | Efficiency | FW Injection (A) | Status  |
+| --------------------- | ----------- | ------ | ------ | --------- | ---------- | ---------------- | ------- |
+| Motenergy ME1718 48V  | 4010.5      | 4000   | +0.26% | 10.0      | 82.3%      | -18.5            | ✅ PASS |
+| Motenergy ME1719 48V  | 4012.3      | 4000   | +0.31% | 10.5      | 83.1%      | -19.2            | ✅ PASS |
+| Innotec 255-EZS48-160 | 3995.8      | 4000   | -0.10% | 9.8       | 81.5%      | -17.8            | ✅ PASS |
 
 **Validation Status**: All motors operating stably with active field weakening, achieving ≥80% efficiency, and maintaining speed accuracy within ±0.31% of target.
 
