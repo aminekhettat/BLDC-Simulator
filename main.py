@@ -23,7 +23,9 @@ import logging
 from PyQt6.QtWidgets import QApplication
 
 # Add project root to path
+
 PROJECT_ROOT = Path(__file__).parent
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # application-specific modules will be imported after path insertion inside main()
@@ -38,7 +40,7 @@ def main():
     Initializes PyQt6 application and launches the main GUI window.
     """
     logger.info("=" * 60)
-    logger.info("⚡ SPIN DOCTOR - BLDC Motor Control Simulator v2.0.0")
+    logger.info("BLIND SYSTEMS BLDC Simulator v2.1.0")
     logger.info("=" * 60)
 
     try:
@@ -53,8 +55,8 @@ def main():
         app = QApplication(sys.argv)
 
         # Set application info
-        app.setApplicationName("SPIN DOCTOR - BLDC Motor Control Simulator")
-        app.setApplicationVersion("2.0.0")
+        app.setApplicationName("BLIND SYSTEMS BLDC Simulator")
+        app.setApplicationVersion("2.1.0")
 
         # Create and show main window
         window = BLDCMotorControlGUI()

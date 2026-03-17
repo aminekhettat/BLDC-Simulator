@@ -61,6 +61,18 @@ Comprehensive Python GUI application for BLDC (Brushless DC) motor simulation wi
 - Custom multi-axis plotting for arbitrarily selected variables
 - Vocal assistance announcements for plot generation and simulation events
 
+### Auto-Tuning & Convergence
+
+- **Unbounded PI Parameter Search** - Iterative optimization of current and speed PI regulators
+- **Convergence Guarantees** - Continuous expansion of parameter space until convergence criteria met
+- **Three-Stage Pipeline**:
+  1. Current PI optimization (D/Q axis current regulators)
+  2. Speed PI optimization (outer speed loop)
+  3. Unbounded expansion loop (parameter space refinement until full convergence)
+- **Load-Aware Orthogonality Gate** - Validates FOC d/q decoupling with load-dependent tolerance
+- **Verified Convergence** - Extended 8-20s verification runs confirm stability after search
+- **Multi-Motor Profiles** - Pre-configured Innotec and Motenergy motor parameters with auto-tuned gains
+
 ### Architecture
 
 - **Modular design** - Easy to extend with FOC, current control, etc.
@@ -145,6 +157,69 @@ python main.py
 5. **Analyze Results**
    - Generate plots (Tab 5)
    - Export data to CSV (Ctrl+S)
+
+### Advanced: Auto-Tuning FOC PI Parameters
+
+The simulator includes production-grade auto-tuning scripts for FOC PI controller optimization:
+
+#### Quick Start - Unbounded Convergence (Recommended)
+
+Run auto-tuning until all motors converge to a target speed:
+
+```bash
+python examples/auto_tune_until_convergence.py \
+  --max-trials 0 \
+  --target-speed-rpm 1500 \
+  --search-time 0.6 \
+  --verify-time 8.0 \
+  --tolerance-ratio 0.02 \
+  --static-error-rpm-limit 10.0
+```
+
+**Key Parameters:**
+
+- `--max-trials 0`: Unbounded mode (continuous expansion until convergence)
+- `--max-trials N` (N>0): Bounded mode (finite N-trial search)
+- `--overcurrent-limit-a 0`: Disable overcurrent abort (keep searching)
+- `--overcurrent-limit-a A`: Enable abort at A amperes (guards against hardware risks)
+
+#### How It Works
+
+1. **Current PI Optimization** (120 trials nominal)
+   - Searches D/Q axis current regulator gains
+   - Orthogonality gate ensures FOC decoupling quality
+
+2. **Speed PI Optimization** (120 trials nominal)
+   - Searches outer speed loop gains
+   - Validates settlement and steady-state error
+
+3. **Unbounded Expansion** (active when `--max-trials ≤ 0`)
+   - If convergence not achieved, expands parameter search space
+   - Iteratively scales gains with diminishing factor (15% per round, capped at 1.5×)
+   - Continues until `full_converged: true` and `accepted: true`
+
+#### Session Output Example
+
+```json
+{
+  "profile": "Innotec 255-EZS48-160",
+  "accepted": true,
+  "full_converged": true,
+  "final_speed_rpm": 1498.79,
+  "final_speed_ratio": 0.9992,
+  "tested_trials": 71,
+  "trial_limit_mode": "unbounded",
+  "overcurrent_limit_a": null,
+  "target_speed_rpm": 1500.0,
+  "verification": {
+    "converged": true,
+    "full_converged": true,
+    "tail_abs_mean_error_rpm": 2.1,
+    "tail_abs_max_error_rpm": 8.7,
+    "settling_time_5pct_s": 0.32
+  }
+}
+```
 
 ### Keyboard Shortcuts
 

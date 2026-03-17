@@ -1,4 +1,4 @@
-# 📚 SPIN DOCTOR v2.0.0 - Complete Documentation Index
+# 📚 BLIND SYSTEMS BLDC Simulator v2.0.0 - Complete Documentation Index
 
 ## Latest Runtime Extension (March 2026)
 
@@ -11,7 +11,7 @@
 
 ## 🎯 Start Here
 
-Welcome to **⚡ SPIN DOCTOR**, your advanced BLDC motor control simulator! This document guides you through all available resources.
+Welcome to **⚡ BLIND SYSTEMS BLDC Simulator**, your advanced BLDC motor control simulator! This document guides you through all available resources.
 
 ---
 
@@ -116,7 +116,7 @@ Welcome to **⚡ SPIN DOCTOR**, your advanced BLDC motor control simulator! This
 
 | #   | Feature                                          | Location         | Doc                                            |
 | --- | ------------------------------------------------ | ---------------- | ---------------------------------------------- |
-| 1   | ⚡ SPIN DOCTOR Branding v2.0.0                   | Window title     | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
+| 1   | ⚡ BLIND SYSTEMS BLDC Simulator Branding v2.0.0                   | Window title     | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
 | 2   | Simulation Duration Control (0=infinite)         | Control Tab      | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
 | 3   | Enhanced Monitoring (13 variables + speed curve) | Monitoring Tab   | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
 | 4   | Standard Menu Bar (File/Tools/Help)              | Application Menu | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
@@ -378,7 +378,7 @@ BLDC_motor_control/
 
 ## ✅ Checklist: What's New in v2.0.0
 
-- ✅ ⚡ SPIN DOCTOR branding
+- ✅ ⚡ BLIND SYSTEMS BLDC Simulator branding
 - ✅ Version 2.0.0 displayed
 - ✅ Duration control (0 = infinite)
 - ✅ 13 monitoring variables
@@ -447,7 +447,7 @@ BLDC_motor_control/
 
 ### v2.0.0 (Current) - March 4, 2026
 
-- ✅ New application branding (⚡ SPIN DOCTOR)
+- ✅ New application branding (⚡ BLIND SYSTEMS BLDC Simulator)
 - ✅ Simulation duration control
 - ✅ Enhanced monitoring (13 variables + live curve)
 - ✅ Standard menu bar
@@ -486,7 +486,7 @@ You now have:
 **Start with:** [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)  
 **Then run:** `python main.py`
 
-**Enjoy SPIN DOCTOR v2.0.0! ⚡**
+**Enjoy BLIND SYSTEMS BLDC Simulator v2.0.0! ⚡**
 
 ---
 

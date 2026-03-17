@@ -15,12 +15,29 @@ except ImportError:  # pragma: no cover - optional dependency
     pyttsx3 = None
 
 
+_AUDIO_ASSISTANCE_ENABLED = True
+
+
+def set_audio_assistance_enabled(enabled: bool) -> None:
+    """Enable or disable text-to-speech output globally."""
+    global _AUDIO_ASSISTANCE_ENABLED
+    _AUDIO_ASSISTANCE_ENABLED = bool(enabled)
+
+
+def is_audio_assistance_enabled() -> bool:
+    """Return current global audio-assistance state."""
+    return _AUDIO_ASSISTANCE_ENABLED
+
+
 def speak(message: str, rate: Optional[int] = None) -> None:
     """Announce a message vocally.
 
     :param message: Text to speak
     :param rate: Optional speech rate (words per minute)
     """
+    if not _AUDIO_ASSISTANCE_ENABLED:
+        return
+
     if pyttsx3 is None:
         # fallback - print to console for debugging
         print(f"[Speech] {message}")

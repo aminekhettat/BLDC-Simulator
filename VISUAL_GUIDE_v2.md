@@ -1,15 +1,15 @@
-# 🚀 Quick Visual Guide - SPIN DOCTOR v2.0.0
+# 🚀 Quick Visual Guide - BLIND SYSTEMS BLDC Simulator v2.0.0
 
 ## Application Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ⚡ SPIN DOCTOR - BLDC Motor Control Simulator (v2.0.0)          │
+│ ⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v2.0.0)          │
 ├─────────────────────────────────────────────────────────────────┤
 │ File  Tools  Help                                               │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  ⚡ SPIN DOCTOR - Advanced BLDC Motor Control Simulator         │
+│  ⚡ BLIND SYSTEMS BLDC Simulator - Advanced BLDC Motor Control Simulator         │
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │ Motor Params │ Load │ Supply │ Control │ Monitoring │ ...│   │
@@ -40,14 +40,14 @@ BLDC Motor Control Simulator - V/f Control System
 ### After:
 
 ```
-⚡ SPIN DOCTOR - BLDC Motor Control Simulator (v2.0.0)
+⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v2.0.0)
 ```
 
 **Everywhere in the app:**
 
-- Window title: ⚡ SPIN DOCTOR
+- Window title: ⚡ BLIND SYSTEMS BLDC Simulator
 - Speed display: ⚡ Rotor Speed
-- Startup log: ⚡ SPIN DOCTOR v2.0.0
+- Startup log: ⚡ BLIND SYSTEMS BLDC Simulator v2.0.0
 
 ---
 
@@ -253,7 +253,7 @@ Speed (RPM)
 ┌──────────────────────────────┐
 │ Help                          │
 ├──────────────────────────────┤
-│ About SPIN DOCTOR             │ → Show version & features
+│ About BLIND SYSTEMS BLDC Simulator             │ → Show version & features
 │                               │
 │ Quick Start Guide             │ → 7-step tutorial
 └──────────────────────────────┘
@@ -267,7 +267,7 @@ Speed (RPM)
 
 ```
 ╔════════════════════════════════════════════╗
-║        SPIN DOCTOR Keyboard Shortcuts      ║
+║        BLIND SYSTEMS BLDC Simulator Keyboard Shortcuts      ║
 ╠════════════════════════════════════════════╣
 ║ F5          Start Simulation               ║
 ║ F6          Stop Simulation                ║
@@ -415,7 +415,7 @@ Manual Stop (you press F6)
 
 | Feature              | v1.0.0         | v2.0.0                     |
 | -------------------- | -------------- | -------------------------- |
-| App Name             | Generic        | ⚡ SPIN DOCTOR             |
+| App Name             | Generic        | ⚡ BLIND SYSTEMS BLDC Simulator             |
 | Version Display      | None           | v2.0.0 (prominent)         |
 | Duration Control     | N/A            | 0=infinite, >0=finite      |
 | Monitoring Variables | 11             | 13 (added pos, time)       |
@@ -450,7 +450,7 @@ Manual Stop (you press F6)
 
 ---
 
-## 🎉 You're Ready to Use SPIN DOCTOR v2.0.0!
+## 🎉 You're Ready to Use BLIND SYSTEMS BLDC Simulator v2.0.0!
 
 ```
 Launch: python main.py

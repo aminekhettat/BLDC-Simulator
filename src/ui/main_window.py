@@ -19,7 +19,9 @@ import numpy as np
 from typing import Optional
 import time
 import logging
+import json
 from threading import Lock
+from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -54,7 +56,17 @@ except ImportError:  # pragma: no cover
 
     QAccessible = _DummyQAccessible
 
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import (
+    QFont,
+    QDesktopServices,
+    QPixmap,
+    QPainter,
+    QColor,
+    QPen,
+    QTextDocument,
+)
+from PyQt6.QtCore import QUrl
+from PyQt6.QtPrintSupport import QPrinter
 
 from src.ui.widgets.accessible_widgets import (
     LabeledSpinBox,
@@ -79,12 +91,22 @@ from src.utils.config import (
     DEFAULT_MOTOR_PARAMS,
     FOC_FIELD_WEAKENING_PARAMS,
     FOC_STARTUP_PARAMS,
+    MOTOR_PROFILES_DIR,
     SIMULATION_PARAMS,
     VF_CONTROLLER_PARAMS,
     PLOT_STYLE,
     DEFAULT_LOAD_PROFILE,
 )
-from src.utils.speech import speak
+from src.utils.motor_profiles import (
+    list_motor_profiles,
+    load_motor_profile,
+    save_motor_profile,
+)
+from src.utils.speech import (
+    speak,
+    is_audio_assistance_enabled,
+    set_audio_assistance_enabled,
+)
 from src.utils.data_logger import DataLogger
 from src.visualization.visualization import SimulationPlotter
 
@@ -361,9 +383,8 @@ class BLDCMotorControlGUI(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Fun application name and version
-        APP_NAME = "⚡ SPIN DOCTOR"
-        APP_VERSION = "2.0.0"
+        APP_NAME = "BLIND SYSTEMS BLDC Simulator"
+        APP_VERSION = "2.1.0"
 
         self.setWindowTitle(
             f"{APP_NAME} - BLDC Motor Control Simulator (v{APP_VERSION})"
@@ -371,7 +392,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.setGeometry(100, 100, 1500, 950)
 
         # Accessibility
-        self.setAccessibleName("SPIN DOCTOR - BLDC Motor Control Application")
+        self.setAccessibleName("BLIND SYSTEMS BLDC Simulator")
         self.setAccessibleDescription(
             "Comprehensive BLDC motor simulator with V/f and FOC control. "
             "Use Tab to navigate between sections, arrow keys in list views."
@@ -413,7 +434,7 @@ class BLDCMotorControlGUI(QMainWindow):
         # Left column: title, tabs, buttons
         left_layout = QVBoxLayout()
 
-        title = QLabel("⚡ SPIN DOCTOR - Advanced BLDC Motor Control Simulator")
+        title = QLabel("BLIND SYSTEMS BLDC Simulator - Advanced Motor Control")
         title_font = QFont()
         title_font.setPointSize(14)
         title_font.setBold(True)
@@ -518,7 +539,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.statusBar().addWidget(self.status_bar_tau_m)
 
     def _create_menu_bar(self):
-        """Create application menu bar with File, Tools, and Help menus."""
+        """Create application menu bar with File, Option, and Help menus."""
         menubar = self.menuBar()
 
         # File Menu (mnemonic Alt+F)
@@ -527,6 +548,20 @@ class BLDCMotorControlGUI(QMainWindow):
         export_action = file_menu.addAction("&Export Simulation Data")
         export_action.setShortcut("Ctrl+S")
         export_action.triggered.connect(self._export_data)
+
+        file_menu.addSeparator()
+
+        import_motor_action = file_menu.addAction("&Import Motor Parameters...")
+        import_motor_action.triggered.connect(self._import_motor_parameters)
+
+        save_motor_action = file_menu.addAction("&Save Motor Parameters...")
+        save_motor_action.triggered.connect(self._save_motor_parameters)
+
+        save_sim_params_action = file_menu.addAction("Save &Simulation Parameters...")
+        save_sim_params_action.triggered.connect(self._save_simulation_parameters)
+
+        self.builtin_motor_menu = file_menu.addMenu("Load Built-in Motor Profile")
+        self._refresh_builtin_motor_menu()
 
         file_menu.addSeparator()
 
@@ -539,19 +574,235 @@ class BLDCMotorControlGUI(QMainWindow):
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
 
-        # Tools Menu (mnemonic Alt+T)
-        tools_menu = menubar.addMenu("&Tools")
-        reset_action = tools_menu.addAction("Reset Simulation (F7)")
+        # Option Menu (mnemonic Alt+O)
+        option_menu = menubar.addMenu("&Option")
+        reset_action = option_menu.addAction("Reset Simulation (F7)")
         reset_action.setShortcut("F7")
         reset_action.triggered.connect(self._reset_simulation)
 
+        self.audio_assistance_action = option_menu.addAction("Audio Assistance Enabled")
+        self.audio_assistance_action.setCheckable(True)
+        self.audio_assistance_action.setChecked(is_audio_assistance_enabled())
+        self.audio_assistance_action.triggered.connect(self._toggle_audio_assistance)
+
         # Help Menu (mnemonic Alt+H)
         help_menu = menubar.addMenu("&Help")
-        about_action = help_menu.addAction("About SPIN DOCTOR")
+        html_help_action = help_menu.addAction("Open HTML Help (Sphinx)")
+        html_help_action.triggered.connect(self._open_html_help)
+
+        pdf_manual_action = help_menu.addAction("Open PDF User Manual")
+        pdf_manual_action.triggered.connect(self._open_user_manual_pdf)
+
+        help_menu.addSeparator()
+        about_action = help_menu.addAction("About")
         about_action.triggered.connect(self._show_about)
 
-        guide_action = help_menu.addAction("Quick Start Guide")
-        guide_action.triggered.connect(self._show_guide)
+    def _refresh_builtin_motor_menu(self):
+        """Populate built-in motor profile submenu from data/motor_profiles."""
+        self.builtin_motor_menu.clear()
+        profile_paths = list_motor_profiles(MOTOR_PROFILES_DIR)
+        if not profile_paths:
+            empty_action = self.builtin_motor_menu.addAction(
+                "No built-in profiles found"
+            )
+            empty_action.setEnabled(False)
+            return
+
+        for profile_path in profile_paths:
+            action = self.builtin_motor_menu.addAction(profile_path.stem)
+            action.triggered.connect(
+                lambda checked=False, p=profile_path: (
+                    self._load_motor_profile_from_path(p)
+                )
+            )
+
+    def _collect_current_motor_parameters(self) -> dict:
+        """Collect current motor parameter values from UI widgets."""
+        return {
+            "nominal_voltage": float(self.param_voltage.value()),
+            "phase_resistance": float(self.param_resistance.value()),
+            "phase_inductance": float(self.param_inductance.value()),
+            "back_emf_constant": float(self.param_emf.value()),
+            "torque_constant": float(self.param_kt.value()),
+            "rotor_inertia": float(self.param_inertia.value()),
+            "friction_coefficient": float(self.param_friction.value()),
+            "num_poles": int(self.param_poles.value()),
+            "ld": float(self.param_ld.value()),
+            "lq": float(self.param_lq.value()),
+            "model_type": self.param_model_type.currentText(),
+            "emf_shape": self.param_emf_shape.currentText(),
+        }
+
+    def _apply_motor_profile(self, profile: dict):
+        """Apply a loaded motor profile to the UI controls."""
+        params = profile["motor_params"]
+        self.param_voltage.setValue(float(params["nominal_voltage"]))
+        self.param_resistance.setValue(float(params["phase_resistance"]))
+        self.param_inductance.setValue(float(params["phase_inductance"]))
+        self.param_emf.setValue(float(params["back_emf_constant"]))
+        self.param_kt.setValue(float(params["torque_constant"]))
+        self.param_inertia.setValue(float(params["rotor_inertia"]))
+        self.param_friction.setValue(float(params["friction_coefficient"]))
+        self.param_poles.setValue(int(params["num_poles"]))
+        self.param_ld.setValue(float(params.get("ld", params["phase_inductance"])))
+        self.param_lq.setValue(float(params.get("lq", params["phase_inductance"])))
+        self.param_model_type.setCurrentText(params.get("model_type", "dq"))
+        self.param_emf_shape.setCurrentText(params.get("emf_shape", "sinusoidal"))
+
+    def _import_motor_parameters(self):
+        """Import motor parameters from a JSON profile file."""
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import Motor Parameters",
+            str(MOTOR_PROFILES_DIR),
+            "JSON Files (*.json)",
+        )
+        if not filename:
+            return
+
+        try:
+            profile = load_motor_profile(Path(filename))
+            self._apply_motor_profile(profile)
+            self._apply_to_simulation()
+            QMessageBox.information(
+                self,
+                "Motor Parameters Imported",
+                f"Loaded profile: {profile['profile_name']}",
+            )
+            speak("Motor parameters imported successfully.")
+        except Exception as exc:
+            QMessageBox.critical(
+                self, "Import Error", f"Failed to import profile: {exc}"
+            )
+
+    def _save_motor_parameters(self):
+        """Save current motor parameters to a JSON profile file."""
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Motor Parameters",
+            str(MOTOR_PROFILES_DIR / "custom_motor_profile.json"),
+            "JSON Files (*.json)",
+        )
+        if not filename:
+            return
+
+        file_path = Path(filename)
+        if file_path.suffix.lower() != ".json":
+            file_path = file_path.with_suffix(".json")
+
+        profile_name = file_path.stem
+        rated_info = {
+            "rated_voltage_v": float(self.param_voltage.value()),
+            "pole_pairs": int(self.param_poles.value() / 2),
+        }
+        source_info = {
+            "origin": "user_saved_profile",
+        }
+
+        try:
+            save_motor_profile(
+                file_path=file_path,
+                motor_params=self._collect_current_motor_parameters(),
+                profile_name=profile_name,
+                rated_info=rated_info,
+                source_info=source_info,
+            )
+            self._refresh_builtin_motor_menu()
+            QMessageBox.information(
+                self,
+                "Motor Parameters Saved",
+                f"Saved profile: {file_path.name}",
+            )
+            speak("Motor parameters saved successfully.")
+        except Exception as exc:
+            QMessageBox.critical(self, "Save Error", f"Failed to save profile: {exc}")
+
+    def _load_motor_profile_from_path(self, profile_path: Path):
+        """Load a built-in motor profile by path."""
+        try:
+            profile = load_motor_profile(profile_path)
+            self._apply_motor_profile(profile)
+            self._apply_to_simulation()
+            QMessageBox.information(
+                self,
+                "Built-in Motor Profile Loaded",
+                f"Loaded profile: {profile['profile_name']}",
+            )
+            speak("Built-in motor profile loaded.")
+        except Exception as exc:
+            QMessageBox.critical(self, "Load Error", f"Failed to load profile: {exc}")
+
+    def _toggle_audio_assistance(self, enabled: bool):
+        """Enable or disable spoken assistance from the option menu."""
+        set_audio_assistance_enabled(bool(enabled))
+        state = "enabled" if enabled else "disabled"
+        QMessageBox.information(
+            self,
+            "Audio Assistance",
+            f"Audio assistance is now {state}.",
+        )
+        speak(f"Audio assistance {state}.")
+
+    def _open_html_help(self):
+        """Open generated Sphinx HTML documentation index."""
+        html_index = (
+            Path(__file__).resolve().parents[2]
+            / "docs"
+            / "_build"
+            / "html"
+            / "index.html"
+        )
+        if not html_index.exists():
+            QMessageBox.warning(
+                self,
+                "HTML Help Not Found",
+                "Sphinx HTML help was not found at docs/_build/html/index.html.\n"
+                "Generate it with: sphinx-build -b html docs docs/_build/html",
+            )
+            speak("HTML help not found. Please build Sphinx documentation first.")
+            return
+
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(html_index)))
+        speak("HTML help opened.")
+
+    def _ensure_user_manual_pdf(self) -> Path:
+        """Generate a PDF user manual when missing and return its path."""
+        project_root = Path(__file__).resolve().parents[2]
+        pdf_path = project_root / "docs" / "BLIND_SYSTEMS_User_Manual.pdf"
+        if pdf_path.exists():
+            return pdf_path
+
+        html = (
+            "<h1>BLIND SYSTEMS BLDC Simulator - User Manual</h1>"
+            "<p><b>Version:</b> 2.1.0</p>"
+            "<p><b>Author:</b> Amine Khettat</p>"
+            "<h2>1. Getting Started</h2>"
+            "<p>Configure motor, load and controller parameters, then start simulation.</p>"
+            "<h2>2. Accessibility</h2>"
+            "<p>Use Option -> Audio Assistance Enabled to toggle speech output.</p>"
+            "<h2>3. Running and Monitoring</h2>"
+            "<p>Start: F5, Stop: F6, Reset: F7. Monitor speed, torque, convergence and CPU load metrics.</p>"
+            "<h2>4. Data Export</h2>"
+            "<p>Use File -> Export Simulation Data or Ctrl+S.</p>"
+            "<h2>5. Help</h2>"
+            "<p>Open HTML help from Sphinx or this PDF from the Help menu.</p>"
+            "<hr/>"
+            "<p>Copyright 2026 BLIND SYSTEMS</p>"
+        )
+
+        printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+        printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+        printer.setOutputFileName(str(pdf_path))
+        document = QTextDocument()
+        document.setHtml(html)
+        document.print(printer)
+        return pdf_path
+
+    def _open_user_manual_pdf(self):
+        """Open generated PDF user manual, generating it if required."""
+        pdf_path = self._ensure_user_manual_pdf()
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(pdf_path)))
+        speak("PDF user manual opened.")
 
     def _show_simulation_params(self):
         """Show current simulation time step and motor time constants."""
@@ -596,29 +847,260 @@ class BLDCMotorControlGUI(QMainWindow):
 
         return msg
 
+    def _collect_simulation_configuration(self) -> dict:
+        """Collect complete simulation configuration from current UI state."""
+        now_utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        switching_frequency_hz = float(self.inverter_switching_frequency.value())
+        dt_s = 1.0 / switching_frequency_hz if switching_frequency_hz > 0.0 else None
+
+        config = {
+            "schema": "bldc.simulation_config.v1",
+            "created_utc": now_utc,
+            "control_mode": self.ctrl_mode.currentText(),
+            "simulation": {
+                "duration_s": float(self.sim_duration.value()),
+                "switching_frequency_hz": switching_frequency_hz,
+                "dt_s": dt_s,
+                "dc_voltage_v": float(self.supply_constant_voltage.value())
+                if hasattr(self, "supply_constant_voltage")
+                else float(SIMULATION_PARAMS.get("dc_voltage", 48.0)),
+            },
+            "motor_params": {
+                "nominal_voltage": float(self.param_voltage.value()),
+                "phase_resistance": float(self.param_resistance.value()),
+                "phase_inductance": float(self.param_inductance.value()),
+                "back_emf_constant": float(self.param_emf.value()),
+                "torque_constant": float(self.param_kt.value()),
+                "rotor_inertia": float(self.param_inertia.value()),
+                "friction_coefficient": float(self.param_friction.value()),
+                "num_poles": int(self.param_poles.value()),
+                "pole_pairs": int(self.param_poles.value() / 2),
+                "ld": float(self.param_ld.value()),
+                "lq": float(self.param_lq.value()),
+                "model_type": self.param_model_type.currentText(),
+                "emf_shape": self.param_emf_shape.currentText(),
+            },
+            "load_profile": {
+                "type": self.load_type.currentText(),
+                "constant_torque_nm": float(self.load_constant_torque.value()),
+                "ramp_initial_torque_nm": float(self.load_initial_torque.value()),
+                "ramp_final_torque_nm": float(self.load_final_torque.value()),
+                "ramp_duration_s": float(self.load_ramp_duration.value()),
+            },
+            "supply_profile": {
+                "type": self.supply_type.currentText()
+                if hasattr(self, "supply_type")
+                else "Constant",
+                "constant_voltage_v": float(self.supply_constant_voltage.value())
+                if hasattr(self, "supply_constant_voltage")
+                else float(SIMULATION_PARAMS.get("dc_voltage", 48.0)),
+                "ramp_initial_v": float(self.supply_ramp_initial.value())
+                if hasattr(self, "supply_ramp_initial")
+                else 0.0,
+                "ramp_final_v": float(self.supply_ramp_final.value())
+                if hasattr(self, "supply_ramp_final")
+                else 0.0,
+                "ramp_duration_s": float(self.supply_ramp_duration.value())
+                if hasattr(self, "supply_ramp_duration")
+                else 0.0,
+            },
+            "vf_controller": {
+                "v_nominal": float(self.vf_v_nominal.value()),
+                "f_nominal": float(self.vf_f_nominal.value()),
+                "speed_ref_rpm": float(self.vf_speed_ref.value()),
+                "startup_voltage_v": float(self.vf_startup_voltage.value()),
+                "frequency_slew_hz_per_s": float(self.vf_freq_slew.value()),
+                "startup_sequence_enabled": self.vf_startup_sequence_mode.currentText()
+                == "Enabled",
+                "align_duration_s": float(self.vf_align_time.value()),
+                "align_voltage_v": float(self.vf_align_voltage.value()),
+                "align_angle_deg": float(self.vf_align_angle.value()),
+                "ramp_initial_frequency_hz": float(
+                    self.vf_ramp_initial_frequency.value()
+                ),
+            },
+            "foc_controller": {
+                "transform": self.foc_transform.currentText(),
+                "output_mode": self.foc_output_mode.currentText(),
+                "speed_loop_mode": self.foc_speed_loop_mode.currentText(),
+                "id_ref_a": float(self.foc_id_ref.value()),
+                "iq_ref_a": float(self.foc_iq_ref.value()),
+                "speed_ref_rpm": float(self.foc_speed_ref.value()),
+                "iq_limit_a": float(self.foc_iq_limit.value()),
+                "speed_pi": {
+                    "kp": float(self.foc_speed_kp.value()),
+                    "ki": float(self.foc_speed_ki.value()),
+                },
+                "current_pi": {
+                    "d_kp": float(self.foc_d_kp.value()),
+                    "d_ki": float(self.foc_d_ki.value()),
+                    "q_kp": float(self.foc_q_kp.value()),
+                    "q_ki": float(self.foc_q_ki.value()),
+                },
+                "decoupling": {
+                    "enable_d": self.foc_decouple_d_mode.currentText() == "Enabled",
+                    "enable_q": self.foc_decouple_q_mode.currentText() == "Enabled",
+                },
+                "observer": {
+                    "mode": self.foc_angle_observer_mode.currentText(),
+                    "pll_kp": float(self.foc_pll_kp.value()),
+                    "pll_ki": float(self.foc_pll_ki.value()),
+                    "smo_k_slide": float(self.foc_smo_k_slide.value()),
+                    "smo_lpf_alpha": float(self.foc_smo_lpf_alpha.value()),
+                    "smo_boundary": float(self.foc_smo_boundary.value()),
+                },
+                "startup_sequence": {
+                    "enabled": self.foc_startup_sequence_mode.currentText()
+                    == "Enabled",
+                    "align_duration_s": float(self.foc_align_time.value()),
+                    "align_current_a": float(self.foc_align_current.value()),
+                    "align_angle_deg": float(self.foc_align_angle.value()),
+                    "open_loop_initial_speed_rpm": float(
+                        self.foc_open_loop_initial_speed.value()
+                    ),
+                    "open_loop_target_speed_rpm": float(
+                        self.foc_open_loop_target_speed.value()
+                    ),
+                    "open_loop_ramp_time_s": float(
+                        self.foc_open_loop_ramp_time.value()
+                    ),
+                    "open_loop_id_ref_a": float(self.foc_open_loop_id_ref.value()),
+                    "open_loop_iq_ref_a": float(self.foc_open_loop_iq_ref.value()),
+                },
+                "startup_transition": {
+                    "enabled": self.foc_startup_transition_mode.currentText()
+                    == "Enabled",
+                    "initial_mode": self.foc_startup_initial_observer.currentText(),
+                    "min_speed_rpm": float(self.foc_startup_min_speed.value()),
+                    "min_elapsed_s": float(self.foc_startup_min_time.value()),
+                    "min_emf_v": float(self.foc_startup_min_emf.value()),
+                    "min_confidence": float(self.foc_startup_min_confidence.value()),
+                    "confidence_hold_s": float(
+                        self.foc_startup_confidence_hold.value()
+                    ),
+                    "confidence_hysteresis": float(
+                        self.foc_startup_confidence_hysteresis.value()
+                    ),
+                    "fallback_enabled": self.foc_startup_fallback_mode.currentText()
+                    == "Enabled",
+                    "fallback_hold_s": float(self.foc_startup_fallback_hold.value()),
+                },
+                "field_weakening": {
+                    "enabled": self.foc_field_weakening_mode.currentText() == "Enabled",
+                    "start_speed_rpm": float(
+                        self.foc_field_weakening_start_speed.value()
+                    ),
+                    "gain": float(self.foc_field_weakening_gain.value()),
+                    "max_negative_id_a": float(self.foc_field_weakening_max_id.value()),
+                },
+            },
+            "pfc": {
+                "enabled": self.pfc_mode.currentText() == "Enabled",
+                "target_pf": float(self.pfc_target_pf.value()),
+                "kp": float(self.pfc_kp.value()),
+                "ki": float(self.pfc_ki.value()),
+                "max_compensation_var": float(self.pfc_max_var.value()),
+                "window_samples": int(self.pfc_window_samples.value()),
+            },
+            "inverter_params": self.svm.get_realism_state() if self.svm else {},
+            "communication_params": {
+                "enabled": bool(
+                    hasattr(self, "hardware_enable_backend")
+                    and self.hardware_enable_backend.isChecked()
+                ),
+                "backend": self.hardware_backend_type.currentText()
+                if hasattr(self, "hardware_backend_type")
+                else "none",
+                "mock_noise_std": float(self.hardware_noise_std.value())
+                if hasattr(self, "hardware_noise_std")
+                else 0.0,
+                "mock_seed": int(self.hardware_seed.value())
+                if hasattr(self, "hardware_seed")
+                else 0,
+            },
+        }
+
+        return config
+
+    def _save_simulation_parameters(self):
+        """Save full simulation configuration as JSON."""
+        default_path = Path("data") / "logs" / "simulation_parameters.json"
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Simulation Parameters",
+            str(default_path),
+            "JSON Files (*.json)",
+        )
+        if not filename:
+            return
+
+        file_path = Path(filename)
+        if file_path.suffix.lower() != ".json":
+            file_path = file_path.with_suffix(".json")
+
+        try:
+            payload = self._collect_simulation_configuration()
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            QMessageBox.information(
+                self,
+                "Simulation Parameters Saved",
+                f"Saved configuration: {file_path.name}",
+            )
+            speak("Simulation parameters saved successfully.")
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Save Error",
+                f"Failed to save simulation parameters: {exc}",
+            )
+
     def _show_about(self):
         """Show about dialog."""
         about_text = (
-            "<h2>⚡ SPIN DOCTOR v2.0.0</h2>"
+            "<h2>BLIND SYSTEMS BLDC Simulator v2.1.0</h2>"
             "<p><b>Advanced BLDC Motor Control Simulator</b></p>"
-            "<p>A comprehensive tool for simulating and controlling Brushless DC motors with:</p>"
-            "<ul>"
-            "<li>V/f (Voltage-to-Frequency) control</li>"
-            "<li>FOC (Field-Oriented Control) algorithm</li>"
-            "<li>Clarke/Concordia coordinate transforms</li>"
-            "<li>SVM (Space Vector Modulation) generation</li>"
-            "<li>Real-time monitoring and visualization</li>"
-            "<li>Screen reader accessibility</li>"
-            "</ul>"
-            "<p><b>Author:</b> BLDC Control Team</p>"
-            "<p><b>Version:</b> 2.0.0</p>"
+            "<p><b>Author:</b> Amine Khettat</p>"
+            "<p><b>Copyright:</b> 2026 BLIND SYSTEMS</p>"
+            "<p>Includes accessible audio assistance and real-time control diagnostics.</p>"
         )
-        QMessageBox.about(self, "About SPIN DOCTOR", about_text)
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("About")
+        msg.setTextFormat(Qt.TextFormat.RichText)
+        msg.setText(about_text)
+
+        project_root = Path(__file__).resolve().parents[2]
+        candidate_logos = [
+            project_root / "docs" / "logo.png",
+            project_root / "data" / "logo.png",
+        ]
+        logo_path = next((p for p in candidate_logos if p.exists()), None)
+        if logo_path is not None:
+            pix = QPixmap(str(logo_path))
+            if not pix.isNull():
+                msg.setIconPixmap(
+                    pix.scaled(220, 80, Qt.AspectRatioMode.KeepAspectRatio)
+                )
+        else:
+            # Fallback synthetic logo if no file is present yet.
+            pix = QPixmap(240, 70)
+            pix.fill(QColor("white"))
+            painter = QPainter(pix)
+            painter.setPen(QPen(QColor("#0A0A0A"), 2))
+            painter.drawRect(1, 1, 238, 68)
+            painter.setPen(QPen(QColor("#0A3D91"), 2))
+            painter.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+            painter.drawText(pix.rect(), Qt.AlignmentFlag.AlignCenter, "BLIND SYSTEMS")
+            painter.end()
+            msg.setIconPixmap(pix)
+
+        msg.exec()
 
     def _show_guide(self):
         """Show quick start guide."""
         guide_text = (
-            "<h3>Quick Start Guide - SPIN DOCTOR</h3>"
+            "<h3>Quick Start Guide - BLIND SYSTEMS BLDC Simulator</h3>"
             "<p><b>1. Configure Motor Parameters:</b></p>"
             "<ul><li>Set nominal voltage, resistance, inductance, pole pairs, Back-EMF constant</li></ul>"
             "<p><b>2. Set Load Profile:</b></p>"
@@ -3349,54 +3831,7 @@ class BLDCMotorControlGUI(QMainWindow):
         )
 
         if filename:
-            metadata = {
-                "motor_params": {
-                    "nominal_voltage": self.param_voltage.value(),
-                    "resistance": self.param_resistance.value(),
-                    "inductance": self.param_inductance.value(),
-                },
-                "control_params": {
-                    "v_nominal": self.vf_v_nominal.value(),
-                    "f_nominal": self.vf_f_nominal.value(),
-                    "vf_startup_sequence_enabled": self.vf_startup_sequence_mode.currentText()
-                    == "Enabled",
-                    "vf_align_duration_s": self.vf_align_time.value(),
-                    "vf_align_voltage_v": self.vf_align_voltage.value(),
-                    "vf_align_angle_deg": self.vf_align_angle.value(),
-                    "vf_ramp_initial_frequency_hz": self.vf_ramp_initial_frequency.value(),
-                    "foc_startup_sequence_enabled": self.foc_startup_sequence_mode.currentText()
-                    == "Enabled",
-                    "foc_align_duration_s": self.foc_align_time.value(),
-                    "foc_align_current_a": self.foc_align_current.value(),
-                    "foc_align_angle_deg": self.foc_align_angle.value(),
-                    "foc_open_loop_initial_speed_rpm": self.foc_open_loop_initial_speed.value(),
-                    "foc_open_loop_target_speed_rpm": self.foc_open_loop_target_speed.value(),
-                    "foc_open_loop_ramp_time_s": self.foc_open_loop_ramp_time.value(),
-                    "foc_open_loop_id_ref_a": self.foc_open_loop_id_ref.value(),
-                    "foc_open_loop_iq_ref_a": self.foc_open_loop_iq_ref.value(),
-                    "foc_field_weakening_enabled": self.foc_field_weakening_mode.currentText()
-                    == "Enabled",
-                    "foc_field_weakening_start_speed_rpm": self.foc_field_weakening_start_speed.value(),
-                    "foc_field_weakening_gain": self.foc_field_weakening_gain.value(),
-                    "foc_field_weakening_max_negative_id_a": self.foc_field_weakening_max_id.value(),
-                },
-                "inverter_params": self.svm.get_realism_state() if self.svm else {},
-                "communication_params": {
-                    "enabled": bool(
-                        hasattr(self, "hardware_enable_backend")
-                        and self.hardware_enable_backend.isChecked()
-                    ),
-                    "backend": self.hardware_backend_type.currentText()
-                    if hasattr(self, "hardware_backend_type")
-                    else "none",
-                    "mock_noise_std": self.hardware_noise_std.value()
-                    if hasattr(self, "hardware_noise_std")
-                    else 0.0,
-                    "mock_seed": int(self.hardware_seed.value())
-                    if hasattr(self, "hardware_seed")
-                    else 0,
-                },
-            }
+            metadata = self._collect_simulation_configuration()
 
             try:
                 self.logger.save_simulation_data(

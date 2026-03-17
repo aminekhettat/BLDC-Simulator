@@ -17,10 +17,12 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 LOGS_DIR = DATA_DIR / "logs"
 PLOTS_DIR = DATA_DIR / "plots"
+MOTOR_PROFILES_DIR = DATA_DIR / "motor_profiles"
 
 # Create directories if they don't exist
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+MOTOR_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Default motor parameters
 DEFAULT_MOTOR_PARAMS = {

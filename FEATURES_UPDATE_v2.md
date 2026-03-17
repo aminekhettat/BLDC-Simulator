@@ -1,6 +1,6 @@
-# 🚀 SPIN DOCTOR v2.0.0 - New Features Update
+# 🚀 BLIND SYSTEMS BLDC Simulator v2.0.0 - New Features Update
 
-Welcome to **SPIN DOCTOR**, the advanced BLDC motor control simulator! This document highlights all the new features and improvements in v2.0.0.
+Welcome to **BLIND SYSTEMS BLDC Simulator**, the advanced BLDC motor control simulator! This document highlights all the new features and improvements in v2.0.0.
 
 ---
 
@@ -44,14 +44,14 @@ The following capabilities were added after v2.0.0:
 
 ### 1. **Fun Application Identity**
 
-- **New App Name:** ⚡ **SPIN DOCTOR** (replacing generic "BLDC Motor Control Simulator")
+- **New App Name:** ⚡ **BLIND SYSTEMS BLDC Simulator** (replacing generic "BLDC Motor Control Simulator")
 - **Version Display:** Now shows v2.0.0 in the window title
 - **Professional Branding:** Complete visual refresh with consistent emoji icons throughout the interface
 
 **Window Title Example:**
 
 ```
-⚡ SPIN DOCTOR - BLDC Motor Control Simulator (v2.0.0)
+⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v2.0.0)
 ```
 
 ---
@@ -138,7 +138,7 @@ Professional menu structure with keyboard shortcuts:
 
 #### **Help Menu**
 
-- **About SPIN DOCTOR**
+- **About BLIND SYSTEMS BLDC Simulator**
   - Display application version, features, and credits
   - Shows supported control algorithms and transformations
 - **Quick Start Guide**
@@ -152,7 +152,7 @@ Professional menu structure with keyboard shortcuts:
 File       → Export Simulation Data... (Ctrl+S)
            → Quit (Ctrl+Q)
 Tools      → Reset Simulation (F7)
-Help       → About SPIN DOCTOR
+Help       → About BLIND SYSTEMS BLDC Simulator
            → Quick Start Guide
 ```
 
@@ -278,7 +278,7 @@ Speed (RPM)
 Option 1: Menu → Help → Quick Start Guide
          (Shows step-by-step workflow)
 
-Option 2: Menu → Help → About SPIN DOCTOR
+Option 2: Menu → Help → About BLIND SYSTEMS BLDC Simulator
          (Shows features and capabilities)
 ```
 
@@ -410,7 +410,7 @@ Potential features for future versions:
 
 ## ✅ Feature Checklist
 
-- ✅ Renamed to "SPIN DOCTOR" with emoji branding
+- ✅ Renamed to "BLIND SYSTEMS BLDC Simulator" with emoji branding
 - ✅ Version v2.0.0 displayed in window title
 - ✅ Simulation duration control (0 = infinite)
 - ✅ 13-variable real-time monitoring display
@@ -430,11 +430,11 @@ For more information, see:
 - [QUICKSTART.md](QUICKSTART.md) - Getting started guide
 - [README.md](README.md) - Complete project documentation
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical design details
-- Help menu in application → Quick Start Guide or About SPIN DOCTOR
+- Help menu in application → Quick Start Guide or About BLIND SYSTEMS BLDC Simulator
 
 ---
 
-**Enjoy using SPIN DOCTOR! Happy motor simulation! ⚡🔩**
+**Enjoy using BLIND SYSTEMS BLDC Simulator! Happy motor simulation! ⚡🔩**
 
 Version: 2.0.0  
 Last Updated: March 4, 2026

@@ -431,6 +431,11 @@ class BLDCMotor:
             i_d, i_q = park_transform(i_alpha, i_beta, theta_elec)
 
             # d-q voltage equations
+            # back_emf_constant is Ke [V·s/mech.rad]; flux linkage λ_pm = Ke/P.
+            # BEMF term in q-axis: ωe × λ_pm = ωe × Ke/P = ωmech × Ke = omega × Ke.
+            lambda_pm = self.params.back_emf_constant / max(
+                float(self.params.poles_pairs), 1.0
+            )
             di_d_dt = (
                 v_d
                 - self.params.phase_resistance * i_d
@@ -440,12 +445,22 @@ class BLDCMotor:
                 v_q
                 - self.params.phase_resistance * i_q
                 - omega_elec * self.params.ld * i_d
-                - omega_elec * self.params.back_emf_constant
+                - omega_elec * lambda_pm
             ) / self.params.lq
 
-            # Transform back to get di/dt for a,b,c phases
-            dv_alpha_dt, dv_beta_dt = inverse_park(di_d_dt, di_q_dt, theta_elec)
-            di_dt_a, di_dt_b, di_dt_c = inverse_clarke(dv_alpha_dt, dv_beta_dt)
+            # Transform DQ derivatives back to stationary-frame (ABC) derivatives.
+            # Full chain-rule: d/dt(iPark(id, iq, θe)) has a rotational correction
+            # from dθe/dt = ωe:
+            #   d(iα)/dt = iPark(diᵈ/dt, diᵍ/dt, θe)[α] − ωe · iβ
+            #   d(iβ)/dt = iPark(diᵈ/dt, diᵍ/dt, θe)[β] + ωe · iα
+            # Without this term the ABC state "freezes" while Park transform rotates,
+            # producing a spurious limit cycle at the electrical frequency.
+            di_alpha_dt_base, di_beta_dt_base = inverse_park(
+                di_d_dt, di_q_dt, theta_elec
+            )
+            di_alpha_dt = di_alpha_dt_base - omega_elec * i_beta
+            di_beta_dt = di_beta_dt_base + omega_elec * i_alpha
+            di_dt_a, di_dt_b, di_dt_c = inverse_clarke(di_alpha_dt, di_beta_dt)
             di_dt = np.array([di_dt_a, di_dt_b, di_dt_c])
         else:  # scalar model
             # Electrical dynamics: di/dt = (V - R*i - E) / L

@@ -8,6 +8,42 @@ This document provides insights into the project architecture and design decisio
 
 The simulator architecture now includes four additional runtime layers:
 
+## Motor Parameter Import/Save Architecture
+
+The simulator now supports parameter profile persistence for repeatable motor setup.
+
+1. UI Interaction Layer
+
+- File menu exposes:
+  - Import Motor Parameters (JSON)
+  - Save Motor Parameters (JSON)
+  - Load Built-in Motor Profile (from `data/motor_profiles`)
+- Imported values are written directly into motor parameter widgets and applied to
+  simulation state.
+
+2. Profile Persistence Layer
+
+- Module: `src/utils/motor_profiles.py`
+- Responsibilities:
+  - Discover built-in profiles
+  - Validate profile schema and motor parameter completeness
+  - Normalize profile fields (pole-pairs derivation, Ld/Lq defaults)
+  - Read/write JSON profiles
+
+3. Storage Layer
+
+- Directory: `data/motor_profiles`
+- Schema id: `bldc.motor_profile.v1`
+- Profile structure:
+  - `motor_params`: simulation-ready motor model parameters
+  - `rated_info`: vendor rated operating point
+  - `source`: traceability (vendor URL / notes)
+
+4. Startup Defaults and Built-ins
+
+- Built-in menu is populated from all JSON profiles in `data/motor_profiles`.
+- User-saved profiles are immediately discoverable by the built-in loader.
+
 1. Startup Sequencing Layer
 
 - FOC and V/f controllers each expose a phase-machine startup flow.
@@ -32,6 +68,134 @@ The simulator architecture now includes four additional runtime layers:
 - Compute backend policy is selectable (`auto`, `cpu`, `gpu`).
 - GPU probing and fallback metadata are tracked in simulation state.
 - Power metric evaluation can execute via CuPy when GPU backend is active.
+
+## Auto-Tuning Convergence System (March 2026)
+
+A production-grade auto-tuning framework has been integrated to optimize FOC PI controller parameters:
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Auto-Tune Until Convergence Script                     │
+│  (examples/auto_tune_until_convergence.py)              │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─ Stage 1: Current PI Optimization ─────────────┐    │
+│  │  • Initial candidate generation                │    │
+│  │  • Trial evaluation on search_time window      │    │
+│  │  • Orthogonality gate (load-aware d/q decoup) │    │
+│  │  • Best current gains selected                 │    │
+│  └──────────────────────────────────────────────┘    │
+│            │                                           │
+│            ▼                                           │
+│  ┌─ Stage 2: Speed PI Optimization ──────────────┐    │
+│  │  • Constrain current PI (from Stage 1)        │    │
+│  │  • Vary speed PI gains                        │    │
+│  │  • Validation: settling time, steady-state   │    │
+│  │  • Best speed gains selected                  │    │
+│  └──────────────────────────────────────────────┘    │
+│            │                                           │
+│            ▼                                           │
+│  ┌─ Stage 3: Unbounded Expansion (NEW!) ─────────┐    │
+│  │  if --max-trials ≤ 0 and not converged:      │    │
+│  │    • Expand parameter space (1.15× per round)│    │
+│  │    • Build new neighbors from scaled seed    │    │
+│  │    • Continue until convergence achieved     │    │
+│  │    • Adaptive scaling factor up to 1.5×      │    │
+│  └──────────────────────────────────────────────┘    │
+│            │                                           │
+│            ▼                                           │
+│  ┌─ Verification: 20s Extended Run ──────────────┐    │
+│  │  • Apply best candidate to motor             │    │
+│  │  • Run verify_time_s window (default 8-20s) │    │
+│  │  • Confirm full_converged=true               │    │
+│  │  • Measure final speed ratio                 │    │
+│  └──────────────────────────────────────────────┘    │
+│            │                                           │
+│            ▼                                           │
+│  ┌─ Session Storage ─────────────────────────────┐    │
+│  │  • JSON session file with all metrics       │    │
+│  │  • Trial debug log (first N trials)         │    │
+│  │  • Acceptance/convergence evidence          │    │
+│  │  • Best candidate dictionary (PI gains)     │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Key Components
+
+**Trial Structure:**
+
+- Each trial evaluates one (current_kp, current_ki, speed_kp, speed_ki, iq_limit_a) candidate
+- Search phase: 0.6s default motor simulation to measure orthogonality & speed tracking
+- Verification phase: 8-20s extended run to confirm stability and convergence
+
+**Convergence Criteria:**
+
+1. Speed error within ±2% tolerance band (configurable)
+2. Tail mean error ≤ band upper (smooth tracking)
+3. Tail max error ≤ 2× band upper (no large spikes)
+4. Settling time achieved (stabilization detected)
+5. Orthogonality gate pass (d/q decoupling quality)
+6. Full verification window converged (20s extended run)
+
+**Trial Limits:**
+
+- Bounded mode: `--max-trials N` (N > 0) → search for N trials total
+- Unbounded mode: `--max-trials 0` (or ≤ 0) → expand parameter space iteratively until convergence
+- Overcurrent control:
+  - `--overcurrent-limit-a A` (A > 0) → abort trial if phase current exceeds A amperes
+  - `--overcurrent-limit-a 0` (or ≤ 0) → disable overcurrent abort (full search)
+
+### Session Metadata Schema
+
+Tuning sessions are saved as JSON with schema version v2:
+
+```json
+{
+  "session_version": "v2",
+  "scenario": "auto_tune_until_convergence",
+  "trial_limit_mode": "unbounded|bounded",
+  "trial_limit": -1 | 0 | N,
+  "overcurrent_limit_a": null | 0.0 | A,
+  "profiles_tuned": ["Motor Profile Name"],
+  "results": {
+    "tested_trials": <count>,
+    "best_search_trial": { ...trial_dict... },
+    "best_candidate": {
+      "speed_pi": { "kp": X, "ki": Y },
+      "current_pi": { "d_kp": X, "d_ki": Y },
+      "iq_limit_a": <float>
+    },
+    "verification": {
+      "converged": true|false,
+      "full_converged": true|false,
+      "final_speed_rpm": <float>,
+      "final_speed_ratio": <float>,
+      "tail_abs_mean_error_rpm": <float>,
+      "tail_abs_max_error_rpm": <float>
+    }
+  },
+  "acceptance": {
+    "accepted": true|false,
+    "reason": "convergence_ok" | "overcurrent_abort" | "search_exhausted"
+  }
+}
+```
+
+### Real-World Outcomes (March 2026)
+
+All three motor profiles achieved successful convergence with unbounded mode:
+
+| Motor Profile         | Target RPM | Trials | Final Speed | Ratio  | Status            |
+| --------------------- | ---------- | ------ | ----------- | ------ | ----------------- |
+| Innotec 255-EZS48-160 | 1500       | 71     | 1498.79     | 0.9992 | ✅ Full Converged |
+| Motenergy ME1718 48V  | 1500       | 71     | 1506.52     | 1.0044 | ✅ Full Converged |
+| Motenergy ME1719 48V  | 1500       | 71     | 1506.52     | 1.0044 | ✅ Full Converged |
+
+All speed ratios within ±2% tolerance. Unbounded mode enabled convergence where bounded high-budget searches (5000 trials) failed due to finite candidate pool architecture.
 
 ## Core Components Interaction
 

@@ -13,8 +13,15 @@ from .config import (
     VF_CONTROLLER_PARAMS,
     LOGS_DIR,
     PLOTS_DIR,
+    MOTOR_PROFILES_DIR,
 )
 from .data_logger import DataLogger
+from .motor_profiles import (
+    PROFILE_SCHEMA,
+    list_motor_profiles,
+    load_motor_profile,
+    save_motor_profile,
+)
 
 __all__ = [
     "DEFAULT_MOTOR_PARAMS",
@@ -22,5 +29,10 @@ __all__ = [
     "VF_CONTROLLER_PARAMS",
     "LOGS_DIR",
     "PLOTS_DIR",
+    "MOTOR_PROFILES_DIR",
     "DataLogger",
+    "PROFILE_SCHEMA",
+    "list_motor_profiles",
+    "load_motor_profile",
+    "save_motor_profile",
 ]
