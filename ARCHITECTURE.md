@@ -73,6 +73,51 @@ The simulator now supports parameter profile persistence for repeatable motor se
 
 A production-grade auto-tuning framework has been integrated to optimize FOC PI controller parameters:
 
+## Loaded No-Field-Weakening Calibration Workflow (March 2026)
+
+The simulator now includes a dedicated loaded operating-point calibration script for practical no-field-weakening operation:
+
+- Script: `examples/calibrate_no_fw_loaded_point.py`
+- Input profile: `data/motor_profiles/motenergy_me1718_48v.json`
+- Baseline seed: `data/tuning_sessions/until_converged/motenergy_me1718_48v_until_converged.json`
+- Report output: `data/logs/calibration_me1718_no_fw_loaded_point.json`
+
+### Workflow Stages
+
+1. **Practical No-FW Speed Selection**
+
+- Estimates the theoretical no-field-weakening speed limit from the motor parameters.
+- Caps the working target to the prior converged session's effective no-FW speed, avoiding unrealistic over-target search points.
+
+2. **Torque Feasibility Search**
+
+- Applies a smooth torque ramp to avoid binary step shocks on the controller.
+- Searches for the highest load torque that still preserves speed tracking.
+- Uses `speed_tracking_passed` as the acceptance key so torque reachability is established before orthogonality tuning is enforced.
+
+3. **Final Loaded-Point Retuning**
+
+- Retunes the controller at the selected load point.
+- Uses a staged acceptance strategy:
+  - `speed_tracking_passed`
+  - `orthogonality_stage_passed`
+  - `efficiency_conditioned_passed`
+- Efficiency is only enforced when the mechanical power and load are high enough to make the efficiency metric meaningful.
+
+### Current Outcome
+
+- Practical no-FW target speed: `1617.44 rpm`
+- Selected speed-feasible torque: `9.9904 Nm`
+- Final high-fidelity result:
+  - Mean speed: `1615.36 rpm`
+  - Orthogonality error: `24.36 deg`
+  - Efficiency: `75.17%`
+  - Speed tracking: pass
+  - Orthogonality: fail
+  - Conditioned efficiency: fail
+
+This means the workflow now finds a realistic loaded torque ceiling without collapsing to zero torque, but further controller or plant-model refinement is still required to satisfy the full loaded-point acceptance criteria.
+
 ### Architecture
 
 ```
@@ -257,17 +302,17 @@ di_phase/dt = (1/L) * (v_phase - R*i_phase - e_back_emf)
 
 ### Back-EMF Generation
 
-Trapezoidal model (realistic for BLDC):
+Profile-driven model:
 
 ```
-e = K_emf * ω * f_trap(θ)
+e = K_emf * ω * f_emf(θ)
 ```
 
 Where:
 
 - K_emf: Back-EMF constant [V·s/rad]
 - ω: Angular velocity [rad/s]
-- f_trap(θ): Trapezoidal function based on rotor position
+- f_emf(θ): Sinusoidal or trapezoidal waveform selected by motor profile
 - θ: Rotor position [rad] (electrical angle = θ \* poles_pairs)
 
 ### Mechanical Equations

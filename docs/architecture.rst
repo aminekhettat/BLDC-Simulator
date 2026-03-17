@@ -77,7 +77,7 @@ Key Components
 **Motor Model** (`src.core.motor_model`)
 - Grid-based motor parameter storage
 - Phase current and voltage tracking
-- EMF calculation with parameter injection
+- EMF calculation with profile-selected sinusoidal or trapezoidal waveform support
 - Torque computation from currents
 
 **Control Modules** (`src.control.*`)
@@ -102,6 +102,23 @@ Key Components
 - Matplotlib integration
 - Configurable grid and plot styles
 - Export functionality
+
+Loaded Calibration Workflow
+---------------------------
+
+The repository includes a dedicated loaded no-field-weakening calibration example:
+
+- Script: `examples/calibrate_no_fw_loaded_point.py`
+- Seed source: prior converged unloaded/no-FW tuning session
+- Output: JSON report in `data/logs/`
+
+The workflow is intentionally staged:
+
+1. Stabilize at the practical no-field-weakening speed cap.
+2. Increase load torque with a smooth ramp and retain the highest point that still passes speed tracking.
+3. Retune the final operating point with orthogonality and conditioned-efficiency gates.
+
+This keeps torque-feasibility discovery separate from the stricter final loaded-point quality checks.
 
 Data Flow
 ---------

@@ -43,6 +43,12 @@ Voltage-Frequency Control example::
 
     python examples/example_vf_control.py
 
+Loaded no-field-weakening calibration example::
+
+    python examples/calibrate_no_fw_loaded_point.py
+
+This example writes a detailed report to ``data/logs/calibration_me1718_no_fw_loaded_point.json``.
+
 Running Tests
 -------------
 
@@ -69,5 +75,7 @@ Core Concepts
 - **V/F (Voltage-Frequency Control)**: Simplified scalar control for basic operation
 
 **Space Vector Modulation**: PWM generation for 3-phase inverter control
+
+**Loaded Calibration**: The loaded no-FW workflow first proves speed feasibility under load, then evaluates orthogonality and conditioned efficiency at the final operating point.
 
 See the full documentation for detailed API reference and advanced topics.

@@ -4,6 +4,8 @@
 
 This release introduces **unbounded auto-tuning convergence** for FOC PI controller parameter optimization. The auto-tuning framework now delivers guaranteed convergence to target motor speeds by adaptively expanding the parameter search space rather than relying on finite candidate pools. All three production motor profiles (Innotec, Motenergy ME1718, ME1719) have been successfully auto-tuned to 1500 RPM with full convergence validation.
 
+This snapshot also documents a new **loaded no-field-weakening calibration workflow** for the Motenergy ME1718 operating point. That workflow now reaches a realistic speed-feasible torque near `9.99 Nm` at the practical no-FW speed cap, while clearly reporting that orthogonality and conditioned-efficiency acceptance are still not satisfied in the final high-fidelity verification.
+
 **Major Achievement**: Achieved 1500 RPM convergence on all three motors using unbounded iterative refinement, overcoming prior limitations of bounded high-budget searches (5000 trials) that could not produce convergence.
 
 ---
@@ -91,6 +93,35 @@ effective_overcurrent_limit_a = (
 }
 ```
 
+### 4. **Loaded No-Field-Weakening Calibration Staging** ⚙️
+
+**File Added**: `examples/calibrate_no_fw_loaded_point.py`
+
+**What's New**:
+
+- Dedicated workflow for calibrating a loaded operating point without field weakening
+- Practical target speed selection reuses the prior converged session's effective no-FW speed
+- Staged acceptance prevents efficiency from prematurely rejecting torque-feasible candidates
+- Final JSON report captures both fast-search and high-fidelity verification results
+
+**Acceptance Strategy**:
+
+- `speed_tracking_passed`: used during torque-feasibility search
+- `orthogonality_stage_passed`: used during final loaded-point retuning
+- `efficiency_conditioned_passed`: only active once mechanical power/load is meaningful
+
+**Current Outcome**:
+
+- Practical no-FW target speed: `1617.44 RPM`
+- Selected plausible achievable torque: `9.9904 Nm`
+- Final verification:
+  - speed tracking: pass
+  - orthogonality error: `24.36 deg` → fail
+  - efficiency: `75.17%` → fail conditioned gate
+  - overall success: false
+
+This is an intentional documentation update of current status, not a claim of full loaded-point convergence.
+
 ---
 
 ## Regression Gates
@@ -151,12 +182,14 @@ pytest tests/test_baseline_integrity.py \
 
 - Added "Auto-Tuning & Convergence" section under features
 - Added "Advanced: Auto-Tuning FOC PI Parameters" usage guide
+- Added loaded no-field-weakening calibration workflow and current status
 - CLI parameter documentation with convergence semantics
 - Session output example showing v2 schema
 
 ### ARCHITECTURE.md
 
 - New "Auto-Tuning Convergence System (March 2026)" subsection
+- Added loaded no-field-weakening calibration workflow and staged acceptance notes
 - Three-stage pipeline diagram (Current → Speed → Unbounded Expansion → Verification)
 - Convergence criteria checklist
 - Trial limit semantics (bounded vs unbounded)
@@ -216,6 +249,7 @@ python examples/auto_tune_until_convergence.py \
 ### Modified Files
 
 - `examples/auto_tune_until_convergence.py` → 1834 lines (trial limit semantics + unbounded loop + metadata)
+- `examples/calibrate_no_fw_loaded_point.py` → loaded no-field-weakening staged calibration workflow
 - `README.md` → Added auto-tuning convergence sections
 - `ARCHITECTURE.md` → Added auto-tuning system architecture & outcomes
 

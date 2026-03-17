@@ -5,6 +5,7 @@ Core Simulation Features
 ------------------------
 
 - **3-Phase Motor Model**: Complete mathematical model of BLDC motor dynamics
+- **Profile-Driven EMF Shapes**: Supports sinusoidal dq/PMSM-style profiles and trapezoidal BLDC waveforms
 - **Accurate EMF Calculation**: Based on space vector PWM and motor parameters
 - **Torque Computation**: Accounting for load dynamics and motor characteristics
 
@@ -38,6 +39,7 @@ Advanced Features
 - **PFC Telemetry Hook**: Optional closed-loop PF target tracking in simulation metadata/history (`pfc_command_var`, PF trend)
 - **Efficiency Telemetry**: Input power, mechanical output power, estimated total loss, and system efficiency tracked in simulation metadata/history
 - **Efficiency Tuning Suggestions**: Heuristic recommendations for switching-frequency and inverter-loss tradeoff tuning from measured efficiency/PF
+- **Loaded No-FW Calibration**: Staged loaded-point search that separates speed feasibility, orthogonality, and conditioned efficiency acceptance
 - **Standard Startup Sequencing**: Configurable alignment and open-loop startup flows for both FOC and V/f controllers
 - **Inverter Realism Blocks**: Independently switchable drop/loss/ripple/thermal/asymmetry effects with runtime telemetry
 - **Inverter Analysis Plot**: Dedicated multi-panel plotting for bus ripple, loss breakdown, junction temperature, and common-mode voltage

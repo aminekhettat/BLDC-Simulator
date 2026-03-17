@@ -59,6 +59,28 @@ The three phases are controlled by calculating:
 **Implementation**
 See `src.control.svm_generator.SVMGenerator.generate_pwm()` for details.
 
+Loaded No-Field-Weakening Calibration
+-------------------------------------
+
+The repository includes a staged loaded-point calibration workflow in `examples/calibrate_no_fw_loaded_point.py`.
+
+**Why staged acceptance is used**
+
+- A strict all-criteria gate can reject candidates too early when the real question is whether the motor can hold speed under load.
+- The workflow therefore checks speed feasibility first, then orthogonality, then efficiency only when the mechanical power/load is large enough for efficiency to be meaningful.
+
+**Acceptance stages**
+
+1. ``speed_tracking_passed``
+2. ``orthogonality_stage_passed``
+3. ``efficiency_conditioned_passed``
+
+**Current measured outcome**
+
+- Practical no-FW target speed: about ``1617.44 rpm``
+- Selected speed-feasible torque: about ``9.99 Nm``
+- Final high-fidelity verification still fails orthogonality and conditioned efficiency, so the report remains informative rather than fully accepted.
+
 Monte Carlo Simulation
 ----------------------
 

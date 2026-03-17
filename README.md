@@ -2,14 +2,14 @@
 
 ## Overview
 
-Comprehensive Python GUI application for BLDC (Brushless DC) motor simulation with V/f voltage-to-frequency control. Designed with **full screen reader accessibility** and scalable architecture for future Field-Oriented Control (FOC) implementation.
+Comprehensive Python GUI application for BLDC and PMSM-style motor simulation with both V/f voltage-to-frequency control and Field-Oriented Control (FOC). The simulator is designed for **full screen reader accessibility**, profile-driven motor modeling, and repeatable calibration workflows ranging from unloaded convergence searches to loaded no-field-weakening operating-point tuning.
 
 ## Key Features
 
 ### Motor Modeling
 
 - **Complete BLDC motor model** with 3-phase electrical dynamics
-- Trapezoidal back-EMF generation
+- Profile-driven back-EMF support for sinusoidal dq/PMSM models and trapezoidal BLDC waveforms
 - Mechanical dynamics (inertia, friction)
 - Real-time numerical integration (RK4 method)
 - Optimized calculations using NumPy
@@ -72,10 +72,11 @@ Comprehensive Python GUI application for BLDC (Brushless DC) motor simulation wi
 - **Load-Aware Orthogonality Gate** - Validates FOC d/q decoupling with load-dependent tolerance
 - **Verified Convergence** - Extended 8-20s verification runs confirm stability after search
 - **Multi-Motor Profiles** - Pre-configured Innotec and Motenergy motor parameters with auto-tuned gains
+- **Loaded No-FW Calibration Workflow** - Smooth torque-ramp search at the practical no-field-weakening speed limit with staged acceptance: speed feasibility first, orthogonality second, conditioned efficiency last
 
 ### Architecture
 
-- **Modular design** - Easy to extend with FOC, current control, etc.
+- **Modular design** - Easy to extend with new controllers, observers, calibration flows, and measurement models
 - **Well-documented code** - Full Sphinx-style docstrings
 - **Efficient computations** - Optimized for real-time performance
 - **Type hints** - Clear interfaces for extension
@@ -221,6 +222,22 @@ python examples/auto_tune_until_convergence.py \
 }
 ```
 
+### Advanced: Loaded No-Field-Weakening Calibration
+
+Run the staged loaded-point calibration workflow for the Motenergy ME1718 profile:
+
+```bash
+python examples/calibrate_no_fw_loaded_point.py
+```
+
+The script performs three phases:
+
+1. Find a stable controller at the practical no-field-weakening speed cap derived from the prior converged session.
+2. Increase load torque with a smooth ramp and keep the highest torque that still passes speed tracking.
+3. Retune the final operating point using staged acceptance so torque reachability is not rejected prematurely by orthogonality or efficiency gates.
+
+The latest generated report is written to `data/logs/calibration_me1718_no_fw_loaded_point.json`. In the current snapshot, the workflow found a speed-feasible loaded point near `9.99 Nm` at `1617.44 rpm`, but the final high-fidelity verification still fails the orthogonality and conditioned-efficiency gates.
+
 ### Keyboard Shortcuts
 
 - **F5**: Start simulation
@@ -258,11 +275,13 @@ The application is designed for NVDA, JAWS, and other screen readers:
 v_phase = R*i_phase + L*di_phase/dt + e_back_emf
 ```
 
-**Back-EMF (Trapezoidal):**
+**Back-EMF (Profile-Defined):**
 
 ```
-e = K_emf * ω * trapezoidal(θ)
+e = K_emf * ω * f_emf(θ)
 ```
+
+Where `f_emf(θ)` is selected by the motor profile. dq/PMSM-oriented profiles use sinusoidal EMF, while six-step BLDC-oriented profiles can use trapezoidal EMF.
 
 **Mechanical Equation:**
 
@@ -299,24 +318,24 @@ Key parameters in `src/utils/config.py`:
 
 Modify these for different motor types or simulation speeds.
 
-## Extension Points (for FOC Implementation)
+## Extension Points
 
-The architecture is designed for FOC extension:
+The architecture is designed for further controller and calibration extension:
 
 1. **BaseController Interface** (`src/control/base_controller.py`)
    - Inherit for new control algorithms
    - Implement `update()`, `reset()`, `get_state()`
 
-2. **Coordinate Transformations** (Ready to add)
+2. **Coordinate Transformations**
    - Clarke transform (3-phase → α-β)
    - Park transform (α-β → d-q)
 
-3. **Current Control Loop** (Ready to add)
-   - Inherit BaseController
-   - Implement PI regulators for d and q axes
-   - Generate voltage references for SVM
+3. **Calibration Workflows**
+   - Extend the example scripts for unloaded, loaded, or multi-motor tuning
+   - Reuse staged acceptance keys for search-vs-verification separation
+   - Add measurement realism or hardware constraints to candidate evaluation
 
-4. **Rotor Position Estimation** (Future)
+4. **Rotor Position Estimation**
    - Sensorless estimation from back-EMF
    - PLL for grid synchronization
 
@@ -332,14 +351,12 @@ The simulator is optimized for real-time efficiency:
 
 ## Future Enhancements
 
-- [ ] Field-Oriented Control (FOC) implementation
-- [ ] Sensorless rotor position estimation
-- [ ] Current control loops (PI regulators)
-- [ ] Power factor correction
-- [ ] Harmonic analysis
-- [ ] 3D motor visualization
-- [ ] Hardware interface (real-time DAQ)
-- [ ] Multi-motor simulation
+- [ ] GUI-triggered loaded calibration workflow with accessible progress narration
+- [ ] Single-active calibration job enforcement and reliable process shutdown handling
+- [ ] Bottom status bar with elapsed time, remaining-time estimate, and CPU-load estimate
+- [ ] More realistic microcontroller-style scheduling for control and telemetry tasks
+- [ ] Shunt plus differential-amplifier current measurement model with gain, offset, and capacitance effects
+- [ ] Sensorless rotor position estimation and expanded hardware validation paths
 
 ## License & Attribution
 
