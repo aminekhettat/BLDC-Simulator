@@ -1,0 +1,2481 @@
+{
+  "schema": "bldc.auto_tune_until_convergence.v2",
+  "created_utc": "2026-03-17T01:39:21Z",
+  "profile": {
+    "name": "Innotec 255-EZS48-160",
+    "file": "innotec_255_ezs48_160.json"
+  },
+  "search_setup": {
+    "max_trials": 0,
+    "search_time_s": 0.6,
+    "verify_time_s": 8.0,
+    "search_max_time_s": 8.0,
+    "verify_max_time_s": 20.0,
+    "overcurrent_limit_a": null,
+    "trial_limit_mode": "unbounded",
+    "tolerance_ratio": 0.02,
+    "static_error_rpm_limit": 10.0,
+    "field_weakening_enabled": false,
+    "sensored_pi_tuning": true,
+    "startup_open_loop_calibration": true,
+    "candidate_strategy": "sequential_current_then_speed",
+    "feasibility_gate": "no_fw_voltage_headroom",
+    "requested_target_speed_rpm": 1500.0,
+    "effective_target_speed_rpm": 1500.0,
+    "effective_target_reason": "user_target_override",
+    "pre_tuning_speed_ramp": {
+      "enabled": true,
+      "steady_state_entry_speed_rpm": 1000.0,
+      "vf_ratio_applied_in_open_loop": true
+    },
+    "candidate_pool_sizes": {
+      "current_stage_budget": 120,
+      "speed_stage_budget": 120,
+      "max_trials_effective": -1
+    },
+    "speed_pi_design_reference": {
+      "equations": {
+        "plant": "J*w_dot + B*w = Kt*iq",
+        "speed_kp": "(2*zeta*wn*J - B)/Kt",
+        "speed_ki": "(wn^2*J)/Kt",
+        "wn_rule": "clip(0.08*omega_target, 8, 120)",
+        "zeta": "0.90"
+      },
+      "inputs": {
+        "target_speed_rpm": 1500.0,
+        "inertia_J": 0.006761,
+        "friction_B": 0.001,
+        "torque_constant_Kt": 0.165
+      },
+      "derived": {
+        "omega_target_rad_s": 157.07963267948966,
+        "wn_rad_s": 12.566370614359172,
+        "zeta": 0.9
+      },
+      "seed_speed_pi": {
+        "kp": 0.9207891945613833,
+        "ki": 6.4706322769226805
+      }
+    }
+  },
+  "best_candidate": {
+    "speed_pi": {
+      "kp": 1.6963822568874227,
+      "ki": 13.370954978484756,
+      "kaw": 0.05
+    },
+    "current_pi": {
+      "d_kp": 0.15707963267948968,
+      "d_ki": 19.634954084936208,
+      "q_kp": 0.15707963267948968,
+      "q_ki": 19.634954084936208,
+      "kaw": 0.2
+    },
+    "iq_limit_a": 480.0,
+    "observer": {
+      "mode": "Measured"
+    },
+    "startup_sequence": {
+      "align_duration_s": 0.0,
+      "align_current_a": 12.8,
+      "open_loop_initial_speed_rpm": 180.0,
+      "open_loop_target_speed_rpm": 1000.0,
+      "open_loop_ramp_time_s": 0.2,
+      "open_loop_iq_ref_a": 64.0
+    }
+  },
+  "motor_params": {
+    "nominal_voltage": 48.0,
+    "phase_resistance": 0.005,
+    "phase_inductance": 4e-05,
+    "back_emf_constant": 0.152,
+    "torque_constant": 0.165,
+    "rotor_inertia": 0.006761,
+    "friction_coefficient": 0.001,
+    "num_poles": 10,
+    "poles_pairs": 5,
+    "ld": 4e-05,
+    "lq": 4e-05,
+    "model_type": "dq",
+    "emf_shape": "sinusoidal"
+  },
+  "feasibility": {
+    "no_fw_voltage_feasible": true,
+    "no_fw_voltage_feasible_conservative_model": false,
+    "hardware_voltage_ok": true,
+    "rated_voltage_v": 48.0,
+    "rated_speed_rpm": 3000.0,
+    "rated_current_a": 160.0,
+    "v_phase_limit_v": 26.327172275046937,
+    "v_required_v": 48.9700225064398,
+    "v_emf_v": 47.752208334564855,
+    "v_resistive_v": 0.8,
+    "v_inductive_v": 10.053096491487338,
+    "margin_v": -22.64285023139286,
+    "max_no_fw_speed_rpm_est": 1653.9866862653766
+  },
+  "results": {
+    "best_search_trial": {
+      "stable": true,
+      "converged": true,
+      "full_converged": true,
+      "score": -2.998748605212161,
+      "rated_speed_rpm": 1500.0,
+      "final_speed_rpm": 1498.2244406793823,
+      "final_speed_ratio": 0.9988162937862548,
+      "final_error_rpm": 1.775559320617731,
+      "tail_abs_mean_error_rpm": 1.7882359666485244,
+      "tail_abs_max_error_rpm": 3.7324459706539983,
+      "tail_orthogonality_error_deg": 2.1164713592320794,
+      "tail_orthogonality_gate_pass": true,
+      "tail_iq_dc_a": 1.030762021234963,
+      "iq_quality_floor_a": 9.6,
+      "tail_id_abs_mean_a": 0.03809305196146231,
+      "settling_time_s": 0.4665714285714286,
+      "sim_time_s": 7.999714285714286,
+      "requested_min_sim_time_s": 0.6,
+      "requested_max_sim_time_s": 8.0,
+      "band_rpm": 30.0,
+      "tuning_start_time_s": 0.404,
+      "pre_tune_target_speed_rpm": 1000.0,
+      "pre_tune_steady_band_rpm": 200.0
+    },
+    "verification": {
+      "stable": true,
+      "converged": true,
+      "full_converged": true,
+      "score": -2.9990594620004227,
+      "rated_speed_rpm": 1500.0,
+      "final_speed_rpm": 1498.7873614929554,
+      "final_speed_ratio": 0.9991915743286369,
+      "final_error_rpm": 1.2126385070446304,
+      "tail_abs_mean_error_rpm": 1.6633398559730945,
+      "tail_abs_max_error_rpm": 2.8824915818386216,
+      "tail_orthogonality_error_deg": 52.61827697305785,
+      "tail_orthogonality_gate_pass": true,
+      "tail_iq_dc_a": 0.09638370438890011,
+      "iq_quality_floor_a": 9.6,
+      "tail_id_abs_mean_a": 0.12614803013186543,
+      "settling_time_s": 0.468125,
+      "sim_time_s": 20.0,
+      "requested_min_sim_time_s": 8.0,
+      "requested_max_sim_time_s": 20.0,
+      "band_rpm": 30.0,
+      "tuning_start_time_s": 0.403875,
+      "pre_tune_target_speed_rpm": 1000.0,
+      "pre_tune_steady_band_rpm": 200.0
+    },
+    "tested_trials": 71,
+    "trial_limit": -1,
+    "trial_debug": [
+      {
+        "trial_index": 1,
+        "phase": "current_stage_anchor",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 72.0,
+          "open_loop_target_speed_rpm": 1350.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9966503837565353,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 2,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 288.0,
+        "startup": {
+          "open_loop_iq_ref_a": 56.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9962632393092745,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 3,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 288.0,
+        "startup": {
+          "open_loop_iq_ref_a": 80.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9962632393092745,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 4,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 288.0,
+        "startup": {
+          "open_loop_iq_ref_a": 104.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9962632393092745,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 5,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 320.0,
+        "startup": {
+          "open_loop_iq_ref_a": 56.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9964180970881786,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 6,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 320.0,
+        "startup": {
+          "open_loop_iq_ref_a": 80.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9964180970881786,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 7,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 320.0,
+        "startup": {
+          "open_loop_iq_ref_a": 104.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9964180970881786,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 8,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 320.0,
+        "startup": {
+          "open_loop_iq_ref_a": 56.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9964180970881786,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 9,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 320.0,
+        "startup": {
+          "open_loop_iq_ref_a": 80.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9964180970881786,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 10,
+        "phase": "current_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.228527006889925,
+          "ki": 7.764758732307216,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 320.0,
+        "startup": {
+          "open_loop_iq_ref_a": 104.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9964180970881786,
+          "final_speed_rpm": 1496.491404046844,
+          "final_speed_ratio": 0.9976609360312294,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 11,
+        "phase": "speed_stage_anchor",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 72.0,
+          "open_loop_target_speed_rpm": 1350.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9978625641333148,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 12,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9977566361994263,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 13,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9977566361994263,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 14,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9977566361994263,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 15,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9978625641333148,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 16,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9978625641333148,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 17,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9978625641333148,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 18,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9980214560341474,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 19,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9980214560341474,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 20,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9980214560341474,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 21,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998053234414314,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 22,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998053234414314,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 23,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.9561897077795842,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998053234414314,
+          "final_speed_rpm": 1498.2974864341588,
+          "final_speed_ratio": 0.9988649909561059,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 24,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9970206583454293,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 25,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9970206583454293,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 26,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9970206583454293,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 27,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9971086683305317,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 28,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9971086683305317,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 29,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9971086683305317,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 30,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9972406833081857,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 31,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9972406833081857,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 32,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9972406833081857,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 33,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9972670863037165,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 34,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9972670863037165,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 35,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.3262859823335036,
+          "ki": 8.18939397548027,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9972670863037165,
+          "final_speed_rpm": 1496.6439353897056,
+          "final_speed_ratio": 0.997762623593137,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 36,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998743975848207,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 37,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998743975848207,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 38,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998743975848207,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 39,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9987456291924763,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 40,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9987456291924763,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 41,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9987456291924763,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 42,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.99874810920888,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 43,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.99874810920888,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 44,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.99874810920888,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 45,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998748605212161,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 46,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998748605212161,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 47,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998748605212161,
+          "final_speed_rpm": 1498.2244406793823,
+          "final_speed_ratio": 0.9988162937862548,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 48,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9984058480802993,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 49,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9984058480802993,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 50,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9984058480802993,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 51,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.99849242867291,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 52,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.99849242867291,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 53,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.99849242867291,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 54,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9986222995618257,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 55,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9986222995618257,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 56,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9986222995618257,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 57,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998648273739609,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 58,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998648273739609,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 59,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 2.066478531441342,
+          "ki": 19.81631134807571,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998648273739609,
+          "final_speed_rpm": 1499.1628578823559,
+          "final_speed_ratio": 0.999441905254904,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 60,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9977686336048386,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 61,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9977686336048386,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 62,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 345.6,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9977686336048386,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 63,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9978736396825933,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 64,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9978736396825933,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 65,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 384.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9978736396825933,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 66,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998031148799225,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 67,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998031148799225,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 68,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 460.79999999999995,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.998031148799225,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 69,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9980626506225514,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 70,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 88.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9980626506225514,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 71,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.6,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.83067879727869,
+          "ki": 4.271628339062239,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 112.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9980626506225514,
+          "final_speed_rpm": 1498.3020540921548,
+          "final_speed_ratio": 0.9988680360614365,
+          "reason": null,
+          "tuning_start_time_s": 0.404,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 72,
+        "phase": "verification",
+        "sim_time_s": 8.0,
+        "dt_s": 0.000125,
+        "speed_pi": {
+          "kp": 1.6963822568874227,
+          "ki": 13.370954978484756,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.15707963267948968,
+          "ki": 19.634954084936208,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 480.0,
+        "startup": {
+          "open_loop_iq_ref_a": 64.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": true,
+          "converged": true,
+          "full_converged": true,
+          "score": -2.9990594620004227,
+          "final_speed_rpm": 1498.7873614929554,
+          "final_speed_ratio": 0.9991915743286369,
+          "reason": null,
+          "tuning_start_time_s": 0.403875,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      }
+    ]
+  },
+  "acceptance": {
+    "accepted": true,
+    "reason": "full convergence achieved"
+  }
+}

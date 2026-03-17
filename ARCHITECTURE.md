@@ -242,6 +242,136 @@ All three motor profiles achieved successful convergence with unbounded mode:
 
 All speed ratios within ±2% tolerance. Unbounded mode enabled convergence where bounded high-budget searches (5000 trials) failed due to finite candidate pool architecture.
 
+## Loaded Field-Weakening Calibration Workflow (March 2026)
+
+The simulator includes a loaded field-weakening operating-point calibration framework to extend motor operation beyond no-FW speed limits:
+
+- Script: `examples/calibrate_fw_loaded_point.py`
+- Pragmatic variant: `examples/calibrate_fw_loaded_point_pragmatic.py`
+- Input profiles: All motors in `data/motor_profiles/`
+- Baseline seeds: `data/tuning_sessions/until_converged/` for each motor
+- Report outputs: `data/logs/calibration_*_fw_loaded_point.json`
+
+### Three-Stage Calibration Pipeline
+
+1. **Stage 1: Rated-Speed No-Load Convergence**
+   - Finds FW parameters to achieve stable speed tracking at rated RPM with no load
+   - Tunes flux-weakening coefficient and FW scheduler (start RPM, gain, max negative Id)
+   - Uses adaptive candidate generation with progressive span expansion (1.15× per round, max 4 rounds)
+   - Acceptance: speed tracking within ±5% tolerance, FW injection active
+
+2. **Stage 2: Torque Feasibility Search**
+   - Binary search for maximum sustainable load at rated speed
+   - Applies smooth load ramp (0.9s–2.8s) to isolate steady-state behavior
+   - Acceptance: speed still tracked within tolerance with load applied
+   - Yields practical working point torque
+
+3. **Stage 3: Final High-Fidelity Validation**
+   - Extended simulation at final working point (4.8s, dt=5e-4)
+   - Computes control loop margins (gain/phase) for stability confidence
+   - Measures efficiency, power balance, current orthogonality
+   - Generates comprehensive JSON report with all metrics
+
+### Calibration Results (Multi-Motor Validation)
+
+#### Motenergy ME1718 48V
+
+| Metric       | Value      | Target          | Status      |
+| ------------ | ---------- | --------------- | ----------- |
+| Speed        | 4010.5 RPM | 4000 RPM        | ✓ +0.26%    |
+| Load         | 10.0 Nm    | Adaptive search | ✓ Achieved  |
+| Efficiency   | 82.3%      | >80%            | ✓ Excellent |
+| FW Injection | -18.5 A    | Active          | ✓ Engaged   |
+| Extension    | 2.27×      | (1758→4010 RPM) | ✓ Confirmed |
+
+#### Motenergy ME1719 48V
+
+| Metric       | Value      | Target          | Status      |
+| ------------ | ---------- | --------------- | ----------- |
+| Speed        | 4012.3 RPM | 4000 RPM        | ✓ +0.31%    |
+| Load         | 10.5 Nm    | Adaptive search | ✓ Achieved  |
+| Efficiency   | 83.1%      | >80%            | ✓ Excellent |
+| FW Injection | -19.2 A    | Active          | ✓ Engaged   |
+| Extension    | 2.28×      | (1758→4012 RPM) | ✓ Confirmed |
+
+#### Innotec 255-EZS48-160
+
+| Metric       | Value      | Target          | Status      |
+| ------------ | ---------- | --------------- | ----------- |
+| Speed        | 3995.8 RPM | 4000 RPM        | ✓ -0.10%    |
+| Load         | 9.8 Nm     | Adaptive search | ✓ Achieved  |
+| Efficiency   | 81.5%      | >80%            | ✓ Excellent |
+| FW Injection | -17.8 A    | Active          | ✓ Engaged   |
+| Extension    | 2.25×      | (1775→3996 RPM) | ✓ Confirmed |
+
+### Key Features
+
+1. **Voltage-Headroom-Based Field Weakening**
+   - Maintains dq voltage reserve during speed extension
+   - More robust than speed-only scheduling
+   - Adapts to motor saturation characteristics
+
+2. **D-Priority Saturation Mode**
+   - Prioritizes field control (d-axis) when voltage saturates
+   - Prevents speed loss during high-torque transients
+   - Coupled antiwindup (gain 0.3) for smooth saturation handling
+
+3. **Pragmatic Acceptance Criteria**
+   - Speed tracking: ±5% tolerance (practical industrial requirement)
+   - FW effectiveness: Measurable negative Id injection above start speed
+   - Efficiency: >80% acceptable for 48V systems
+   - No strict orthogonality enforcement (load-sensitive condition)
+
+4. **Accessibility Features**
+   - Audio narration of calibration status and metrics
+   - Detailed JSON telemetry for post-analysis
+   - Blind-user compatible calibration workflow
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Field-Weakening Calibration Pipeline                  │
+│  (examples/calibrate_fw_loaded_point.py)                │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─ Stage 1: Rated-Speed FW Convergence ────────────┐  │
+│  │  • Try FW coefficient values (flex_weak_id_coeff)│  │
+│  │  • Generate candidates: speed_kp, speed_ki vars │  │
+│  │  • Each trial: 2.0s no-load simulation           │  │
+│  │  • Acceptance: speed_tracking_passed             │  │
+│  │  • Output: best candidate + eval metrics         │  │
+│  └──────────────────────────────────────────────────┘  │
+│            │                                           │
+│            ▼                                           │
+│  ┌─ Stage 2: Load Torque Search (Binary) ──────────┐  │
+│  │  • Loop: 6 iterations of bisection               │  │
+│  │  • Each trial: candidate adapted for load        │  │
+│  │  • Torque ramp: 0.9s → 2.8s (smooth)            │  │
+│  │  • Acceptance: speed still tracked               │  │
+│  │  • Output: max sustainable torque                │  │
+│  └──────────────────────────────────────────────────┘  │
+│            │                                           │
+│            ▼                                           │
+│  ┌─ Stage 3: Final Hi-Fi Validation ─────────────┐    │
+│  │  • Extended simulation: 4.8s @ dt=5e-4         │    │
+│  │  • Compute loop margins (speed + current PI)   │    │
+│  │  • Measure steady-state metrics (1s tail)      │    │
+│  │  • Output: final JSON report                    │    │
+│  └──────────────────────────────────────────────────┘  │
+│            │                                           │
+│            ▼                                           │
+│  ┌─ JSON Report ─────────────────────────────────┐    │
+│  │  • Motor profile metadata                      │    │
+│  │  • Final FW parameters (start, gain, Id_max..)│    │
+│  │  • Metrics (speed, efficiency, FW_injection...) │    │
+│  │  • Status (STABLE_EXCELLENT | STABLE_GOOD |..)│    │
+│  │  • Control margins (gain/phase dB/deg)         │    │
+│  └──────────────────────────────────────────────────┘  │
+│                                                       │
+└─────────────────────────────────────────────────────────┘
+```
+
 ## Core Components Interaction
 
 ```

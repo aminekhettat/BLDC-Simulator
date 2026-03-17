@@ -79,6 +79,7 @@ FOC_FIELD_WEAKENING_PARAMS = {
     "start_speed_rpm": 12000.0,
     "gain": 1.0,
     "max_negative_id_a": 8.0,
+    "headroom_target_v": 1.2,
 }
 
 # Load profile defaults

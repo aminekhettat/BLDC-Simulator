@@ -1,0 +1,63 @@
+{
+  "motor": "Motenergy ME1718 48V",
+  "target_speed_rpm": 1500.0,
+  "load_profile": {
+    "type": "smoothstep_ramp_then_hold",
+    "ramp_start_s": 2.0,
+    "ramp_end_s": 5.0,
+    "calculated_plausible_load_nm": 10.009999999999998,
+    "calc_basis": {
+      "rated_torque_nm": 14.3,
+      "kt_times_rated_current_nm": 14.299999999999999,
+      "factor": 0.7
+    },
+    "mean_tail_load_nm": 10.009999999999994
+  },
+  "initial_gains": {
+    "speed_kp": 0.3128782450088629,
+    "speed_ki": 1.6329709099984213,
+    "current_kp": 0.1619883712007237,
+    "current_ki": 20.302542523824037,
+    "iq_limit_a": 300.0
+  },
+  "retune_applied_under_load": true,
+  "retune_time_s": 6.5,
+  "retuned_gains": {
+    "speed_kp": 0.008672488792828037,
+    "speed_ki": 0.0001,
+    "current_kp": 0.008408964152537146,
+    "current_ki": 0.1
+  },
+  "final_metrics": {
+    "mean_speed_rpm_last_1p5s": -1426.61743977348,
+    "mean_speed_error_rpm_last_1p5s": -2926.6174397734803,
+    "speed_ratio_last_1p5s": -0.9510782931823201,
+    "flux_angle_deg_last_1p5s": 89.57932371829882,
+    "orthogonality_error_deg_last_1p5s": 0.42067628170117644,
+    "efficiency_pct_last_1p5s": 0.0,
+    "mean_electrical_power_w_last_1p5s": 0.0,
+    "mean_mechanical_power_w_last_1p5s": 0.0
+  },
+  "margins_initial": {
+    "speed_gain_margin_db": Infinity,
+    "speed_phase_margin_deg": 77.02436921464952,
+    "current_gain_margin_db": Infinity,
+    "current_phase_margin_deg": 90.0
+  },
+  "margins_final": {
+    "speed_gain_margin_db": Infinity,
+    "speed_phase_margin_deg": 141.67888436431156,
+    "current_gain_margin_db": Infinity,
+    "current_phase_margin_deg": 123.60622765301702
+  },
+  "criteria": {
+    "angle_90_plus_minus_2deg": true,
+    "speed_tracking_plus_minus_2pct": false,
+    "speed_phase_margin_ge_45deg": true,
+    "current_phase_margin_ge_45deg": true,
+    "speed_gain_margin_ge_6db": true,
+    "current_gain_margin_ge_6db": true,
+    "efficiency_ge_85pct": false
+  },
+  "all_criteria_passed": false
+}

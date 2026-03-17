@@ -71,6 +71,12 @@ class MotorParameters:
     # d/q inductances (optional). If None, defaults to phase_inductance
     ld: float | None = None
     lq: float | None = None
+    # Optional Id-dependent PM flux weakening model for dq simulation.
+    # Effective PM flux ratio is clamped as:
+    #   ratio = clip(1 + k_fw * min(id, 0), min_ratio, 1)
+    # where k_fw is in 1/A. Defaults keep legacy behavior.
+    flux_weakening_id_coefficient: float = 0.0
+    flux_weakening_min_ratio: float = 0.2
 
     def __post_init__(self):
         # Ensure ld/lq default to phase_inductance when not provided
@@ -78,6 +84,10 @@ class MotorParameters:
             self.ld = self.phase_inductance
         if self.lq is None:
             self.lq = self.phase_inductance
+        if self.flux_weakening_id_coefficient < 0.0:
+            raise ValueError("flux_weakening_id_coefficient must be non-negative")
+        if not (0.0 < self.flux_weakening_min_ratio <= 1.0):
+            raise ValueError("flux_weakening_min_ratio must be in (0, 1]")
 
 
 class BLDCMotor:
@@ -355,11 +365,21 @@ class BLDCMotor:
 
         P = self.params.poles_pairs
         lambda_pm = self.params.torque_constant / (1.5 * P)
+        flux_ratio = self._flux_weakening_ratio(i_d)
+        lambda_pm_eff = lambda_pm * flux_ratio
 
         torque = (
-            1.5 * P * ((self.params.ld - self.params.lq) * i_d * i_q + i_q * lambda_pm)
+            1.5
+            * P
+            * ((self.params.ld - self.params.lq) * i_d * i_q + i_q * lambda_pm_eff)
         )
         return torque
+
+    def _flux_weakening_ratio(self, i_d: float) -> float:
+        """Return effective PM flux ratio after Id-based weakening."""
+        id_neg = min(float(i_d), 0.0)
+        ratio = 1.0 + self.params.flux_weakening_id_coefficient * id_neg
+        return float(np.clip(ratio, self.params.flux_weakening_min_ratio, 1.0))
 
     def _calculate_torque(self, currents: np.ndarray, theta: float) -> float:
         if self.params.model_type == "dq":
@@ -436,6 +456,8 @@ class BLDCMotor:
             lambda_pm = self.params.back_emf_constant / max(
                 float(self.params.poles_pairs), 1.0
             )
+            flux_ratio = self._flux_weakening_ratio(i_d)
+            lambda_pm_eff = lambda_pm * flux_ratio
             di_d_dt = (
                 v_d
                 - self.params.phase_resistance * i_d
@@ -445,7 +467,7 @@ class BLDCMotor:
                 v_q
                 - self.params.phase_resistance * i_q
                 - omega_elec * self.params.ld * i_d
-                - omega_elec * lambda_pm
+                - omega_elec * lambda_pm_eff
             ) / self.params.lq
 
             # Transform DQ derivatives back to stationary-frame (ABC) derivatives.

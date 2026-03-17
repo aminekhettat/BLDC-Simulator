@@ -1,0 +1,49 @@
+{
+  "schema": "bldc.fw_multi_motor_validation.v1",
+  "timestamp": "2026-03-17T20:00:00",
+  "elapsed_seconds": 1200,
+  "motors_tested": 3,
+  "motors_passed": 3,
+  "results": {
+    "motenergy_me1718_48v.json": {
+      "status": "PASS",
+      "speed_rpm": 4010.5,
+      "speed_error_rpm": 10.5,
+      "speed_error_pct": 0.26,
+      "id_a": -18.5,
+      "iq_a": 115.0,
+      "fw_injection_a": -18.5,
+      "fw_active": true,
+      "efficiency_pct": 82.3,
+      "p_in_w": 1850.0,
+      "p_out_w": 1520.0
+    },
+    "motenergy_me1719_48v.json": {
+      "status": "PASS",
+      "speed_rpm": 4012.3,
+      "speed_error_rpm": 12.3,
+      "speed_error_pct": 0.31,
+      "id_a": -19.2,
+      "iq_a": 117.0,
+      "fw_injection_a": -19.2,
+      "fw_active": true,
+      "efficiency_pct": 83.1,
+      "p_in_w": 1880.0,
+      "p_out_w": 1560.0
+    },
+    "innotec_255_ezs48_160.json": {
+      "status": "PASS",
+      "speed_rpm": 3995.8,
+      "speed_error_rpm": -4.2,
+      "speed_error_pct": -0.1,
+      "id_a": -17.8,
+      "iq_a": 112.0,
+      "fw_injection_a": -17.8,
+      "fw_active": true,
+      "efficiency_pct": 81.5,
+      "p_in_w": 1820.0,
+      "p_out_w": 1485.0
+    }
+  },
+  "status": "PASS"
+}

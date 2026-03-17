@@ -1,0 +1,5 @@
+﻿ef4f4ec feat: add max-speed targeting workflow with field weakening disabled
+c47471c feat: make field weakening an independent toggleable FOC feature
+0f0bb93 chore: add latest 12V convergence check artifact
+0bcbca7 feat: extend runtime architecture with startup, inverter realism, hardware backend, and docs
+d646a25 feat: add efficiency telemetry and tuning

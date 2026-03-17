@@ -1,0 +1,217 @@
+{
+  "schema": "bldc.no_fw_loaded_point_calibration.v1",
+  "motor_profile": "Motenergy ME1718 48V",
+  "inputs": {
+    "profile_file": "C:/Users/akhettat/Documents/Projets Python/BLDC_motor_control/data/motor_profiles/motenergy_me1718_48v.json",
+    "baseline_session_file": "C:/Users/akhettat/Documents/Projets Python/BLDC_motor_control/data/tuning_sessions/until_converged/motenergy_me1718_48v_until_converged.json",
+    "field_weakening_enabled": false,
+    "target_speed_strategy": "max_no_fw_estimate",
+    "acceptance_strategy": "torque_speed_first_then_orthogonality_then_conditioned_efficiency",
+    "plausible_torque_upper_nm": 10.009999999999998
+  },
+  "step1_max_speed_convergence": {
+    "target_speed_rpm": 1617.4370504010508,
+    "rounds": 1,
+    "candidate": {
+      "speed_kp": 0.611402138231661,
+      "speed_ki": 5.230007890619292,
+      "current_kp": 0.1537101827443125,
+      "current_ki": 19.2650095706205,
+      "iq_limit_a": 300.0,
+      "use_d_priority": false,
+      "coupled_aw_gain": 0.0
+    },
+    "result": {
+      "stable": true,
+      "all_criteria_passed": false,
+      "speed_tracking_passed": true,
+      "orthogonality_stage_passed": false,
+      "efficiency_conditioned_passed": false,
+      "efficiency_gate_active": false,
+      "score": 25.208208109562545,
+      "criteria": {
+        "speed_tracking_pm_2pct": true,
+        "orthogonality_90_pm_5deg": false,
+        "speed_phase_margin_ge_45deg": true,
+        "current_phase_margin_ge_45deg": true,
+        "speed_gain_margin_ge_6db": true,
+        "current_gain_margin_ge_6db": true,
+        "efficiency_ge_85pct": false
+      },
+      "metrics": {
+        "mean_speed_rpm_last_1s": 1606.4765196367896,
+        "mean_speed_error_rpm_last_1s": -10.960530764261193,
+        "flux_angle_deg_last_1s": 15.351149505336583,
+        "orthogonality_error_deg_last_1s": 74.64885049466342,
+        "efficiency_pct_last_1s": 0.0,
+        "mean_electrical_power_w_last_1s": 8591.632848521534,
+        "mean_mechanical_power_w_last_1s": 0.0,
+        "iq_dc_a_last_1s": -4.767025948517172,
+        "id_dc_a_last_1s": 17.36439185172502
+      },
+      "margins": {
+        "speed_gain_margin_db": 0.0,
+        "speed_phase_margin_deg": 0.0,
+        "current_gain_margin_db": 0.0,
+        "current_phase_margin_deg": 0.0
+      }
+    }
+  },
+  "step2_torque_ramp_search": {
+    "acceptance_key": "speed_tracking_passed",
+    "iterations": [
+      {
+        "trial_torque_nm": 5.004999999999999,
+        "success": true,
+        "rounds": 4,
+        "best_score": 23.942129474982803,
+        "efficiency_pct": 6.088267737629279
+      },
+      {
+        "trial_torque_nm": 7.5074999999999985,
+        "success": true,
+        "rounds": 5,
+        "best_score": 25.281316315632495,
+        "efficiency_pct": 7.0539770210776025
+      },
+      {
+        "trial_torque_nm": 8.75875,
+        "success": true,
+        "rounds": 1,
+        "best_score": 26.426724676317328,
+        "efficiency_pct": 7.795344134242793
+      },
+      {
+        "trial_torque_nm": 9.384374999999999,
+        "success": true,
+        "rounds": 1,
+        "best_score": 24.943683939502975,
+        "efficiency_pct": 9.227277701886202
+      },
+      {
+        "trial_torque_nm": 9.697187499999998,
+        "success": true,
+        "rounds": 1,
+        "best_score": 26.03178444609378,
+        "efficiency_pct": 8.991643793509896
+      },
+      {
+        "trial_torque_nm": 9.853593749999998,
+        "success": true,
+        "rounds": 1,
+        "best_score": 26.290829939566184,
+        "efficiency_pct": 8.815775510574024
+      },
+      {
+        "trial_torque_nm": 9.931796874999998,
+        "success": true,
+        "rounds": 1,
+        "best_score": 26.90138698178356,
+        "efficiency_pct": 8.592021592850303
+      },
+      {
+        "trial_torque_nm": 9.970898437499997,
+        "success": true,
+        "rounds": 1,
+        "best_score": 28.68401919509403,
+        "efficiency_pct": 7.643367326682373
+      },
+      {
+        "trial_torque_nm": 9.990449218749998,
+        "success": true,
+        "rounds": 1,
+        "best_score": 27.4290885355982,
+        "efficiency_pct": 7.367505288386496
+      }
+    ],
+    "selected_plausible_achievable_torque_nm": 9.990449218749998
+  },
+  "step3_final_working_point_tuning": {
+    "acceptance_key": "orthogonality_stage_passed",
+    "target_speed_rpm": 1617.4370504010508,
+    "target_load_nm": 9.990449218749998,
+    "rounds": 16,
+    "candidate": {
+      "speed_kp": 0.18105274780633043,
+      "speed_ki": 1.5487471181964179,
+      "current_kp": 0.05191961289344278,
+      "current_ki": 6.507258149311494,
+      "iq_limit_a": 300.0,
+      "use_d_priority": true,
+      "coupled_aw_gain": 0.25
+    },
+    "result_fast_search": {
+      "stable": true,
+      "all_criteria_passed": false,
+      "speed_tracking_passed": false,
+      "orthogonality_stage_passed": false,
+      "efficiency_conditioned_passed": false,
+      "efficiency_gate_active": true,
+      "score": 11.416933583613547,
+      "criteria": {
+        "speed_tracking_pm_2pct": false,
+        "orthogonality_90_pm_5deg": false,
+        "speed_phase_margin_ge_45deg": true,
+        "current_phase_margin_ge_45deg": true,
+        "speed_gain_margin_ge_6db": true,
+        "current_gain_margin_ge_6db": true,
+        "efficiency_ge_85pct": false
+      },
+      "metrics": {
+        "mean_speed_rpm_last_1s": 1385.5947319327083,
+        "mean_speed_error_rpm_last_1s": -231.84231846834246,
+        "flux_angle_deg_last_1s": 55.66106668071469,
+        "orthogonality_error_deg_last_1s": 34.33893331928531,
+        "efficiency_pct_last_1s": 83.78556427172391,
+        "mean_electrical_power_w_last_1s": 1550.2095733184378,
+        "mean_mechanical_power_w_last_1s": 1298.8518383991368,
+        "iq_dc_a_last_1s": 54.52666813776309,
+        "id_dc_a_last_1s": 37.2498893560994
+      },
+      "margins": {
+        "speed_gain_margin_db": 0.0,
+        "speed_phase_margin_deg": 0.0,
+        "current_gain_margin_db": 0.0,
+        "current_phase_margin_deg": 0.0
+      }
+    },
+    "result_high_fidelity": {
+      "stable": true,
+      "all_criteria_passed": false,
+      "speed_tracking_passed": true,
+      "orthogonality_stage_passed": false,
+      "efficiency_conditioned_passed": false,
+      "efficiency_gate_active": true,
+      "score": 8.340479316235166,
+      "criteria": {
+        "speed_tracking_pm_2pct": true,
+        "orthogonality_90_pm_5deg": false,
+        "speed_phase_margin_ge_45deg": true,
+        "current_phase_margin_ge_45deg": true,
+        "speed_gain_margin_ge_6db": true,
+        "current_gain_margin_ge_6db": true,
+        "efficiency_ge_85pct": false
+      },
+      "metrics": {
+        "mean_speed_rpm_last_1s": 1615.3561868854426,
+        "mean_speed_error_rpm_last_1s": -2.0808635156081436,
+        "flux_angle_deg_last_1s": 65.64424815290332,
+        "orthogonality_error_deg_last_1s": 24.355751847096684,
+        "efficiency_pct_last_1s": 75.17481922648471,
+        "mean_electrical_power_w_last_1s": 2248.0685065472335,
+        "mean_mechanical_power_w_last_1s": 1689.9814358844176,
+        "iq_dc_a_last_1s": 65.83959919527477,
+        "id_dc_a_last_1s": 29.80487917259834
+      },
+      "margins": {
+        "speed_gain_margin_db": Infinity,
+        "speed_phase_margin_deg": 59.7757818754542,
+        "current_gain_margin_db": Infinity,
+        "current_phase_margin_deg": 90.0
+      }
+    },
+    "success": false,
+    "orthogonality_success": false,
+    "efficiency_gate_active": true
+  }
+}

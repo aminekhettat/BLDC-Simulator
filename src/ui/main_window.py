@@ -992,6 +992,9 @@ class BLDCMotorControlGUI(QMainWindow):
                     ),
                     "gain": float(self.foc_field_weakening_gain.value()),
                     "max_negative_id_a": float(self.foc_field_weakening_max_id.value()),
+                    "headroom_target_v": float(
+                        self.foc_field_weakening_headroom_target.value()
+                    ),
                 },
             },
             "pfc": {
@@ -1706,6 +1709,18 @@ class BLDCMotorControlGUI(QMainWindow):
             description="Maximum additional negative d-axis current magnitude injected by field weakening.",
         )
         self.foc_group_layout.addWidget(self.foc_field_weakening_max_id)
+
+        self.foc_field_weakening_headroom_target = LabeledSpinBox(
+            "FW Target Headroom",
+            min_val=0.0,
+            max_val=100.0,
+            initial=FOC_FIELD_WEAKENING_PARAMS["headroom_target_v"],
+            step=0.05,
+            decimals=3,
+            suffix=" V",
+            description="Desired dq voltage reserve maintained by FW. Lower values maximize speed range; higher values preserve control margin.",
+        )
+        self.foc_group_layout.addWidget(self.foc_field_weakening_headroom_target)
 
         self.foc_speed_loop_mode = LabeledComboBox(
             "Speed Loop Mode",
@@ -3100,6 +3115,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 start_speed_rpm=self.foc_field_weakening_start_speed.value(),
                 gain=self.foc_field_weakening_gain.value(),
                 max_negative_id_a=self.foc_field_weakening_max_id.value(),
+                headroom_target_v=self.foc_field_weakening_headroom_target.value(),
             )
             self.controller.set_cascaded_speed_loop(
                 enabled=speed_loop_enabled,

@@ -121,6 +121,9 @@ class FOCController(BaseController):
         # Cascaded-loop limits.
         self.iq_limit_a = 30.0
         self.vdq_limit = self.motor.params.nominal_voltage / np.sqrt(3.0)
+        self.voltage_saturation_mode = "proportional"
+        self.coupled_voltage_antiwindup_enabled = False
+        self.coupled_voltage_antiwindup_gain = 0.15
 
         # Optional decoupling feed-forward terms for current loops.
         self.enable_decouple_d = False
@@ -208,6 +211,9 @@ class FOCController(BaseController):
         self.field_weakening_start_speed_rpm = 0.0
         self.field_weakening_gain = 1.0
         self.field_weakening_max_negative_id_a = 0.0
+        self.field_weakening_headroom_target_v = 0.08 * self.vdq_limit
+        self.field_weakening_headroom_v = self.vdq_limit
+        self.field_weakening_voltage_error_v = 0.0
         self.field_weakening_id_injection_a = 0.0
 
         # Sensorless maturity: blend measured and observer angle at low confidence
@@ -657,7 +663,7 @@ class FOCController(BaseController):
 
     def _get_active_references(self, dt: float) -> Tuple[float, float]:
         """Return d/q references after applying startup phase overrides."""
-        id_ref = self.id_ref + self._compute_field_weakening_id_injection()
+        id_ref = self.id_ref + self.field_weakening_id_injection_a
 
         if self.enable_speed_loop:
             speed_ref_rad_s = (self.speed_ref / 60.0) * (2 * np.pi)
@@ -971,6 +977,23 @@ class FOCController(BaseController):
         self.pi_d.update({"kp": float(d_kp), "ki": float(d_ki), "kaw": float(kaw)})
         self.pi_q.update({"kp": float(q_kp), "ki": float(q_ki), "kaw": float(kaw)})
 
+    def set_voltage_saturation(
+        self,
+        mode: str = "proportional",
+        coupled_antiwindup_enabled: bool = False,
+        coupled_antiwindup_gain: float = 0.15,
+    ) -> None:
+        """Configure dq voltage saturation strategy and optional coupled anti-windup."""
+        normalized = str(mode).strip().lower()
+        if normalized not in {"proportional", "d_priority"}:
+            raise ValueError("mode must be 'proportional' or 'd_priority'")
+        if coupled_antiwindup_gain < 0.0:
+            raise ValueError("coupled_antiwindup_gain must be non-negative")
+
+        self.voltage_saturation_mode = normalized
+        self.coupled_voltage_antiwindup_enabled = bool(coupled_antiwindup_enabled)
+        self.coupled_voltage_antiwindup_gain = float(coupled_antiwindup_gain)
+
     def set_current_references(self, id_ref: float, iq_ref: float) -> None:
         """Set d/q current references."""
         self.id_ref = id_ref
@@ -986,44 +1009,64 @@ class FOCController(BaseController):
         start_speed_rpm: float = 0.0,
         gain: float = 1.0,
         max_negative_id_a: float = 0.0,
+        headroom_target_v: Optional[float] = None,
     ) -> None:
-        """Configure optional field-weakening d-axis current injection."""
+        """Configure voltage-headroom-based field-weakening d-axis current injection."""
         if start_speed_rpm < 0.0:
             raise ValueError("start_speed_rpm must be non-negative")
         if gain < 0.0:
             raise ValueError("gain must be non-negative")
         if max_negative_id_a < 0.0:
             raise ValueError("max_negative_id_a must be non-negative")
+        if headroom_target_v is not None and headroom_target_v < 0.0:
+            raise ValueError("headroom_target_v must be non-negative")
 
         self.field_weakening_enabled = bool(enabled)
         self.field_weakening_start_speed_rpm = float(start_speed_rpm)
         self.field_weakening_gain = float(gain)
         self.field_weakening_max_negative_id_a = float(max_negative_id_a)
+        self.field_weakening_headroom_target_v = (
+            float(headroom_target_v)
+            if headroom_target_v is not None
+            else 0.08 * float(self.vdq_limit)
+        )
+        self.field_weakening_headroom_v = float(self.vdq_limit)
+        self.field_weakening_voltage_error_v = 0.0
         self.field_weakening_id_injection_a = 0.0
 
-    def _compute_field_weakening_id_injection(self) -> float:
-        """Compute additional negative d-axis current from field-weakening."""
-        if (
-            not self.field_weakening_enabled
-            or self.field_weakening_max_negative_id_a <= 0.0
-            or self.field_weakening_gain <= 0.0
-        ):
-            self.field_weakening_id_injection_a = 0.0
-            return 0.0
+    def _update_field_weakening_from_voltage(
+        self,
+        v_d_unsat: float,
+        v_q_unsat: float,
+        dt: float,
+    ) -> None:
+        """Update FW Id injection to maintain configured dq voltage headroom."""
+        v_mag_cmd = float(np.hypot(v_d_unsat, v_q_unsat))
+        self.field_weakening_headroom_v = float(self.vdq_limit - v_mag_cmd)
 
-        speed_abs = abs(self.motor.speed_rpm)
-        start = self.field_weakening_start_speed_rpm
-        if speed_abs <= start:
-            self.field_weakening_id_injection_a = 0.0
-            return 0.0
-
-        span = max(abs(self.speed_ref) - start, 1.0)
-        ratio = (speed_abs - start) / span
-        injection = -self.field_weakening_max_negative_id_a * float(
-            np.clip(self.field_weakening_gain * ratio, 0.0, 1.0)
+        active = (
+            self.field_weakening_enabled
+            and self.field_weakening_max_negative_id_a > 0.0
+            and self.field_weakening_gain > 0.0
+            and abs(self.motor.speed_rpm) > self.field_weakening_start_speed_rpm
         )
-        self.field_weakening_id_injection_a = injection
-        return injection
+
+        inj_mag = max(-float(self.field_weakening_id_injection_a), 0.0)
+        target_headroom = max(float(self.field_weakening_headroom_target_v), 0.0)
+
+        if not active:
+            decay_rate = self.field_weakening_gain * max(target_headroom, 1.0)
+            inj_mag = max(0.0, inj_mag - decay_rate * dt)
+            self.field_weakening_voltage_error_v = 0.0
+        else:
+            headroom_error_v = target_headroom - self.field_weakening_headroom_v
+            self.field_weakening_voltage_error_v = float(headroom_error_v)
+            inj_mag += self.field_weakening_gain * headroom_error_v * dt
+            inj_mag = float(
+                np.clip(inj_mag, 0.0, self.field_weakening_max_negative_id_a)
+            )
+
+        self.field_weakening_id_injection_a = -float(inj_mag)
 
     def auto_tune_pi(self, axis: str = "q", bandwidth: float = 50.0) -> None:
         """Auto-tune PI parameters for given axis ('d' or 'q').
@@ -1071,8 +1114,8 @@ class FOCController(BaseController):
         error_q = self.iq_ref_command - iq_val
 
         # PI controller outputs Vd and Vq with anti-windup clamps.
-        v_d = _pi_update_anti_windup(self.pi_d, error_d, dt, limit=self.vdq_limit)
-        v_q = _pi_update_anti_windup(self.pi_q, error_q, dt, limit=self.vdq_limit)
+        v_d_pi = _pi_update_anti_windup(self.pi_d, error_d, dt, limit=self.vdq_limit)
+        v_q_pi = _pi_update_anti_windup(self.pi_q, error_q, dt, limit=self.vdq_limit)
 
         omega_elec = self.motor.omega * self.motor.params.poles_pairs
         v_d_ff = (
@@ -1085,15 +1128,32 @@ class FOCController(BaseController):
             if self.enable_decouple_q
             else 0.0
         )
-        v_d += v_d_ff
-        v_q += v_q_ff
+        v_d_unsat = v_d_pi + v_d_ff
+        v_q_unsat = v_q_pi + v_q_ff
+
+        # FW uses commanded dq magnitude to maintain voltage headroom.
+        self._update_field_weakening_from_voltage(v_d_unsat, v_q_unsat, dt)
 
         # Enforce vector saturation to available voltage circle.
-        vdq_mag = np.hypot(v_d, v_q)
-        if vdq_mag > self.vdq_limit and vdq_mag > 1e-12:
-            scale = self.vdq_limit / vdq_mag
-            v_d *= scale
-            v_q *= scale
+        if self.voltage_saturation_mode == "d_priority":
+            v_d = float(np.clip(v_d_unsat, -self.vdq_limit, self.vdq_limit))
+            v_q_headroom = float(
+                np.sqrt(max(self.vdq_limit * self.vdq_limit - v_d * v_d, 0.0))
+            )
+            v_q = float(np.clip(v_q_unsat, -v_q_headroom, v_q_headroom))
+        else:
+            v_d = float(v_d_unsat)
+            v_q = float(v_q_unsat)
+            vdq_mag = np.hypot(v_d, v_q)
+            if vdq_mag > self.vdq_limit and vdq_mag > 1e-12:
+                scale = self.vdq_limit / vdq_mag
+                v_d *= scale
+                v_q *= scale
+
+        if self.coupled_voltage_antiwindup_enabled:
+            aw = self.coupled_voltage_antiwindup_gain
+            self.pi_d["integral"] += aw * (v_d - v_d_unsat) * dt
+            self.pi_q["integral"] += aw * (v_q - v_q_unsat) * dt
 
         self.last_v_d = v_d
         self.last_v_q = v_q
@@ -1163,7 +1223,12 @@ class FOCController(BaseController):
         self.theta_sensorless_raw = 0.0
         self.id_ref_command = 0.0
         self.iq_ref_command = 0.0
+        self.field_weakening_headroom_v = self.vdq_limit
+        self.field_weakening_voltage_error_v = 0.0
         self.field_weakening_id_injection_a = 0.0
+        self.voltage_saturation_mode = "proportional"
+        self.coupled_voltage_antiwindup_enabled = False
+        self.coupled_voltage_antiwindup_gain = 0.15
         self.angle_observer_mode = (
             self.startup_initial_mode
             if self.startup_transition_enabled
@@ -1250,7 +1315,13 @@ class FOCController(BaseController):
             "field_weakening_start_speed_rpm": self.field_weakening_start_speed_rpm,
             "field_weakening_gain": self.field_weakening_gain,
             "field_weakening_max_negative_id_a": self.field_weakening_max_negative_id_a,
+            "field_weakening_headroom_target_v": self.field_weakening_headroom_target_v,
+            "field_weakening_headroom_v": self.field_weakening_headroom_v,
+            "field_weakening_voltage_error_v": self.field_weakening_voltage_error_v,
             "field_weakening_id_injection_a": self.field_weakening_id_injection_a,
+            "voltage_saturation_mode": self.voltage_saturation_mode,
+            "coupled_voltage_antiwindup_enabled": self.coupled_voltage_antiwindup_enabled,
+            "coupled_voltage_antiwindup_gain": self.coupled_voltage_antiwindup_gain,
             "v_d": self.pi_d,
             "v_q": self.pi_q,
             "v_d_cmd": self.last_v_d,

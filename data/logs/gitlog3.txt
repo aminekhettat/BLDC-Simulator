@@ -1,0 +1,3 @@
+﻿4996759 feat: unbounded FOC auto-tuning convergence and documentation update (March 2026)
+ef4f4ec feat: add max-speed targeting workflow with field weakening disabled
+c47471c feat: make field weakening an independent toggleable FOC feature

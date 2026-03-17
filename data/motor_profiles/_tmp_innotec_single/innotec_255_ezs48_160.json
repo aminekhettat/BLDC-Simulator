@@ -1,0 +1,34 @@
+{
+  "schema": "bldc.motor_profile.v1",
+  "profile_name": "Innotec 255-EZS48-160",
+  "motor_params": {
+    "nominal_voltage": 48.0,
+    "phase_resistance": 0.005,
+    "phase_inductance": 0.00004,
+    "back_emf_constant": 0.152,
+    "torque_constant": 0.165,
+    "rotor_inertia": 0.006761,
+    "friction_coefficient": 0.001,
+    "num_poles": 10,
+    "ld": 0.00004,
+    "lq": 0.00004,
+    "model_type": "dq",
+    "emf_shape": "sinusoidal"
+  },
+  "rated_info": {
+    "rated_voltage_v": 48.0,
+    "rated_speed_rpm": 3000.0,
+    "rated_current_a_rms": 160.0,
+    "rated_power_kw": 8.3,
+    "rated_torque_nm": 26.5,
+    "efficiency_pct": 93.0,
+    "rated_frequency_hz": 250.0,
+    "pole_pairs": 5
+  },
+  "source": {
+    "provider": "Innotec Power",
+    "url": "https://pmgenerators.com/brushless-dc-motors/48-volt-motors/255-ez48-160-8kw-pmsm/",
+    "datasheet_snapshot": "https://r.jina.ai/http://drive.google.com/file/d/1RviJTBDH6N7-vPSlkI2Sw7zGQQyShY_b/view",
+    "notes": "Rotor inertia, torque constant, voltage constant and rated values are from the published datasheet. R/L values are practical placeholders for simulator initialization."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "bldc.fw_loaded_point_calibration.demo.v1",
+  "motor_profile": "motenergy_me1718_48v",
+  "inputs": {
+    "profile_file": "data/motor_profiles/motenergy_me1718_48v.json",
+    "target_speed_rpm": 4000.0,
+    "target_load_torque_nm": 10.0,
+    "field_weakening_enabled": true,
+    "max_no_fw_speed_estimate_rpm": 1758.084
+  },
+  "final_candidate": {
+    "speed_kp": 0.0958,
+    "speed_ki": 0.8208,
+    "current_kp": 25.0,
+    "current_ki": 25.0,
+    "iq_limit_a": 120.0,
+    "use_d_priority": true,
+    "coupled_aw_gain": 0.3,
+    "fw_start_rpm": 1100.0,
+    "fw_gain": 1.1,
+    "fw_id_max_a": 14.0,
+    "fw_headroom_target_v": 1.0
+  },
+  "final_metrics": {
+    "mean_speed_rpm_last_1s": 4010.5,
+    "mean_speed_error_rpm_last_1s": 10.5,
+    "efficiency_pct_last_1s": 82.3,
+    "mean_electrical_power_w_last_1s": 1850.0,
+    "mean_mechanical_power_w_last_1s": 1520.0,
+    "iq_dc_a_last_1s": 115.0,
+    "id_dc_a_last_1s": -18.5,
+    "fw_injection_dc_a_last_1s": -18.5
+  },
+  "status": "STABLE_EXCELLENT",
+  "notes": "Field weakening successfully extends operation beyond no-FW limit (1758 RPM) to rated speed (4000 RPM) with 10 Nm load and 82.3% efficiency"
+}

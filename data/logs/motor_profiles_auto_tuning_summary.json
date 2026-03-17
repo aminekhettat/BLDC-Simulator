@@ -1,0 +1,43 @@
+{
+  "schema": "bldc.auto_tuning_summary.v2",
+  "created_utc": "2026-03-15T19:50:11Z",
+  "profiles_dir": "C:\\Users\\akhettat\\Documents\\Projets Python\\BLDC_motor_control\\data\\motor_profiles",
+  "search_time_s": 0.25,
+  "verify_time_s": 0.7,
+  "results": [
+    {
+      "profile": "Innotec 255-EZS48-160",
+      "file": "innotec_255_ezs48_160.json",
+      "session_file": "innotec_255_ezs48_160_auto_tuned.json",
+      "accepted": false,
+      "stable": true,
+      "converged": false,
+      "final_speed_rpm": 33.455729489896505,
+      "final_error_rpm": 2966.5442705101036,
+      "score": 0.9404507496551905
+    },
+    {
+      "profile": "Motenergy ME1718 48V",
+      "file": "motenergy_me1718_48v.json",
+      "session_file": "motenergy_me1718_48v_auto_tuned.json",
+      "accepted": false,
+      "stable": true,
+      "converged": false,
+      "final_speed_rpm": 5.731236943851582,
+      "final_error_rpm": 3994.2687630561486,
+      "score": 0.9784697681830298
+    },
+    {
+      "profile": "Motenergy ME1719 48V",
+      "file": "motenergy_me1719_48v.json",
+      "session_file": "motenergy_me1719_48v_auto_tuned.json",
+      "accepted": false,
+      "stable": true,
+      "converged": false,
+      "final_speed_rpm": 5.731236943851582,
+      "final_error_rpm": 3994.2687630561486,
+      "score": 0.9784697681830298
+    }
+  ],
+  "errors": []
+}

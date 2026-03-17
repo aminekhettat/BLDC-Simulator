@@ -1,0 +1,4405 @@
+{
+  "constraints": {
+    "orthogonality": "90 +/- 5 deg",
+    "speed_tracking": "+/- 2%",
+    "gain_margin_db": ">= 6",
+    "phase_margin_deg": ">= 45",
+    "efficiency_pct": ">= 85",
+    "field_weakening": "disabled"
+  },
+  "global_settings": {
+    "base_speed_rpm": 1500.0,
+    "speed_grid_relative": [
+      0.5,
+      1.0,
+      1.5
+    ],
+    "load_grid_relative": [
+      0.35,
+      0.7,
+      1.0
+    ],
+    "dt": 0.0005,
+    "sim_end_s": 3.8
+  },
+  "overall_all_pass": false,
+  "motors": [
+    {
+      "profile": "Motenergy ME1718 48V",
+      "profile_file": "data/motor_profiles/motenergy_me1718_48v.json",
+      "session_file": "data/tuning_sessions/until_converged/motenergy_me1718_48v_until_converged.json",
+      "base_plausible_torque_nm": 10.009999999999998,
+      "speed_grid_rpm": [
+        750.0,
+        1500.0,
+        2250.0
+      ],
+      "load_grid_nm": [
+        3.503499999999999,
+        7.006999999999998,
+        10.009999999999998
+      ],
+      "baseline_candidate": {
+        "speed_kp": 0.3128782450088629,
+        "speed_ki": 1.6329709099984213,
+        "current_kp": 0.1619883712007237,
+        "current_ki": 20.302542523824037,
+        "iq_limit_a": 300.0
+      },
+      "search_trials": [
+        {
+          "trial_index": 1,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.15
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 1,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.15
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 77.33068453763157,
+          "worst_orthogonality_error_deg": 28.92307010103731
+        },
+        {
+          "trial_index": 2,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.64655716547946,
+          "worst_orthogonality_error_deg": 28.735372137622335
+        },
+        {
+          "trial_index": 2,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.89456809424965,
+          "worst_orthogonality_error_deg": 28.31769893720596
+        },
+        {
+          "trial_index": 3,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.64655716547946,
+          "worst_orthogonality_error_deg": 28.735372137622335
+        },
+        {
+          "trial_index": 3,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.22102873784475,
+          "worst_orthogonality_error_deg": 29.518717766390083
+        },
+        {
+          "trial_index": 4,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.64655716547946,
+          "worst_orthogonality_error_deg": 28.735372137622335
+        },
+        {
+          "trial_index": 4,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.89456809424965,
+          "worst_orthogonality_error_deg": 28.31769893720596
+        },
+        {
+          "trial_index": 5,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.64655716547946,
+          "worst_orthogonality_error_deg": 28.735372137622335
+        },
+        {
+          "trial_index": 5,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.22102873784475,
+          "worst_orthogonality_error_deg": 29.518717766390083
+        },
+        {
+          "trial_index": 6,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.25607155333533,
+          "worst_orthogonality_error_deg": 29.39523773418265
+        },
+        {
+          "trial_index": 6,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 77.54775902501494,
+          "worst_orthogonality_error_deg": 30.391531932593097
+        },
+        {
+          "trial_index": 7,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.25607155333533,
+          "worst_orthogonality_error_deg": 29.39523773418265
+        },
+        {
+          "trial_index": 7,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.196558475463,
+          "worst_orthogonality_error_deg": 27.253720258122712
+        },
+        {
+          "trial_index": 8,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.25607155333533,
+          "worst_orthogonality_error_deg": 29.39523773418265
+        },
+        {
+          "trial_index": 8,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 77.54775902501494,
+          "worst_orthogonality_error_deg": 30.391531932593097
+        },
+        {
+          "trial_index": 9,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.25607155333533,
+          "worst_orthogonality_error_deg": 29.39523773418265
+        },
+        {
+          "trial_index": 9,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.196558475463,
+          "worst_orthogonality_error_deg": 27.253720258122712
+        },
+        {
+          "trial_index": 10,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.28203345185929,
+          "worst_orthogonality_error_deg": 28.47609009382441
+        },
+        {
+          "trial_index": 10,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.47526809115746,
+          "worst_orthogonality_error_deg": 24.790615900220118
+        },
+        {
+          "trial_index": 11,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.28203345185929,
+          "worst_orthogonality_error_deg": 28.47609009382441
+        },
+        {
+          "trial_index": 11,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 75.13489114210277,
+          "worst_orthogonality_error_deg": 25.335634374513972
+        },
+        {
+          "trial_index": 12,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.28203345185929,
+          "worst_orthogonality_error_deg": 28.47609009382441
+        },
+        {
+          "trial_index": 12,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.47526809115746,
+          "worst_orthogonality_error_deg": 24.790615900220118
+        },
+        {
+          "trial_index": 13,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.28203345185929,
+          "worst_orthogonality_error_deg": 28.47609009382441
+        },
+        {
+          "trial_index": 13,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 75.13489114210277,
+          "worst_orthogonality_error_deg": 25.335634374513972
+        },
+        {
+          "trial_index": 14,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.9294789173405,
+          "worst_orthogonality_error_deg": 29.01519555747452
+        },
+        {
+          "trial_index": 14,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.73040309109261,
+          "worst_orthogonality_error_deg": 30.55208967329495
+        },
+        {
+          "trial_index": 15,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.9294789173405,
+          "worst_orthogonality_error_deg": 29.01519555747452
+        },
+        {
+          "trial_index": 15,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.18263404417449,
+          "worst_orthogonality_error_deg": 29.357630481858294
+        },
+        {
+          "trial_index": 16,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.9294789173405,
+          "worst_orthogonality_error_deg": 29.01519555747452
+        },
+        {
+          "trial_index": 16,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.73040309109261,
+          "worst_orthogonality_error_deg": 30.55208967329495
+        },
+        {
+          "trial_index": 17,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.9294789173405,
+          "worst_orthogonality_error_deg": 29.01519555747452
+        },
+        {
+          "trial_index": 17,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.18263404417449,
+          "worst_orthogonality_error_deg": 29.357630481858294
+        },
+        {
+          "trial_index": 18,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 18,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.41669520117246,
+          "worst_orthogonality_error_deg": 26.959798870490772
+        },
+        {
+          "trial_index": 19,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 19,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 78.00165217145909,
+          "worst_orthogonality_error_deg": 29.263627497189667
+        },
+        {
+          "trial_index": 20,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 20,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.41669520117246,
+          "worst_orthogonality_error_deg": 26.959798870490772
+        },
+        {
+          "trial_index": 21,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 21,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 78.00165217145909,
+          "worst_orthogonality_error_deg": 29.263627497189667
+        },
+        {
+          "trial_index": 22,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.30394300016664,
+          "worst_orthogonality_error_deg": 28.615760194640522
+        },
+        {
+          "trial_index": 22,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.74728120817213,
+          "worst_orthogonality_error_deg": 25.60242859044213
+        },
+        {
+          "trial_index": 23,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.30394300016664,
+          "worst_orthogonality_error_deg": 28.615760194640522
+        },
+        {
+          "trial_index": 23,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 75.21495333170161,
+          "worst_orthogonality_error_deg": 26.379255981483766
+        },
+        {
+          "trial_index": 24,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.30394300016664,
+          "worst_orthogonality_error_deg": 28.615760194640522
+        },
+        {
+          "trial_index": 24,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.74728120817213,
+          "worst_orthogonality_error_deg": 25.60242859044213
+        },
+        {
+          "trial_index": 25,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.30394300016664,
+          "worst_orthogonality_error_deg": 28.615760194640522
+        },
+        {
+          "trial_index": 25,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 75.21495333170161,
+          "worst_orthogonality_error_deg": 26.379255981483766
+        },
+        {
+          "trial_index": 26,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.68088432157627,
+          "worst_orthogonality_error_deg": 28.75521203609908
+        },
+        {
+          "trial_index": 26,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.85576050390206,
+          "worst_orthogonality_error_deg": 27.908046715830082
+        },
+        {
+          "trial_index": 27,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.68088432157627,
+          "worst_orthogonality_error_deg": 28.75521203609908
+        },
+        {
+          "trial_index": 27,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.07580633032674,
+          "worst_orthogonality_error_deg": 27.983636374924657
+        },
+        {
+          "trial_index": 28,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.68088432157627,
+          "worst_orthogonality_error_deg": 28.75521203609908
+        },
+        {
+          "trial_index": 28,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.85576050390206,
+          "worst_orthogonality_error_deg": 27.908046715830082
+        },
+        {
+          "trial_index": 29,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.68088432157627,
+          "worst_orthogonality_error_deg": 28.75521203609908
+        },
+        {
+          "trial_index": 29,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.07580633032674,
+          "worst_orthogonality_error_deg": 27.983636374924657
+        },
+        {
+          "trial_index": 30,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.39342641998411,
+          "worst_orthogonality_error_deg": 29.7190433382629
+        },
+        {
+          "trial_index": 30,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.81440078367517,
+          "worst_orthogonality_error_deg": 28.84983679985617
+        },
+        {
+          "trial_index": 31,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.39342641998411,
+          "worst_orthogonality_error_deg": 29.7190433382629
+        },
+        {
+          "trial_index": 31,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.56354325860717,
+          "worst_orthogonality_error_deg": 27.277501227453016
+        },
+        {
+          "trial_index": 32,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.39342641998411,
+          "worst_orthogonality_error_deg": 29.7190433382629
+        },
+        {
+          "trial_index": 32,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.81440078367517,
+          "worst_orthogonality_error_deg": 28.84983679985617
+        },
+        {
+          "trial_index": 33,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.39342641998411,
+          "worst_orthogonality_error_deg": 29.7190433382629
+        },
+        {
+          "trial_index": 33,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.56354325860717,
+          "worst_orthogonality_error_deg": 27.277501227453016
+        },
+        {
+          "trial_index": 34,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.27096757638517,
+          "worst_orthogonality_error_deg": 28.40839833056323
+        },
+        {
+          "trial_index": 34,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.40306729259265,
+          "worst_orthogonality_error_deg": 24.195182443494375
+        },
+        {
+          "trial_index": 35,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.27096757638517,
+          "worst_orthogonality_error_deg": 28.40839833056323
+        },
+        {
+          "trial_index": 35,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.63611503932539,
+          "worst_orthogonality_error_deg": 25.7339695842752
+        },
+        {
+          "trial_index": 36,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.27096757638517,
+          "worst_orthogonality_error_deg": 28.40839833056323
+        },
+        {
+          "trial_index": 36,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.40306729259265,
+          "worst_orthogonality_error_deg": 24.195182443494375
+        },
+        {
+          "trial_index": 37,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.27096757638517,
+          "worst_orthogonality_error_deg": 28.40839833056323
+        },
+        {
+          "trial_index": 37,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.63611503932539,
+          "worst_orthogonality_error_deg": 25.7339695842752
+        }
+      ],
+      "best": {
+        "candidate": {
+          "speed_kp": 0.2815904205079766,
+          "speed_ki": 1.4696738189985792,
+          "current_kp": 0.14578953408065135,
+          "current_ki": 18.272288271441635,
+          "iq_limit_a": 300.0,
+          "coupled_aw_gain": 0.1
+        },
+        "use_d_priority": false
+      },
+      "best_eval": {
+        "all_criteria_passed": false,
+        "aggregate_score": 71.64655716547946,
+        "worst_orthogonality_error_deg": 28.735372137622335,
+        "cases": [
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 3.503499999999999,
+            "result": {
+              "stable": true,
+              "score": 5.574908477713021,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 750.4272899683777,
+                "mean_speed_error_rpm_last_1s": 0.4272899683777496,
+                "speed_ratio_last_1s": 1.000569719957837,
+                "flux_angle_deg_last_1s": 78.50049721083818,
+                "orthogonality_error_deg_last_1s": 11.499502789161824,
+                "efficiency_pct_last_1s": 9.994110672706727,
+                "mean_electrical_power_w_last_1s": 2754.8325421402487,
+                "mean_mechanical_power_w_last_1s": 275.3210131092366
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 7.006999999999998,
+            "result": {
+              "stable": true,
+              "score": 5.299249350388993,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 750.1070739855744,
+                "mean_speed_error_rpm_last_1s": 0.10707398557440229,
+                "speed_ratio_last_1s": 1.0001427653140993,
+                "flux_angle_deg_last_1s": 78.72272802343109,
+                "orthogonality_error_deg_last_1s": 11.277271976568912,
+                "efficiency_pct_last_1s": 21.77638549912595,
+                "mean_electrical_power_w_last_1s": 2527.5409499655393,
+                "mean_mechanical_power_w_last_1s": 550.407060912766
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 10.009999999999998,
+            "result": {
+              "stable": true,
+              "score": 5.0786150725222425,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 750.1025905027178,
+                "mean_speed_error_rpm_last_1s": 0.10259050271781689,
+                "speed_ratio_last_1s": 1.000136787336957,
+                "flux_angle_deg_last_1s": 78.58646433309502,
+                "orthogonality_error_deg_last_1s": 11.413535666904977,
+                "efficiency_pct_last_1s": 36.59463043385978,
+                "mean_electrical_power_w_last_1s": 2148.6515704475114,
+                "mean_mechanical_power_w_last_1s": 786.291101516591
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 3.503499999999999,
+            "result": {
+              "stable": true,
+              "score": 8.422986780674611,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1500.3275476979502,
+                "mean_speed_error_rpm_last_1s": 0.32754769795019456,
+                "speed_ratio_last_1s": 1.0002183651319667,
+                "flux_angle_deg_last_1s": 67.40387950536413,
+                "orthogonality_error_deg_last_1s": 22.59612049463587,
+                "efficiency_pct_last_1s": 37.19573256427714,
+                "mean_electrical_power_w_last_1s": 1479.8704789464562,
+                "mean_mechanical_power_w_last_1s": 550.4486656466111
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 7.006999999999998,
+            "result": {
+              "stable": true,
+              "score": 7.937405335530851,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1500.6808513050648,
+                "mean_speed_error_rpm_last_1s": 0.6808513050648344,
+                "speed_ratio_last_1s": 1.0004539008700433,
+                "flux_angle_deg_last_1s": 67.37837899029137,
+                "orthogonality_error_deg_last_1s": 22.621621009708633,
+                "efficiency_pct_last_1s": 65.17889077488798,
+                "mean_electrical_power_w_last_1s": 1689.4374271448694,
+                "mean_mechanical_power_w_last_1s": 1101.1565753488321
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 10.009999999999998,
+            "result": {
+              "stable": true,
+              "score": 7.727874012415964,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1501.2281772653948,
+                "mean_speed_error_rpm_last_1s": 1.2281772653948337,
+                "speed_ratio_last_1s": 1.0008187848435965,
+                "flux_angle_deg_last_1s": 67.44546011242294,
+                "orthogonality_error_deg_last_1s": 22.554539887577064,
+                "efficiency_pct_last_1s": 75.96364523808168,
+                "mean_electrical_power_w_last_1s": 2071.5890457318087,
+                "mean_mechanical_power_w_last_1s": 1573.6545534906727
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 3.503499999999999,
+            "result": {
+              "stable": true,
+              "score": 11.062443014752024,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1840.6088797502093,
+                "mean_speed_error_rpm_last_1s": -409.3911202497907,
+                "speed_ratio_last_1s": 0.8180483910000931,
+                "flux_angle_deg_last_1s": 61.264627862377665,
+                "orthogonality_error_deg_last_1s": 28.735372137622335,
+                "efficiency_pct_last_1s": 17.73936677861854,
+                "mean_electrical_power_w_last_1s": 3806.7480980087144,
+                "mean_mechanical_power_w_last_1s": 675.2930074438509
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 7.006999999999998,
+            "result": {
+              "stable": true,
+              "score": 10.458673752950675,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1837.9749067725181,
+                "mean_speed_error_rpm_last_1s": -412.0250932274819,
+                "speed_ratio_last_1s": 0.8168777363433414,
+                "flux_angle_deg_last_1s": 62.0317858904726,
+                "orthogonality_error_deg_last_1s": 27.968214109527402,
+                "efficiency_pct_last_1s": 39.077114546120924,
+                "mean_electrical_power_w_last_1s": 3451.2611709249977,
+                "mean_mechanical_power_w_last_1s": 1348.6532810481556
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 10.009999999999998,
+            "result": {
+              "stable": true,
+              "score": 10.08440136853109,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1838.4610398555003,
+                "mean_speed_error_rpm_last_1s": -411.5389601444997,
+                "speed_ratio_last_1s": 0.8170937954913334,
+                "flux_angle_deg_last_1s": 62.198267552885696,
+                "orthogonality_error_deg_last_1s": 27.801732447114304,
+                "efficiency_pct_last_1s": 57.42508635624251,
+                "mean_electrical_power_w_last_1s": 3355.9499046298633,
+                "mean_mechanical_power_w_last_1s": 1927.1571308059372
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "profile": "Motenergy ME1719 48V",
+      "profile_file": "data/motor_profiles/motenergy_me1719_48v.json",
+      "session_file": "data/tuning_sessions/until_converged/motenergy_me1719_48v_until_converged.json",
+      "base_plausible_torque_nm": 10.009999999999998,
+      "speed_grid_rpm": [
+        750.0,
+        1500.0,
+        2250.0
+      ],
+      "load_grid_nm": [
+        3.503499999999999,
+        7.006999999999998,
+        10.009999999999998
+      ],
+      "baseline_candidate": {
+        "speed_kp": 0.3128782450088629,
+        "speed_ki": 1.6329709099984213,
+        "current_kp": 0.1619883712007237,
+        "current_ki": 20.302542523824037,
+        "iq_limit_a": 300.0
+      },
+      "search_trials": [
+        {
+          "trial_index": 1,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.15
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 1,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.15
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 77.33068453763157,
+          "worst_orthogonality_error_deg": 28.92307010103731
+        },
+        {
+          "trial_index": 2,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.64655716547946,
+          "worst_orthogonality_error_deg": 28.735372137622335
+        },
+        {
+          "trial_index": 2,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.89456809424965,
+          "worst_orthogonality_error_deg": 28.31769893720596
+        },
+        {
+          "trial_index": 3,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.64655716547946,
+          "worst_orthogonality_error_deg": 28.735372137622335
+        },
+        {
+          "trial_index": 3,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.22102873784475,
+          "worst_orthogonality_error_deg": 29.518717766390083
+        },
+        {
+          "trial_index": 4,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.64655716547946,
+          "worst_orthogonality_error_deg": 28.735372137622335
+        },
+        {
+          "trial_index": 4,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.89456809424965,
+          "worst_orthogonality_error_deg": 28.31769893720596
+        },
+        {
+          "trial_index": 5,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.64655716547946,
+          "worst_orthogonality_error_deg": 28.735372137622335
+        },
+        {
+          "trial_index": 5,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.22102873784475,
+          "worst_orthogonality_error_deg": 29.518717766390083
+        },
+        {
+          "trial_index": 6,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.25607155333533,
+          "worst_orthogonality_error_deg": 29.39523773418265
+        },
+        {
+          "trial_index": 6,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 77.54775902501494,
+          "worst_orthogonality_error_deg": 30.391531932593097
+        },
+        {
+          "trial_index": 7,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.25607155333533,
+          "worst_orthogonality_error_deg": 29.39523773418265
+        },
+        {
+          "trial_index": 7,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.196558475463,
+          "worst_orthogonality_error_deg": 27.253720258122712
+        },
+        {
+          "trial_index": 8,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.25607155333533,
+          "worst_orthogonality_error_deg": 29.39523773418265
+        },
+        {
+          "trial_index": 8,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 77.54775902501494,
+          "worst_orthogonality_error_deg": 30.391531932593097
+        },
+        {
+          "trial_index": 9,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.25607155333533,
+          "worst_orthogonality_error_deg": 29.39523773418265
+        },
+        {
+          "trial_index": 9,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.196558475463,
+          "worst_orthogonality_error_deg": 27.253720258122712
+        },
+        {
+          "trial_index": 10,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.28203345185929,
+          "worst_orthogonality_error_deg": 28.47609009382441
+        },
+        {
+          "trial_index": 10,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.47526809115746,
+          "worst_orthogonality_error_deg": 24.790615900220118
+        },
+        {
+          "trial_index": 11,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.28203345185929,
+          "worst_orthogonality_error_deg": 28.47609009382441
+        },
+        {
+          "trial_index": 11,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 75.13489114210277,
+          "worst_orthogonality_error_deg": 25.335634374513972
+        },
+        {
+          "trial_index": 12,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.28203345185929,
+          "worst_orthogonality_error_deg": 28.47609009382441
+        },
+        {
+          "trial_index": 12,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.47526809115746,
+          "worst_orthogonality_error_deg": 24.790615900220118
+        },
+        {
+          "trial_index": 13,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.28203345185929,
+          "worst_orthogonality_error_deg": 28.47609009382441
+        },
+        {
+          "trial_index": 13,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.2815904205079766,
+            "speed_ki": 1.4696738189985792,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 75.13489114210277,
+          "worst_orthogonality_error_deg": 25.335634374513972
+        },
+        {
+          "trial_index": 14,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.9294789173405,
+          "worst_orthogonality_error_deg": 29.01519555747452
+        },
+        {
+          "trial_index": 14,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.73040309109261,
+          "worst_orthogonality_error_deg": 30.55208967329495
+        },
+        {
+          "trial_index": 15,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.9294789173405,
+          "worst_orthogonality_error_deg": 29.01519555747452
+        },
+        {
+          "trial_index": 15,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.18263404417449,
+          "worst_orthogonality_error_deg": 29.357630481858294
+        },
+        {
+          "trial_index": 16,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.9294789173405,
+          "worst_orthogonality_error_deg": 29.01519555747452
+        },
+        {
+          "trial_index": 16,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.73040309109261,
+          "worst_orthogonality_error_deg": 30.55208967329495
+        },
+        {
+          "trial_index": 17,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.9294789173405,
+          "worst_orthogonality_error_deg": 29.01519555747452
+        },
+        {
+          "trial_index": 17,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.18263404417449,
+          "worst_orthogonality_error_deg": 29.357630481858294
+        },
+        {
+          "trial_index": 18,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 18,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.41669520117246,
+          "worst_orthogonality_error_deg": 26.959798870490772
+        },
+        {
+          "trial_index": 19,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 19,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 78.00165217145909,
+          "worst_orthogonality_error_deg": 29.263627497189667
+        },
+        {
+          "trial_index": 20,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 20,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.41669520117246,
+          "worst_orthogonality_error_deg": 26.959798870490772
+        },
+        {
+          "trial_index": 21,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.45807521496171,
+          "worst_orthogonality_error_deg": 29.228802940980486
+        },
+        {
+          "trial_index": 21,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 78.00165217145909,
+          "worst_orthogonality_error_deg": 29.263627497189667
+        },
+        {
+          "trial_index": 22,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.30394300016664,
+          "worst_orthogonality_error_deg": 28.615760194640522
+        },
+        {
+          "trial_index": 22,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.74728120817213,
+          "worst_orthogonality_error_deg": 25.60242859044213
+        },
+        {
+          "trial_index": 23,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.30394300016664,
+          "worst_orthogonality_error_deg": 28.615760194640522
+        },
+        {
+          "trial_index": 23,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 75.21495333170161,
+          "worst_orthogonality_error_deg": 26.379255981483766
+        },
+        {
+          "trial_index": 24,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.30394300016664,
+          "worst_orthogonality_error_deg": 28.615760194640522
+        },
+        {
+          "trial_index": 24,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.74728120817213,
+          "worst_orthogonality_error_deg": 25.60242859044213
+        },
+        {
+          "trial_index": 25,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.30394300016664,
+          "worst_orthogonality_error_deg": 28.615760194640522
+        },
+        {
+          "trial_index": 25,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3128782450088629,
+            "speed_ki": 1.6329709099984213,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 75.21495333170161,
+          "worst_orthogonality_error_deg": 26.379255981483766
+        },
+        {
+          "trial_index": 26,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.68088432157627,
+          "worst_orthogonality_error_deg": 28.75521203609908
+        },
+        {
+          "trial_index": 26,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.85576050390206,
+          "worst_orthogonality_error_deg": 27.908046715830082
+        },
+        {
+          "trial_index": 27,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.68088432157627,
+          "worst_orthogonality_error_deg": 28.75521203609908
+        },
+        {
+          "trial_index": 27,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.07580633032674,
+          "worst_orthogonality_error_deg": 27.983636374924657
+        },
+        {
+          "trial_index": 28,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.68088432157627,
+          "worst_orthogonality_error_deg": 28.75521203609908
+        },
+        {
+          "trial_index": 28,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.85576050390206,
+          "worst_orthogonality_error_deg": 27.908046715830082
+        },
+        {
+          "trial_index": 29,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.68088432157627,
+          "worst_orthogonality_error_deg": 28.75521203609908
+        },
+        {
+          "trial_index": 29,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.14578953408065135,
+            "current_ki": 18.272288271441635,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.07580633032674,
+          "worst_orthogonality_error_deg": 27.983636374924657
+        },
+        {
+          "trial_index": 30,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.39342641998411,
+          "worst_orthogonality_error_deg": 29.7190433382629
+        },
+        {
+          "trial_index": 30,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.81440078367517,
+          "worst_orthogonality_error_deg": 28.84983679985617
+        },
+        {
+          "trial_index": 31,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.39342641998411,
+          "worst_orthogonality_error_deg": 29.7190433382629
+        },
+        {
+          "trial_index": 31,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.56354325860717,
+          "worst_orthogonality_error_deg": 27.277501227453016
+        },
+        {
+          "trial_index": 32,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.39342641998411,
+          "worst_orthogonality_error_deg": 29.7190433382629
+        },
+        {
+          "trial_index": 32,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.81440078367517,
+          "worst_orthogonality_error_deg": 28.84983679985617
+        },
+        {
+          "trial_index": 33,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.39342641998411,
+          "worst_orthogonality_error_deg": 29.7190433382629
+        },
+        {
+          "trial_index": 33,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1619883712007237,
+            "current_ki": 20.302542523824037,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 76.56354325860717,
+          "worst_orthogonality_error_deg": 27.277501227453016
+        },
+        {
+          "trial_index": 34,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.27096757638517,
+          "worst_orthogonality_error_deg": 28.40839833056323
+        },
+        {
+          "trial_index": 34,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.40306729259265,
+          "worst_orthogonality_error_deg": 24.195182443494375
+        },
+        {
+          "trial_index": 35,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.27096757638517,
+          "worst_orthogonality_error_deg": 28.40839833056323
+        },
+        {
+          "trial_index": 35,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 300.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.63611503932539,
+          "worst_orthogonality_error_deg": 25.7339695842752
+        },
+        {
+          "trial_index": 36,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.27096757638517,
+          "worst_orthogonality_error_deg": 28.40839833056323
+        },
+        {
+          "trial_index": 36,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.40306729259265,
+          "worst_orthogonality_error_deg": 24.195182443494375
+        },
+        {
+          "trial_index": 37,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.27096757638517,
+          "worst_orthogonality_error_deg": 28.40839833056323
+        },
+        {
+          "trial_index": 37,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 0.3441660695097492,
+            "speed_ki": 1.7962680009982637,
+            "current_kp": 0.1781872083207961,
+            "current_ki": 22.332796776206443,
+            "iq_limit_a": 345.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 74.63611503932539,
+          "worst_orthogonality_error_deg": 25.7339695842752
+        }
+      ],
+      "best": {
+        "candidate": {
+          "speed_kp": 0.2815904205079766,
+          "speed_ki": 1.4696738189985792,
+          "current_kp": 0.14578953408065135,
+          "current_ki": 18.272288271441635,
+          "iq_limit_a": 300.0,
+          "coupled_aw_gain": 0.1
+        },
+        "use_d_priority": false
+      },
+      "best_eval": {
+        "all_criteria_passed": false,
+        "aggregate_score": 71.64655716547946,
+        "worst_orthogonality_error_deg": 28.735372137622335,
+        "cases": [
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 3.503499999999999,
+            "result": {
+              "stable": true,
+              "score": 5.574908477713021,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 750.4272899683777,
+                "mean_speed_error_rpm_last_1s": 0.4272899683777496,
+                "speed_ratio_last_1s": 1.000569719957837,
+                "flux_angle_deg_last_1s": 78.50049721083818,
+                "orthogonality_error_deg_last_1s": 11.499502789161824,
+                "efficiency_pct_last_1s": 9.994110672706727,
+                "mean_electrical_power_w_last_1s": 2754.8325421402487,
+                "mean_mechanical_power_w_last_1s": 275.3210131092366
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 7.006999999999998,
+            "result": {
+              "stable": true,
+              "score": 5.299249350388993,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 750.1070739855744,
+                "mean_speed_error_rpm_last_1s": 0.10707398557440229,
+                "speed_ratio_last_1s": 1.0001427653140993,
+                "flux_angle_deg_last_1s": 78.72272802343109,
+                "orthogonality_error_deg_last_1s": 11.277271976568912,
+                "efficiency_pct_last_1s": 21.77638549912595,
+                "mean_electrical_power_w_last_1s": 2527.5409499655393,
+                "mean_mechanical_power_w_last_1s": 550.407060912766
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 10.009999999999998,
+            "result": {
+              "stable": true,
+              "score": 5.0786150725222425,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 750.1025905027178,
+                "mean_speed_error_rpm_last_1s": 0.10259050271781689,
+                "speed_ratio_last_1s": 1.000136787336957,
+                "flux_angle_deg_last_1s": 78.58646433309502,
+                "orthogonality_error_deg_last_1s": 11.413535666904977,
+                "efficiency_pct_last_1s": 36.59463043385978,
+                "mean_electrical_power_w_last_1s": 2148.6515704475114,
+                "mean_mechanical_power_w_last_1s": 786.291101516591
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 3.503499999999999,
+            "result": {
+              "stable": true,
+              "score": 8.422986780674611,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1500.3275476979502,
+                "mean_speed_error_rpm_last_1s": 0.32754769795019456,
+                "speed_ratio_last_1s": 1.0002183651319667,
+                "flux_angle_deg_last_1s": 67.40387950536413,
+                "orthogonality_error_deg_last_1s": 22.59612049463587,
+                "efficiency_pct_last_1s": 37.19573256427714,
+                "mean_electrical_power_w_last_1s": 1479.8704789464562,
+                "mean_mechanical_power_w_last_1s": 550.4486656466111
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 7.006999999999998,
+            "result": {
+              "stable": true,
+              "score": 7.937405335530851,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1500.6808513050648,
+                "mean_speed_error_rpm_last_1s": 0.6808513050648344,
+                "speed_ratio_last_1s": 1.0004539008700433,
+                "flux_angle_deg_last_1s": 67.37837899029137,
+                "orthogonality_error_deg_last_1s": 22.621621009708633,
+                "efficiency_pct_last_1s": 65.17889077488798,
+                "mean_electrical_power_w_last_1s": 1689.4374271448694,
+                "mean_mechanical_power_w_last_1s": 1101.1565753488321
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 10.009999999999998,
+            "result": {
+              "stable": true,
+              "score": 7.727874012415964,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1501.2281772653948,
+                "mean_speed_error_rpm_last_1s": 1.2281772653948337,
+                "speed_ratio_last_1s": 1.0008187848435965,
+                "flux_angle_deg_last_1s": 67.44546011242294,
+                "orthogonality_error_deg_last_1s": 22.554539887577064,
+                "efficiency_pct_last_1s": 75.96364523808168,
+                "mean_electrical_power_w_last_1s": 2071.5890457318087,
+                "mean_mechanical_power_w_last_1s": 1573.6545534906727
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 3.503499999999999,
+            "result": {
+              "stable": true,
+              "score": 11.062443014752024,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1840.6088797502093,
+                "mean_speed_error_rpm_last_1s": -409.3911202497907,
+                "speed_ratio_last_1s": 0.8180483910000931,
+                "flux_angle_deg_last_1s": 61.264627862377665,
+                "orthogonality_error_deg_last_1s": 28.735372137622335,
+                "efficiency_pct_last_1s": 17.73936677861854,
+                "mean_electrical_power_w_last_1s": 3806.7480980087144,
+                "mean_mechanical_power_w_last_1s": 675.2930074438509
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 7.006999999999998,
+            "result": {
+              "stable": true,
+              "score": 10.458673752950675,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1837.9749067725181,
+                "mean_speed_error_rpm_last_1s": -412.0250932274819,
+                "speed_ratio_last_1s": 0.8168777363433414,
+                "flux_angle_deg_last_1s": 62.0317858904726,
+                "orthogonality_error_deg_last_1s": 27.968214109527402,
+                "efficiency_pct_last_1s": 39.077114546120924,
+                "mean_electrical_power_w_last_1s": 3451.2611709249977,
+                "mean_mechanical_power_w_last_1s": 1348.6532810481556
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 10.009999999999998,
+            "result": {
+              "stable": true,
+              "score": 10.08440136853109,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1838.4610398555003,
+                "mean_speed_error_rpm_last_1s": -411.5389601444997,
+                "speed_ratio_last_1s": 0.8170937954913334,
+                "flux_angle_deg_last_1s": 62.198267552885696,
+                "orthogonality_error_deg_last_1s": 27.801732447114304,
+                "efficiency_pct_last_1s": 57.42508635624251,
+                "mean_electrical_power_w_last_1s": 3355.9499046298633,
+                "mean_mechanical_power_w_last_1s": 1927.1571308059372
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 75.74499337389932,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "profile": "Innotec 255-EZS48-160",
+      "profile_file": "data/motor_profiles/innotec_255_ezs48_160.json",
+      "session_file": "data/tuning_sessions/until_converged/innotec_255_ezs48_160_until_converged.json",
+      "base_plausible_torque_nm": 11.549999999999999,
+      "speed_grid_rpm": [
+        750.0,
+        1500.0,
+        2250.0
+      ],
+      "load_grid_nm": [
+        4.0424999999999995,
+        8.084999999999999,
+        11.549999999999999
+      ],
+      "baseline_candidate": {
+        "speed_kp": 1.6963822568874227,
+        "speed_ki": 13.370954978484756,
+        "current_kp": 0.15707963267948968,
+        "current_ki": 19.634954084936208,
+        "iq_limit_a": 480.0
+      },
+      "search_trials": [
+        {
+          "trial_index": 1,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.15
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.43231239139811,
+          "worst_orthogonality_error_deg": 25.971459700021555
+        },
+        {
+          "trial_index": 1,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.15
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.75776029707767,
+          "worst_orthogonality_error_deg": 23.421449006020566
+        },
+        {
+          "trial_index": 2,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.22760203696703,
+          "worst_orthogonality_error_deg": 26.4468997361649
+        },
+        {
+          "trial_index": 2,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.57392530282449,
+          "worst_orthogonality_error_deg": 25.846491713434744
+        },
+        {
+          "trial_index": 3,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.22760203696703,
+          "worst_orthogonality_error_deg": 26.4468997361649
+        },
+        {
+          "trial_index": 3,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.33923495543188,
+          "worst_orthogonality_error_deg": 25.608975743570312
+        },
+        {
+          "trial_index": 4,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.22760203696703,
+          "worst_orthogonality_error_deg": 26.4468997361649
+        },
+        {
+          "trial_index": 4,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.57392530282449,
+          "worst_orthogonality_error_deg": 25.846491713434744
+        },
+        {
+          "trial_index": 5,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.22760203696703,
+          "worst_orthogonality_error_deg": 26.4468997361649
+        },
+        {
+          "trial_index": 5,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.33923495543188,
+          "worst_orthogonality_error_deg": 25.608975743570312
+        },
+        {
+          "trial_index": 6,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.39231724575052,
+          "worst_orthogonality_error_deg": 25.83465226751386
+        },
+        {
+          "trial_index": 6,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.43825616733913,
+          "worst_orthogonality_error_deg": 22.820463669809044
+        },
+        {
+          "trial_index": 7,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.39231724575052,
+          "worst_orthogonality_error_deg": 25.83465226751386
+        },
+        {
+          "trial_index": 7,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.48460102760265,
+          "worst_orthogonality_error_deg": 23.362083791755637
+        },
+        {
+          "trial_index": 8,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.39231724575052,
+          "worst_orthogonality_error_deg": 25.83465226751386
+        },
+        {
+          "trial_index": 8,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.43825616733913,
+          "worst_orthogonality_error_deg": 22.820463669809044
+        },
+        {
+          "trial_index": 9,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.39231724575052,
+          "worst_orthogonality_error_deg": 25.83465226751386
+        },
+        {
+          "trial_index": 9,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.48460102760265,
+          "worst_orthogonality_error_deg": 23.362083791755637
+        },
+        {
+          "trial_index": 10,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.58737821168185,
+          "worst_orthogonality_error_deg": 25.917447090279126
+        },
+        {
+          "trial_index": 10,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 68.94256801742733,
+          "worst_orthogonality_error_deg": 20.78429465796644
+        },
+        {
+          "trial_index": 11,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.58737821168185,
+          "worst_orthogonality_error_deg": 25.917447090279126
+        },
+        {
+          "trial_index": 11,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.40292399467806,
+          "worst_orthogonality_error_deg": 20.56366002638947
+        },
+        {
+          "trial_index": 12,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.58737821168185,
+          "worst_orthogonality_error_deg": 25.917447090279126
+        },
+        {
+          "trial_index": 12,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 68.94256801742733,
+          "worst_orthogonality_error_deg": 20.78429465796644
+        },
+        {
+          "trial_index": 13,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.58737821168185,
+          "worst_orthogonality_error_deg": 25.917447090279126
+        },
+        {
+          "trial_index": 13,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.5267440311986804,
+            "speed_ki": 12.03385948063628,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.40292399467806,
+          "worst_orthogonality_error_deg": 20.56366002638947
+        },
+        {
+          "trial_index": 14,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.2258079283221,
+          "worst_orthogonality_error_deg": 26.254000903071784
+        },
+        {
+          "trial_index": 14,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.59853715638211,
+          "worst_orthogonality_error_deg": 24.235607860217286
+        },
+        {
+          "trial_index": 15,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.2258079283221,
+          "worst_orthogonality_error_deg": 26.254000903071784
+        },
+        {
+          "trial_index": 15,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.3982951119177,
+          "worst_orthogonality_error_deg": 25.606671748554533
+        },
+        {
+          "trial_index": 16,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.2258079283221,
+          "worst_orthogonality_error_deg": 26.254000903071784
+        },
+        {
+          "trial_index": 16,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.59853715638211,
+          "worst_orthogonality_error_deg": 24.235607860217286
+        },
+        {
+          "trial_index": 17,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.2258079283221,
+          "worst_orthogonality_error_deg": 26.254000903071784
+        },
+        {
+          "trial_index": 17,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.3982951119177,
+          "worst_orthogonality_error_deg": 25.606671748554533
+        },
+        {
+          "trial_index": 18,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.43231239139811,
+          "worst_orthogonality_error_deg": 25.971459700021555
+        },
+        {
+          "trial_index": 18,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.69662273594128,
+          "worst_orthogonality_error_deg": 23.637905769569116
+        },
+        {
+          "trial_index": 19,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.43231239139811,
+          "worst_orthogonality_error_deg": 25.971459700021555
+        },
+        {
+          "trial_index": 19,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.23378608593954,
+          "worst_orthogonality_error_deg": 24.0783844254657
+        },
+        {
+          "trial_index": 20,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.43231239139811,
+          "worst_orthogonality_error_deg": 25.971459700021555
+        },
+        {
+          "trial_index": 20,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.69662273594128,
+          "worst_orthogonality_error_deg": 23.637905769569116
+        },
+        {
+          "trial_index": 21,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.43231239139811,
+          "worst_orthogonality_error_deg": 25.971459700021555
+        },
+        {
+          "trial_index": 21,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.23378608593954,
+          "worst_orthogonality_error_deg": 24.0783844254657
+        },
+        {
+          "trial_index": 22,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.59745454576948,
+          "worst_orthogonality_error_deg": 25.697237469904408
+        },
+        {
+          "trial_index": 22,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.13000375982789,
+          "worst_orthogonality_error_deg": 20.507537384518713
+        },
+        {
+          "trial_index": 23,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.59745454576948,
+          "worst_orthogonality_error_deg": 25.697237469904408
+        },
+        {
+          "trial_index": 23,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.2969590413914,
+          "worst_orthogonality_error_deg": 20.55279907548025
+        },
+        {
+          "trial_index": 24,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.59745454576948,
+          "worst_orthogonality_error_deg": 25.697237469904408
+        },
+        {
+          "trial_index": 24,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.13000375982789,
+          "worst_orthogonality_error_deg": 20.507537384518713
+        },
+        {
+          "trial_index": 25,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.59745454576948,
+          "worst_orthogonality_error_deg": 25.697237469904408
+        },
+        {
+          "trial_index": 25,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.6963822568874227,
+            "speed_ki": 13.370954978484756,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.2969590413914,
+          "worst_orthogonality_error_deg": 20.55279907548025
+        },
+        {
+          "trial_index": 26,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.12067898301817,
+          "worst_orthogonality_error_deg": 26.342777923563013
+        },
+        {
+          "trial_index": 26,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.59877874912576,
+          "worst_orthogonality_error_deg": 24.28465230270659
+        },
+        {
+          "trial_index": 27,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.12067898301817,
+          "worst_orthogonality_error_deg": 26.342777923563013
+        },
+        {
+          "trial_index": 27,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.01310086109814,
+          "worst_orthogonality_error_deg": 24.945367254623434
+        },
+        {
+          "trial_index": 28,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.12067898301817,
+          "worst_orthogonality_error_deg": 26.342777923563013
+        },
+        {
+          "trial_index": 28,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 72.59877874912576,
+          "worst_orthogonality_error_deg": 24.28465230270659
+        },
+        {
+          "trial_index": 29,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.12067898301817,
+          "worst_orthogonality_error_deg": 26.342777923563013
+        },
+        {
+          "trial_index": 29,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.14137166941154072,
+            "current_ki": 17.671458676442587,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 73.01310086109814,
+          "worst_orthogonality_error_deg": 24.945367254623434
+        },
+        {
+          "trial_index": 30,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.34319236897214,
+          "worst_orthogonality_error_deg": 25.92688825517395
+        },
+        {
+          "trial_index": 30,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.934976976767,
+          "worst_orthogonality_error_deg": 23.441391966431425
+        },
+        {
+          "trial_index": 31,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.34319236897214,
+          "worst_orthogonality_error_deg": 25.92688825517395
+        },
+        {
+          "trial_index": 31,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.78181253956929,
+          "worst_orthogonality_error_deg": 23.320986394318922
+        },
+        {
+          "trial_index": 32,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.34319236897214,
+          "worst_orthogonality_error_deg": 25.92688825517395
+        },
+        {
+          "trial_index": 32,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.934976976767,
+          "worst_orthogonality_error_deg": 23.441391966431425
+        },
+        {
+          "trial_index": 33,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.34319236897214,
+          "worst_orthogonality_error_deg": 25.92688825517395
+        },
+        {
+          "trial_index": 33,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.15707963267948968,
+            "current_ki": 19.634954084936208,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 71.78181253956929,
+          "worst_orthogonality_error_deg": 23.320986394318922
+        },
+        {
+          "trial_index": 34,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.79563962169304,
+          "worst_orthogonality_error_deg": 25.858477783871834
+        },
+        {
+          "trial_index": 34,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 68.64392482653136,
+          "worst_orthogonality_error_deg": 20.272239781909988
+        },
+        {
+          "trial_index": 35,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.79563962169304,
+          "worst_orthogonality_error_deg": 25.858477783871834
+        },
+        {
+          "trial_index": 35,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 480.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.09031333888369,
+          "worst_orthogonality_error_deg": 20.327326491192636
+        },
+        {
+          "trial_index": 36,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.79563962169304,
+          "worst_orthogonality_error_deg": 25.858477783871834
+        },
+        {
+          "trial_index": 36,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.1
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 68.64392482653136,
+          "worst_orthogonality_error_deg": 20.272239781909988
+        },
+        {
+          "trial_index": 37,
+          "use_d_priority": false,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 70.79563962169304,
+          "worst_orthogonality_error_deg": 25.858477783871834
+        },
+        {
+          "trial_index": 37,
+          "use_d_priority": true,
+          "candidate": {
+            "speed_kp": 1.866020482576165,
+            "speed_ki": 14.708050476333232,
+            "current_kp": 0.17278759594743867,
+            "current_ki": 21.59844949342983,
+            "iq_limit_a": 552.0,
+            "coupled_aw_gain": 0.2
+          },
+          "all_criteria_passed": false,
+          "aggregate_score": 69.09031333888369,
+          "worst_orthogonality_error_deg": 20.327326491192636
+        }
+      ],
+      "best": {
+        "candidate": {
+          "speed_kp": 1.866020482576165,
+          "speed_ki": 14.708050476333232,
+          "current_kp": 0.17278759594743867,
+          "current_ki": 21.59844949342983,
+          "iq_limit_a": 480.0,
+          "coupled_aw_gain": 0.1
+        },
+        "use_d_priority": true
+      },
+      "best_eval": {
+        "all_criteria_passed": false,
+        "aggregate_score": 68.64392482653136,
+        "worst_orthogonality_error_deg": 20.272239781909988,
+        "cases": [
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 4.0424999999999995,
+            "result": {
+              "stable": true,
+              "score": 5.946518553399641,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 750.3174549744315,
+                "mean_speed_error_rpm_last_1s": 0.3174549744314845,
+                "speed_ratio_last_1s": 1.000423273299242,
+                "flux_angle_deg_last_1s": 77.55442532897831,
+                "orthogonality_error_deg_last_1s": 12.445574671021689,
+                "efficiency_pct_last_1s": 4.998681765448346,
+                "mean_electrical_power_w_last_1s": 6354.307206341438,
+                "mean_mechanical_power_w_last_1s": 317.63159564395966
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 8.084999999999999,
+            "result": {
+              "stable": true,
+              "score": 5.693024820844353,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 747.1761123365385,
+                "mean_speed_error_rpm_last_1s": -2.8238876634615053,
+                "speed_ratio_last_1s": 0.996234816448718,
+                "flux_angle_deg_last_1s": 78.11878487624972,
+                "orthogonality_error_deg_last_1s": 11.88121512375028,
+                "efficiency_pct_last_1s": 10.242651592339715,
+                "mean_electrical_power_w_last_1s": 6176.16970446435,
+                "mean_mechanical_power_w_last_1s": 632.6035445799208
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 750.0,
+            "load_nm": 11.549999999999999,
+            "result": {
+              "stable": true,
+              "score": 5.577868228054737,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": true,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 749.9523355761661,
+                "mean_speed_error_rpm_last_1s": -0.047664423833907676,
+                "speed_ratio_last_1s": 0.9999364474348881,
+                "flux_angle_deg_last_1s": 78.19785979532149,
+                "orthogonality_error_deg_last_1s": 11.802140204678508,
+                "efficiency_pct_last_1s": 14.899520503156994,
+                "mean_electrical_power_w_last_1s": 6087.962547408223,
+                "mean_mechanical_power_w_last_1s": 907.0772279756071
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 4.0424999999999995,
+            "result": {
+              "stable": true,
+              "score": 8.80516575019731,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1178.8325233084938,
+                "mean_speed_error_rpm_last_1s": -321.1674766915062,
+                "speed_ratio_last_1s": 0.7858883488723292,
+                "flux_angle_deg_last_1s": 69.72776021809001,
+                "orthogonality_error_deg_last_1s": 20.272239781909988,
+                "efficiency_pct_last_1s": 6.334501024375594,
+                "mean_electrical_power_w_last_1s": 7878.042966780535,
+                "mean_mechanical_power_w_last_1s": 499.0347124314625
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 8.084999999999999,
+            "result": {
+              "stable": true,
+              "score": 8.073636414074807,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1106.0052035920448,
+                "mean_speed_error_rpm_last_1s": -393.99479640795516,
+                "speed_ratio_last_1s": 0.7373368023946966,
+                "flux_angle_deg_last_1s": 72.26016761898447,
+                "orthogonality_error_deg_last_1s": 17.739832381015532,
+                "efficiency_pct_last_1s": 11.615040007109638,
+                "mean_electrical_power_w_last_1s": 8062.042856275563,
+                "mean_mechanical_power_w_last_1s": 936.4095031467314
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 1500.0,
+            "load_nm": 11.549999999999999,
+            "result": {
+              "stable": true,
+              "score": 8.045604438068587,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1122.2246738814213,
+                "mean_speed_error_rpm_last_1s": -377.77532611857873,
+                "speed_ratio_last_1s": 0.7481497825876142,
+                "flux_angle_deg_last_1s": 71.96252153272087,
+                "orthogonality_error_deg_last_1s": 18.03747846727913,
+                "efficiency_pct_last_1s": 16.73166325327998,
+                "mean_electrical_power_w_last_1s": 8112.436307394587,
+                "mean_mechanical_power_w_last_1s": 1357.3455245900834
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 4.0424999999999995,
+            "result": {
+              "stable": true,
+              "score": 9.180448594844874,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1139.418291660774,
+                "mean_speed_error_rpm_last_1s": -1110.581708339226,
+                "speed_ratio_last_1s": 0.5064081296270107,
+                "flux_angle_deg_last_1s": 70.82397676561591,
+                "orthogonality_error_deg_last_1s": 19.17602323438409,
+                "efficiency_pct_last_1s": 6.025822912826857,
+                "mean_electrical_power_w_last_1s": 8004.707541106525,
+                "mean_mechanical_power_w_last_1s": 482.3495011167763
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 8.084999999999999,
+            "result": {
+              "stable": true,
+              "score": 8.751680320157858,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1094.349217490669,
+                "mean_speed_error_rpm_last_1s": -1155.650782509331,
+                "speed_ratio_last_1s": 0.4863774299958529,
+                "flux_angle_deg_last_1s": 72.11112641159971,
+                "orthogonality_error_deg_last_1s": 17.888873588400287,
+                "efficiency_pct_last_1s": 11.278830277780418,
+                "mean_electrical_power_w_last_1s": 8214.86654400198,
+                "mean_mechanical_power_w_last_1s": 926.5408550441491
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          },
+          {
+            "target_speed_rpm": 2250.0,
+            "load_nm": 11.549999999999999,
+            "result": {
+              "stable": true,
+              "score": 8.569977706889187,
+              "criteria": {
+                "orthogonality_90_pm_5deg": false,
+                "speed_tracking_pm_2pct": false,
+                "speed_phase_margin_ge_45deg": true,
+                "current_phase_margin_ge_45deg": true,
+                "speed_gain_margin_ge_6db": true,
+                "current_gain_margin_ge_6db": true,
+                "efficiency_ge_85pct": false
+              },
+              "all_criteria_passed": false,
+              "metrics": {
+                "mean_speed_rpm_last_1s": 1126.1314463235562,
+                "mean_speed_error_rpm_last_1s": -1123.8685536764438,
+                "speed_ratio_last_1s": 0.5005028650326917,
+                "flux_angle_deg_last_1s": 72.24553078843935,
+                "orthogonality_error_deg_last_1s": 17.754469211560647,
+                "efficiency_pct_last_1s": 17.289333993179042,
+                "mean_electrical_power_w_last_1s": 7878.098820086284,
+                "mean_mechanical_power_w_last_1s": 1362.070817317415
+              },
+              "margins": {
+                "speed_gain_margin_db": Infinity,
+                "speed_phase_margin_deg": 80.50108003501545,
+                "current_gain_margin_db": Infinity,
+                "current_phase_margin_deg": 90.0
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

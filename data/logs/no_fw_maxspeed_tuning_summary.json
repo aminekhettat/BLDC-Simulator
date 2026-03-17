@@ -1,0 +1,51 @@
+{
+  "schema": "bldc.no_fw_maxspeed_tuning_summary.v1",
+  "created_utc": "2026-03-17T01:10:56Z",
+  "results": [
+    {
+      "profile": "Innotec 255-EZS48-160",
+      "max_no_fw_speed_rpm_est": 1653.9866862653766,
+      "effective_target_speed_rpm": 1521.6677513641466,
+      "effective_target_reason": "no_fw_reachable_speed_fallback",
+      "accepted": false,
+      "full_converged": false,
+      "stable": false,
+      "final_speed_rpm": 0.0,
+      "final_speed_ratio": 0.0,
+      "tail_abs_mean_error_rpm": null,
+      "tail_abs_max_error_rpm": null,
+      "tested_trials": 2,
+      "session_file": "data\\tuning_sessions\\until_converged\\innotec_255_ezs48_160_until_converged.json"
+    },
+    {
+      "profile": "Motenergy ME1718 48V",
+      "max_no_fw_speed_rpm_est": 1758.0837504359247,
+      "effective_target_speed_rpm": 1617.4370504010508,
+      "effective_target_reason": "no_fw_reachable_speed_fallback",
+      "accepted": false,
+      "full_converged": false,
+      "stable": false,
+      "final_speed_rpm": 0.0,
+      "final_speed_ratio": 0.0,
+      "tail_abs_mean_error_rpm": null,
+      "tail_abs_max_error_rpm": null,
+      "tested_trials": 2,
+      "session_file": "data\\tuning_sessions\\until_converged\\motenergy_me1718_48v_until_converged.json"
+    },
+    {
+      "profile": "Motenergy ME1719 48V",
+      "max_no_fw_speed_rpm_est": 1758.0837504359247,
+      "effective_target_speed_rpm": 1617.4370504010508,
+      "effective_target_reason": "no_fw_reachable_speed_fallback",
+      "accepted": false,
+      "full_converged": false,
+      "stable": false,
+      "final_speed_rpm": 0.0,
+      "final_speed_ratio": 0.0,
+      "tail_abs_mean_error_rpm": null,
+      "tail_abs_max_error_rpm": null,
+      "tested_trials": 2,
+      "session_file": "data\\tuning_sessions\\until_converged\\motenergy_me1719_48v_until_converged.json"
+    }
+  ]
+}

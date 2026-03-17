@@ -1,0 +1,48 @@
+﻿On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	modified:   ARCHITECTURE.md
+	modified:   FEATURES_UPDATE_v2.md
+	modified:   IMPLEMENTATION_COMPLETE_v2.md
+	modified:   INDEX.md
+	modified:   LICENSE
+	modified:   README.md
+	new file:   RELEASE_NOTES_MARCH_2026.md
+	new file:   Roadmap/ROADMAP.md
+	modified:   Roadmap/Roadmap.xlsx
+	modified:   VISUAL_GUIDE_v2.md
+	new file:   examples/auto_tune_motor_profiles.py
+	new file:   examples/auto_tune_until_convergence.py
+	new file:   examples/check_motor_profiles_no_fw_convergence.py
+	modified:   main.py
+	modified:   src/core/motor_model.py
+	modified:   src/ui/main_window.py
+	modified:   src/utils/__init__.py
+	modified:   src/utils/config.py
+	new file:   src/utils/motor_profiles.py
+	modified:   src/utils/speech.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	data/logs/cal3s.err
+	data/logs/diag_pretune.py
+	data/logs/diag_pretune_v2.py
+	data/logs/diag_pretune_v3.out
+	data/logs/diag_pretune_v3.py
+	data/logs/diagnose_voltage.py
+	data/logs/gitlog.txt
+	data/logs/gitlog2.txt
+	data/logs/gitstatus.txt
+	data/logs/gitstatus2.txt
+	data/logs/motor_profile_convergence_no_fw.json
+	data/logs/motor_profiles_auto_tuning_summary.json
+	data/logs/motor_profiles_until_converged_summary.json
+	data/logs/no_fw_max_speed_and_convergence_summary.json
+	data/logs/no_fw_maxspeed_tuning_summary.json
+	data/logs/single_motor_foc_tuning_attempt_innotec.json
+	data/motor_profiles/
+	data/tuning_sessions/
+	diag_trial.py
+

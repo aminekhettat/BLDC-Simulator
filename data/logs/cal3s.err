@@ -1,0 +1,2 @@
+C:\Users\akhettat\Documents\Projets Python\BLDC_motor_control\.venv\Lib\site-packages\cupy\_environment.py:275: UserWarning: CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.
+  warnings.warn(

@@ -1,0 +1,28 @@
+{
+  "schema": "bldc.auto_tune_until_convergence_summary.v2",
+  "created_utc": "2026-03-17T10:40:34Z",
+  "search_setup": {
+    "max_trials": 0,
+    "search_time_s": 0.6,
+    "verify_time_s": 8.0,
+    "search_max_time_s": 8.0,
+    "verify_max_time_s": 20.0,
+    "overcurrent_limit_a": 0.0,
+    "tolerance_ratio": 0.02,
+    "target_speed_rpm": -1.0,
+    "seed": 42
+  },
+  "results": [
+    {
+      "profile": "Motenergy ME1718 48V",
+      "file": "motenergy_me1718_48v.json",
+      "session_file": "motenergy_me1718_48v_until_converged.json",
+      "accepted": true,
+      "full_converged": true,
+      "final_speed_rpm": 1620.9653643826343,
+      "final_speed_ratio": 1.002181422751945,
+      "tested_trials": 71
+    }
+  ],
+  "errors": []
+}

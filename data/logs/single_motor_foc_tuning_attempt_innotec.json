@@ -1,0 +1,42 @@
+{
+  "schema": "bldc.single_motor_foc_tuning_attempt.v1",
+  "created_utc": "2026-03-15T21:10:00Z",
+  "motor": {
+    "profile": "Innotec 255-EZS48-160",
+    "file": "innotec_255_ezs48_160.json",
+    "rated_speed_rpm": 3000.0
+  },
+  "constraint": {
+    "motor_params_immutable": true,
+    "field_weakening_enabled": false,
+    "target_static_error_rpm_lt": 10.0
+  },
+  "best_from_auto_tune_until_convergence_v2": {
+    "session_file": "data/tuning_sessions/until_converged/innotec_255_ezs48_160_until_converged.json",
+    "accepted": false,
+    "final_speed_rpm": -10.782294883703116,
+    "final_error_rpm": 3010.782294883703,
+    "full_converged": false
+  },
+  "phase_sequence_exploration": {
+    "notes": "Using run_rated_speed_convergence_search helper (controller-only, no motor-parameter changes).",
+    "results": [
+      {
+        "phase_sequence": "UVW",
+        "final_speed_rpm": 455.725080202832,
+        "final_error_rpm": 2544.274919797168,
+        "negative_speed_detected": false
+      },
+      {
+        "phase_sequence": "UWV",
+        "final_speed_rpm": 5076.420617092315,
+        "final_error_rpm": -2076.4206170923153,
+        "negative_speed_detected": true
+      }
+    ]
+  },
+  "result": {
+    "target_achieved": false,
+    "reason": "No FOC-only parameter set found that satisfies static error < 10 RPM with immutable motor parameters and no field weakening."
+  }
+}

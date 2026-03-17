@@ -494,7 +494,8 @@ def test_foc_field_weakening_is_independent_toggle():
     motor = BLDCMotor(MotorParameters())
     ctrl = FOCController(motor=motor, enable_speed_loop=False)
     ctrl.set_speed_reference(2000.0)
-    ctrl.set_current_references(id_ref=0.4, iq_ref=0.0)
+    ctrl.set_current_references(id_ref=0.4, iq_ref=12.0)
+    ctrl.vdq_limit = 1.0
 
     motor.state[3] = 1800.0
 
@@ -504,7 +505,9 @@ def test_foc_field_weakening_is_independent_toggle():
         gain=1.2,
         max_negative_id_a=3.0,
     )
-    id_disabled, _ = ctrl._get_active_references(1e-4)
+    for _ in range(5):
+        ctrl.update(1e-3)
+    id_disabled, _ = ctrl._get_active_references(1e-3)
     assert id_disabled == pytest.approx(0.4)
     assert ctrl.field_weakening_id_injection_a == pytest.approx(0.0)
 
@@ -514,9 +517,12 @@ def test_foc_field_weakening_is_independent_toggle():
         gain=1.2,
         max_negative_id_a=3.0,
     )
-    id_enabled, _ = ctrl._get_active_references(1e-4)
+    for _ in range(25):
+        ctrl.update(1e-3)
+    id_enabled, _ = ctrl._get_active_references(1e-3)
     assert id_enabled < 0.4
     assert ctrl.field_weakening_id_injection_a < 0.0
+    assert ctrl.field_weakening_headroom_v < ctrl.field_weakening_headroom_target_v
 
 
 def test_foc_standard_startup_sequence_skips_open_loop_when_measured_angle_exists():
@@ -941,6 +947,7 @@ def test_gui_foc_field_weakening_wiring():
     gui.foc_field_weakening_start_speed.setValue(1500.0)
     gui.foc_field_weakening_gain.setValue(1.25)
     gui.foc_field_weakening_max_id.setValue(4.5)
+    gui.foc_field_weakening_headroom_target.setValue(0.9)
     gui._apply_to_simulation()
 
     assert isinstance(gui.controller, FOCController)
@@ -948,6 +955,7 @@ def test_gui_foc_field_weakening_wiring():
     assert gui.controller.field_weakening_start_speed_rpm == pytest.approx(1500.0)
     assert gui.controller.field_weakening_gain == pytest.approx(1.25)
     assert gui.controller.field_weakening_max_negative_id_a == pytest.approx(4.5)
+    assert gui.controller.field_weakening_headroom_target_v == pytest.approx(0.9)
 
 
 def test_gui_vf_startup_sequence_wiring():

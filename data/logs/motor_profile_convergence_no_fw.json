@@ -1,0 +1,47 @@
+{
+  "scenario": "rated_speed_convergence_no_field_weakening",
+  "results": [
+    {
+      "profile": "Motenergy ME1718 48V",
+      "file": "motenergy_me1718_48v.json",
+      "stable": true,
+      "converged": false,
+      "field_weakening_enabled": false,
+      "rated_speed_rpm": 4000.0,
+      "final_speed_rpm": 7.40026626763198,
+      "final_error_rpm": 3992.599733732368,
+      "tail_abs_mean_error_rpm": 3993.245278183,
+      "tail_abs_max_error_rpm": 3993.993563745426,
+      "settling_time_5pct_s": null,
+      "sim_time_s": 2.5
+    },
+    {
+      "profile": "Motenergy ME1719 48V",
+      "file": "motenergy_me1719_48v.json",
+      "stable": true,
+      "converged": false,
+      "field_weakening_enabled": false,
+      "rated_speed_rpm": 4000.0,
+      "final_speed_rpm": 7.40026626763198,
+      "final_error_rpm": 3992.599733732368,
+      "tail_abs_mean_error_rpm": 3993.245278183,
+      "tail_abs_max_error_rpm": 3993.993563745426,
+      "settling_time_5pct_s": null,
+      "sim_time_s": 2.5
+    },
+    {
+      "profile": "Innotec 255-EZS48-160",
+      "file": "innotec_255_ezs48_160.json",
+      "stable": true,
+      "converged": false,
+      "field_weakening_enabled": false,
+      "rated_speed_rpm": 3000.0,
+      "final_speed_rpm": 29.8153822677729,
+      "final_error_rpm": 2970.1846177322273,
+      "tail_abs_mean_error_rpm": 2966.3561591978005,
+      "tail_abs_max_error_rpm": 2974.9925693316945,
+      "settling_time_5pct_s": null,
+      "sim_time_s": 2.5
+    }
+  ]
+}

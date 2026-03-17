@@ -105,6 +105,32 @@ class TestMotorModel:
         torque = motor._calculate_torque(currents=np.array([1, -0.5, -0.5]), theta=0.1)
         assert isinstance(torque, float)
 
+    def test_dq_flux_weakening_reduces_acceleration(self, motor_params):
+        """Negative Id should reduce effective PM flux in dq model when enabled."""
+        motor_params.model_type = "dq"
+        motor_params.emf_shape = "sinusoidal"
+        motor_params.flux_weakening_id_coefficient = 0.02
+        motor_params.flux_weakening_min_ratio = 0.2
+
+        motor_no_fw = BLDCMotor(motor_params, dt=0.0001)
+        motor_fw = BLDCMotor(motor_params, dt=0.0001)
+
+        # Same electrical angle and q-axis voltage command.
+        motor_no_fw.state[4] = np.pi / 2
+        motor_fw.state[4] = np.pi / 2
+
+        # Inject negative Id via initial abc currents for motor_fw only.
+        # At theta_e=pi/2, alpha maps to d-axis; use ia=1, ib=ic=-0.5 to get i_alpha>0,
+        # then invert sign for negative d-axis current.
+        motor_fw.state[0:3] = np.array([-1.0, 0.5, 0.5], dtype=float)
+
+        voltages = np.array([10.0, -5.0, -5.0], dtype=float)
+        for _ in range(80):
+            motor_no_fw.step(voltages, load_torque=0.0)
+            motor_fw.step(voltages, load_torque=0.0)
+
+        assert motor_fw.omega < motor_no_fw.omega
+
     def test_motor_properties(self, motor):
         """Test motor property accessors."""
         assert isinstance(motor.speed_rpm, float)

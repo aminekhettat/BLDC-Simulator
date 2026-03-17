@@ -1,0 +1,32 @@
+{
+  "schema": "bldc.motor_profile.v1",
+  "profile_name": "Motenergy ME1718 48V",
+  "motor_params": {
+    "nominal_voltage": 48.0,
+    "phase_resistance": 0.00517,
+    "phase_inductance": 0.00004125,
+    "back_emf_constant": 0.143,
+    "torque_constant": 0.143,
+    "rotor_inertia": 0.00224,
+    "friction_coefficient": 0.001,
+    "num_poles": 10,
+    "ld": 0.00004125,
+    "lq": 0.00004125,
+    "model_type": "dq",
+    "emf_shape": "sinusoidal"
+  },
+  "rated_info": {
+    "rated_voltage_v": 48.0,
+    "rated_speed_rpm": 4000.0,
+    "rated_current_a": 100.0,
+    "rated_power_kw": 6.0,
+    "rated_torque_nm": 14.3,
+    "efficiency_pct": 92.0,
+    "pole_pairs": 5
+  },
+  "source": {
+    "provider": "Motenergy",
+    "url": "http://www.motenergy.com/mepmmo5.html",
+    "notes": "Published as 24-60V pack capable with 48V continuous current reference."
+  }
+}

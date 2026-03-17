@@ -1,0 +1,274 @@
+{
+  "schema": "bldc.auto_tune_until_convergence.v2",
+  "created_utc": "2026-03-17T01:08:34Z",
+  "profile": {
+    "name": "Motenergy ME1718 48V",
+    "file": "motenergy_me1718_48v.json"
+  },
+  "search_setup": {
+    "max_trials": 3,
+    "search_time_s": 0.3,
+    "verify_time_s": 1.0,
+    "search_max_time_s": 1.0,
+    "verify_max_time_s": 2.0,
+    "overcurrent_limit_a": 250.0,
+    "tolerance_ratio": 0.02,
+    "static_error_rpm_limit": 10.0,
+    "field_weakening_enabled": false,
+    "sensored_pi_tuning": true,
+    "startup_open_loop_calibration": true,
+    "candidate_strategy": "sequential_current_then_speed",
+    "feasibility_gate": "no_fw_voltage_headroom",
+    "requested_target_speed_rpm": -1.0,
+    "effective_target_speed_rpm": 1617.4370504010508,
+    "effective_target_reason": "no_fw_reachable_speed_fallback",
+    "pre_tuning_speed_ramp": {
+      "enabled": true,
+      "steady_state_entry_speed_rpm": 1000.0,
+      "vf_ratio_applied_in_open_loop": true
+    },
+    "candidate_pool_sizes": {
+      "current_stage_budget": 1,
+      "speed_stage_budget": 2
+    },
+    "speed_pi_design_reference": {
+      "equations": {
+        "plant": "J*w_dot + B*w = Kt*iq",
+        "speed_kp": "(2*zeta*wn*J - B)/Kt",
+        "speed_ki": "(wn^2*J)/Kt",
+        "wn_rule": "clip(0.08*omega_target, 8, 120)",
+        "zeta": "0.90"
+      },
+      "inputs": {
+        "target_speed_rpm": 1617.4370504010508,
+        "inertia_J": 0.00224,
+        "friction_B": 0.001,
+        "torque_constant_Kt": 0.143
+      },
+      "derived": {
+        "omega_target_rad_s": 169.37761183946282,
+        "wn_rad_s": 13.550208947157026,
+        "zeta": 0.9
+      },
+      "seed_speed_pi": {
+        "kp": 0.37506603129326666,
+        "ki": 2.876099888293819
+      }
+    }
+  },
+  "best_candidate": {
+    "speed_pi": {
+      "kp": 0.5010204426567564,
+      "ki": 3.4513198659525828,
+      "kaw": 0.05
+    },
+    "current_pi": {
+      "d_kp": 0.17467066220944602,
+      "d_ki": 21.89205633025057,
+      "q_kp": 0.17467066220944602,
+      "q_ki": 21.89205633025057,
+      "kaw": 0.2
+    },
+    "iq_limit_a": 240.0,
+    "observer": {
+      "mode": "Measured"
+    },
+    "startup_sequence": {
+      "align_duration_s": 0.0,
+      "align_current_a": 6.0,
+      "open_loop_initial_speed_rpm": 80.0,
+      "open_loop_target_speed_rpm": 1800.0,
+      "open_loop_ramp_time_s": 0.2,
+      "open_loop_iq_ref_a": 45.0
+    }
+  },
+  "motor_params": {
+    "nominal_voltage": 48.0,
+    "phase_resistance": 0.00517,
+    "phase_inductance": 4.125e-05,
+    "back_emf_constant": 0.143,
+    "torque_constant": 0.143,
+    "rotor_inertia": 0.00224,
+    "friction_coefficient": 0.001,
+    "num_poles": 10,
+    "poles_pairs": 5,
+    "ld": 4.125e-05,
+    "lq": 4.125e-05,
+    "model_type": "dq",
+    "emf_shape": "sinusoidal"
+  },
+  "feasibility": {
+    "no_fw_voltage_feasible": true,
+    "no_fw_voltage_feasible_conservative_model": false,
+    "hardware_voltage_ok": true,
+    "rated_voltage_v": 48.0,
+    "rated_speed_rpm": 4000.0,
+    "rated_current_a": 100.0,
+    "v_phase_limit_v": 26.327172275046937,
+    "v_required_v": 60.59548945681948,
+    "v_emf_v": 59.89969992844538,
+    "v_resistive_v": 0.517,
+    "v_inductive_v": 8.63937979737193,
+    "margin_v": -34.268317181772545,
+    "max_no_fw_speed_rpm_est": 1758.0837504359247
+  },
+  "results": {
+    "best_search_trial": {
+      "stable": false,
+      "converged": false,
+      "full_converged": false,
+      "score": 1000000000.0,
+      "final_speed_rpm": 0.0,
+      "final_speed_ratio": 0.0,
+      "reason": "overcurrent_abort",
+      "tuning_start_time_s": 0.4268571428571429,
+      "pre_tune_target_speed_rpm": 1000.0
+    },
+    "verification": {
+      "stable": false,
+      "converged": false,
+      "full_converged": false,
+      "score": 1000000000.0,
+      "final_speed_rpm": 0.0,
+      "final_speed_ratio": 0.0,
+      "reason": "overcurrent_abort",
+      "tuning_start_time_s": 0.426875,
+      "pre_tune_target_speed_rpm": 1000.0
+    },
+    "tested_trials": 3,
+    "trial_debug": [
+      {
+        "trial_index": 1,
+        "phase": "current_stage_anchor",
+        "sim_time_s": 0.3,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.5010204426567564,
+          "ki": 3.4513198659525828,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.17467066220944602,
+          "ki": 21.89205633025057,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 240.0,
+        "startup": {
+          "open_loop_iq_ref_a": 45.0,
+          "open_loop_target_speed_rpm": 1800.0
+        },
+        "result": {
+          "stable": false,
+          "converged": false,
+          "full_converged": false,
+          "score": 1000000000.0,
+          "final_speed_rpm": 0.0,
+          "final_speed_ratio": 0.0,
+          "reason": "overcurrent_abort",
+          "tuning_start_time_s": 0.4268571428571429,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 2,
+        "phase": "speed_stage_anchor",
+        "sim_time_s": 0.3,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.3896585640055895,
+          "ki": 1.898675316881466,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.17467066220944602,
+          "ki": 21.89205633025057,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 240.0,
+        "startup": {
+          "open_loop_iq_ref_a": 45.0,
+          "open_loop_target_speed_rpm": 1800.0
+        },
+        "result": {
+          "stable": false,
+          "converged": false,
+          "full_converged": false,
+          "score": 1000000000.0,
+          "final_speed_rpm": 0.0,
+          "final_speed_ratio": 0.0,
+          "reason": "overcurrent_abort",
+          "tuning_start_time_s": 0.4268571428571429,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 3,
+        "phase": "speed_stage_search",
+        "sim_time_s": 0.3,
+        "dt_s": 0.00028571428571428574,
+        "speed_pi": {
+          "kp": 0.3896585640055895,
+          "ki": 1.898675316881466,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.17467066220944602,
+          "ki": 21.89205633025057,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 216.0,
+        "startup": {
+          "open_loop_iq_ref_a": 40.0,
+          "open_loop_target_speed_rpm": 1000.0
+        },
+        "result": {
+          "stable": false,
+          "converged": false,
+          "full_converged": false,
+          "score": 1000000000.0,
+          "final_speed_rpm": 0.0,
+          "final_speed_ratio": 0.0,
+          "reason": "overcurrent_abort",
+          "tuning_start_time_s": 0.4268571428571429,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      },
+      {
+        "trial_index": 4,
+        "phase": "verification",
+        "sim_time_s": 1.0,
+        "dt_s": 0.000125,
+        "speed_pi": {
+          "kp": 0.5010204426567564,
+          "ki": 3.4513198659525828,
+          "kaw": 0.05
+        },
+        "current_pi": {
+          "kp": 0.17467066220944602,
+          "ki": 21.89205633025057,
+          "kaw": 0.2
+        },
+        "iq_limit_a": 240.0,
+        "startup": {
+          "open_loop_iq_ref_a": 45.0,
+          "open_loop_target_speed_rpm": 1800.0
+        },
+        "result": {
+          "stable": false,
+          "converged": false,
+          "full_converged": false,
+          "score": 1000000000.0,
+          "final_speed_rpm": 0.0,
+          "final_speed_ratio": 0.0,
+          "reason": "overcurrent_abort",
+          "tuning_start_time_s": 0.426875,
+          "pre_tune_target_speed_rpm": 1000.0
+        }
+      }
+    ]
+  },
+  "acceptance": {
+    "accepted": false,
+    "reason": "full convergence not achieved"
+  }
+}

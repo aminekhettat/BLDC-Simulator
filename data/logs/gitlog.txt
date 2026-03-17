@@ -1,0 +1,15 @@
+﻿ef4f4ec (HEAD -> main, origin/main) feat: add max-speed targeting workflow with field weakening disabled
+c47471c feat: make field weakening an independent toggleable FOC feature
+0f0bb93 chore: add latest 12V convergence check artifact
+0bcbca7 feat: extend runtime architecture with startup, inverter realism, hardware backend, and docs
+d646a25 feat: add efficiency telemetry and tuning
+9a642c2 feat: add PFC analysis plotting and roadmap update
+5eb954c feat: add GUI controls and monitoring for PFC hook
+52e14ae feat: add simulation-level PFC telemetry control hook
+ad3810f feat: add power factor analysis and compensation utilities
+d5f5556 ci: make startup KPI threshold step non-blocking
+0f28a37 fix: lazy-load src subpackages to avoid import side effects
+cdb3728 ci: use GITHUB_WORKSPACE cd for regression steps
+b924f9f ci: fix diagnostics workflow syntax
+66d9523 ci: upload detailed diagnostics for regression gate failures
+bd1036e ci: pin workspace context for regression steps

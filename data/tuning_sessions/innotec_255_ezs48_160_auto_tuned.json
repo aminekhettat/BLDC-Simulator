@@ -1,0 +1,133 @@
+{
+  "schema": "bldc.auto_tuning_session.v2",
+  "created_utc": "2026-03-15T19:50:19Z",
+  "profile": {
+    "name": "Innotec 255-EZS48-160",
+    "file": "innotec_255_ezs48_160.json"
+  },
+  "search_setup": {
+    "search_sim_time_s": 0.25,
+    "verify_sim_time_s": 0.7,
+    "dt_s": 0.000125,
+    "load_profile": "ConstantLoad(0.0)",
+    "field_weakening_enabled": false,
+    "deep_search_enabled": false,
+    "observer_candidates": [
+      {
+        "mode": "PLL",
+        "pll_kp": 25.0,
+        "pll_ki": 300.0
+      },
+      {
+        "mode": "PLL",
+        "pll_kp": 150.0,
+        "pll_ki": 2800.0
+      },
+      {
+        "mode": "SMO",
+        "smo_k_slide": 40.0,
+        "smo_lpf_alpha": 0.15,
+        "smo_boundary": 0.05
+      },
+      {
+        "mode": "SMO",
+        "smo_k_slide": 85.0,
+        "smo_lpf_alpha": 0.25,
+        "smo_boundary": 0.07
+      },
+      {
+        "mode": "SMO",
+        "smo_k_slide": 120.0,
+        "smo_lpf_alpha": 0.35,
+        "smo_boundary": 0.1
+      }
+    ],
+    "speed_candidate_count": 3,
+    "current_candidate_count": 3,
+    "strict_acceptance": {
+      "enabled": true,
+      "min_final_speed_ratio": 0.95,
+      "min_required_speed_rpm": 2850.0
+    }
+  },
+  "motor_params": {
+    "nominal_voltage": 48.0,
+    "phase_resistance": 0.005,
+    "phase_inductance": 4e-05,
+    "back_emf_constant": 0.152,
+    "torque_constant": 0.165,
+    "rotor_inertia": 0.006761,
+    "friction_coefficient": 0.001,
+    "num_poles": 10,
+    "poles_pairs": 5,
+    "ld": 4e-05,
+    "lq": 4e-05,
+    "model_type": "dq",
+    "emf_shape": "sinusoidal"
+  },
+  "rated_info": {
+    "rated_voltage_v": 48.0,
+    "rated_speed_rpm": 3000.0,
+    "rated_current_a_rms": 160.0,
+    "rated_power_kw": 8.3,
+    "rated_torque_nm": 26.5,
+    "efficiency_pct": 93.0,
+    "rated_frequency_hz": 250.0,
+    "pole_pairs": 5
+  },
+  "best_parameters": {
+    "regulators": {
+      "speed_pi": {
+        "kp": 0.06335278435066323,
+        "ki": 0.00018,
+        "kaw": 0.05
+      },
+      "current_pi": {
+        "d_kp": 0.0060771057178513966,
+        "d_ki": 0.16000000000000003,
+        "q_kp": 0.0060771057178513966,
+        "q_ki": 0.16000000000000003,
+        "kaw": 0.2
+      },
+      "iq_limit_a": 144.0
+    },
+    "observer": {
+      "mode": "SMO",
+      "smo_k_slide": 120.0,
+      "smo_lpf_alpha": 0.35,
+      "smo_boundary": 0.1
+    }
+  },
+  "results": {
+    "verification": {
+      "stable": true,
+      "converged": false,
+      "score": 0.9404507496551905,
+      "rated_speed_rpm": 3000.0,
+      "final_speed_rpm": 33.455729489896505,
+      "final_error_rpm": 2966.5442705101036,
+      "tail_abs_mean_error_rpm": 2967.179474462998,
+      "tail_abs_max_error_rpm": 2971.6766230109138,
+      "settling_time_5pct_s": null,
+      "sim_time_s": 0.699875,
+      "mean_observer_confidence": 0.7032986837954682
+    },
+    "observer_stage_best": {
+      "stable": true,
+      "converged": false,
+      "score": 0.9667476591302586,
+      "rated_speed_rpm": 3000.0,
+      "final_speed_rpm": 13.433995586585219,
+      "final_error_rpm": 2986.5660044134147,
+      "tail_abs_mean_error_rpm": 2986.589181257788,
+      "tail_abs_max_error_rpm": 2986.6952485708334,
+      "settling_time_5pct_s": null,
+      "sim_time_s": 0.25,
+      "mean_observer_confidence": 0.41556762345139675
+    }
+  },
+  "acceptance": {
+    "accepted": false,
+    "reason": "strict convergence rule not satisfied"
+  }
+}
