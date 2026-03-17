@@ -15,7 +15,7 @@ Provides efficient real-time simulation with optimized calculations.
 """
 
 import numpy as np
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, Any
 from collections import deque
 from .motor_model import BLDCMotor
 from .load_model import LoadProfile

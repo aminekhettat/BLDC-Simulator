@@ -172,16 +172,16 @@ class AdaptiveFOCTuner:
         self, kp: float, ki: float
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         r = max(self.params.phase_resistance, 1e-12)
-        l = max(self.params.phase_inductance, 1e-12)
+        phase_l = max(self.params.phase_inductance, 1e-12)
 
         a = np.array(
             [
-                [-(r + kp) / l, ki / l],
+                [-(r + kp) / phase_l, ki / phase_l],
                 [-1.0, 0.0],
             ],
             dtype=np.float64,
         )
-        b = np.array([[kp / l], [1.0]], dtype=np.float64)
+        b = np.array([[kp / phase_l], [1.0]], dtype=np.float64)
         c = np.array([[1.0, 0.0]], dtype=np.float64)
         return a, b, c
 

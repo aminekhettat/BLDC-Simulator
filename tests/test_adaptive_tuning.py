@@ -11,8 +11,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.control.adaptive_tuning import AdaptiveFOCTuner
-from src.core.motor_model import MotorParameters
+from src.control.adaptive_tuning import AdaptiveFOCTuner  # noqa: E402
+from src.core.motor_model import MotorParameters  # noqa: E402
 
 
 def _test_params() -> MotorParameters:
