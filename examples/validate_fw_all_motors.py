@@ -4,6 +4,8 @@ Tests FW calibration on all available motor profiles in the project.
 Results are aggregated into a comprehensive validation report.
 """
 
+# ruff: noqa: E402
+
 import json
 import sys
 import time
@@ -227,7 +229,7 @@ def validate_motor(motor_name: str, profile_path: Path, session_path: Path):
         print("❌ FAILED: Simulation unstable")
         return None
 
-    print(f"\nResults:")
+    print("\nResults:")
     print(
         f"  Speed: {result['speed_rpm']:.1f} RPM (error: {result['speed_error_rpm']:+.1f} RPM)"
     )

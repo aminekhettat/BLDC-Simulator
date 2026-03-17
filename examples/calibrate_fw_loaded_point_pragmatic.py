@@ -4,10 +4,11 @@ Calibrates FW for motenergy_me1718_48v at rated speed with more forgiving criter
 This version relaxes the acceptance criteria to achieve practical convergence.
 """
 
+# ruff: noqa: E402
+
 import json
 import math
 import sys
-import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,7 +18,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.control.adaptive_tuning import AdaptiveFOCTuner
 from src.control.foc_controller import FOCController
 from src.control.svm_generator import SVMGenerator
 from src.control.transforms import clarke_transform, park_transform
@@ -382,7 +382,6 @@ def main() -> None:
     low = 0.0
     high = plausible_upper
     best_loaded_cand = cand1
-    best_loaded_eval = eval1
 
     for iteration in range(5):
         mid = 0.5 * (low + high)
@@ -397,7 +396,6 @@ def main() -> None:
         if success:
             low = mid
             best_loaded_cand = cand_mid
-            best_loaded_eval = eval_mid
             print(f"LOAD_OK {mid:.3f} Nm", flush=True)
         else:
             high = mid

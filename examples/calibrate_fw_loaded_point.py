@@ -505,19 +505,6 @@ def main() -> None:
 
     session = json.loads(SESSION_PATH.read_text(encoding="utf-8"))
     best = session["best_candidate"]
-    base = Candidate(
-        speed_kp=float(best["speed_pi"]["kp"]),
-        speed_ki=float(best["speed_pi"]["ki"]),
-        current_kp=float(best["current_pi"]["d_kp"]),
-        current_ki=float(best["current_pi"]["d_ki"]),
-        iq_limit_a=max(300.0, float(best.get("iq_limit_a", 300.0))),
-        use_d_priority=False,
-        coupled_aw_gain=0.0,
-        fw_start_rpm=0.6 * rated_speed_rpm,
-        fw_gain=1.0,
-        fw_id_max_a=30.0,
-        fw_headroom_target_v=1.2,
-    )
 
     max_no_fw_rpm = estimate_max_no_fw_speed_rpm(params, utilization_margin=0.95)
     print(
@@ -603,7 +590,6 @@ def main() -> None:
     low = 0.0
     high = plausible_upper
     best_loaded_candidate = cand_speed
-    best_loaded_eval = eval_speed
     torque_iterations = []
 
     print("STEP2_START smooth torque ramp with FW", flush=True)
@@ -636,7 +622,6 @@ def main() -> None:
         if success and cand_mid is not None and eval_mid is not None:
             low = mid
             best_loaded_candidate = cand_mid
-            best_loaded_eval = eval_mid
             print(f"TORQUE_OK {mid:.4f} Nm", flush=True)
         else:
             high = mid

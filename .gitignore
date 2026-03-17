@@ -15,3 +15,12 @@ venv/
 # Runtime outputs
 data/logs/*.log
 data/logs/*.err.log
+data/logs/ci_*.xml
+data/logs/ci_*.txt
+data/logs/gitlog*.txt
+data/logs/gitstatus*.txt
+data/logs/ruff_out.txt
+data/logs/coverage_summary.txt
+.coverage
+data/logs/coverage.xml
+data/logs/coverage_report.txt

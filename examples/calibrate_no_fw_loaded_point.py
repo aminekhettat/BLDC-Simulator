@@ -7,6 +7,8 @@ from pathlib import Path
 
 import numpy as np
 
+# ruff: noqa: E402
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -477,7 +479,6 @@ def main() -> None:
     low = 0.0
     high = plausible_upper
     best_loaded_candidate = cand_speed
-    best_loaded_eval = eval_speed
     torque_iterations = []
 
     print("STEP2_START smooth torque ramp and retune", flush=True)
@@ -510,7 +511,6 @@ def main() -> None:
         if success and cand_mid is not None and eval_mid is not None:
             low = mid
             best_loaded_candidate = cand_mid
-            best_loaded_eval = eval_mid
             print(f"TORQUE_OK {mid:.4f} Nm", flush=True)
         else:
             high = mid

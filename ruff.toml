@@ -1,0 +1,4 @@
+exclude = ["data/logs"]
+
+[lint]
+per-file-ignores = { "examples/*.py" = ["E402"] }

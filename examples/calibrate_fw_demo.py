@@ -4,8 +4,9 @@ Shows rated speed + rated torque achievable with field weakening
 Uses known-good seed points for fast convergence.
 """
 
+# ruff: noqa: E402
+
 import json
-import math
 import sys
 from pathlib import Path
 
@@ -217,7 +218,7 @@ def main():
     speed_error_pct = 100 * result["speed_err_mean"] / max(rated_speed, 1)
     efficiency_ok = result["efficiency_mean"] > 75
 
-    print(f"\n=== RESULTS ===")
+    print("\n=== RESULTS ===")
     print(f"Speed: {result['speed_mean']:.1f} RPM (±{result['speed_std']:.1f})")
     print(f"Speed Error: {result['speed_err_mean']:.1f} RPM ({speed_error_pct:.2f}%)")
     print(f"d-axis current: {result['id_mean']:.2f} A")

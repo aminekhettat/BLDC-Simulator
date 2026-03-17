@@ -4,7 +4,6 @@ Runs a simple simulation using FOCController with constant current
 references and a variable supply profile to illustrate dynamic behavior.
 """
 
-import numpy as np
 from src.core import (
     BLDCMotor,
     MotorParameters,
