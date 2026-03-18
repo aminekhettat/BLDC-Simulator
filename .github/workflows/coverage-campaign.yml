@@ -1,0 +1,84 @@
+name: Coverage Campaign
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  full-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONIOENCODING: utf-8
+      MPLBACKEND: Agg
+      QT_QPA_PLATFORM: offscreen
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run full test campaign with coverage
+        run: |
+          set -o pipefail
+          mkdir -p data/logs
+          python -m pytest tests/ \
+            --cov=src \
+            --cov-report=term-missing:skip-covered \
+            --cov-report=xml:data/logs/coverage.xml \
+            -q | tee data/logs/coverage_report.txt
+
+      - name: Extract total coverage percentage
+        if: always()
+        run: |
+          python - << 'PY'
+          import re
+          from pathlib import Path
+
+          xml_path = Path("data/logs/coverage.xml")
+          summary_path = Path("data/logs/coverage_summary.txt")
+
+          if not xml_path.exists():
+              summary_path.write_text("TOTAL_COVERAGE_PCT:unavailable\n", encoding="utf-8")
+              print("TOTAL_COVERAGE_PCT:unavailable")
+              raise SystemExit(0)
+
+          text = xml_path.read_text(encoding="utf-8", errors="replace")
+          m = re.search(r'line-rate="([0-9.]+)"', text)
+          if not m:
+              summary_path.write_text("TOTAL_COVERAGE_PCT:unavailable\n", encoding="utf-8")
+              print("TOTAL_COVERAGE_PCT:unavailable")
+              raise SystemExit(0)
+
+          pct = round(float(m.group(1)) * 100.0, 2)
+          line = f"TOTAL_COVERAGE_PCT:{pct}"
+          summary_path.write_text(line + "\n", encoding="utf-8")
+          print(line)
+          PY
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-campaign-artifacts
+          path: |
+            data/logs/coverage.xml
+            data/logs/coverage_report.txt
+            data/logs/coverage_summary.txt
+          if-no-files-found: warn
