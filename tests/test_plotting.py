@@ -1,5 +1,6 @@
 """Tests for visualization utilities."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from src.visualization.visualization import SimulationPlotter
@@ -39,6 +40,7 @@ def test_create_multi_axis_plot():
     )
     # simple sanity: figure should have axes
     assert fig.get_axes()
+    plt.close(fig)
 
 
 def test_create_pfc_analysis_plot():
@@ -49,6 +51,7 @@ def test_create_pfc_analysis_plot():
     assert len(axes) == 4
     assert "Power Factor" in axes[0].get_title()
     assert "Reactive" in axes[2].get_title()
+    plt.close(fig)
 
 
 def test_create_efficiency_analysis_plot():
@@ -59,6 +62,7 @@ def test_create_efficiency_analysis_plot():
     assert len(axes) == 4
     assert "Efficiency" in axes[0].get_title()
     assert "Loss" in axes[3].get_title()
+    plt.close(fig)
 
 
 def test_create_inverter_analysis_plot():
@@ -69,3 +73,4 @@ def test_create_inverter_analysis_plot():
     assert len(axes) == 5
     assert "DC-Link" in axes[0].get_title()
     assert "Loss Breakdown" in axes[2].get_title()
+    plt.close(fig)
