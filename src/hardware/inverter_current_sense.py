@@ -53,12 +53,29 @@ class InverterCurrentSense:
     -----
     - `triple`: one shunt/op-amp per phase (A, B, C).
     - `double`: shunts in legs A and B. C is reconstructed from Kirchhoff.
-    - `single`: one collector shunt. For controller-facing phase-current output,
-      this implementation uses an "ideal PWM observability" approximation where
-      the measured bus-current envelope scales the internal phase-current shape.
-      This is intentionally marked approximate and can be replaced by a strict
-      PWM-window reconstruction model later.
+    - `single`: one DC-bus shunt. When an SVM sector is provided, true
+      sector-aware reconstruction is used: each active vector contributes one
+      measurable bus-current sample that directly encodes one phase current
+      (or its negative). Two samples + Kirchhoff reconstruct all three phases
+      exactly with ideal channels. Without a sector hint, a fallback
+      approximation is used instead.
     """
+
+    # Per-sector SVM active-vector observable bus currents for single-shunt.
+    # Each entry: ((sign_v1, phase_idx_v1), (sign_v2, phase_idx_v2), kirchhoff_idx)
+    # Meaning: i_bus_sample = sign * i_phase[phase_idx]
+    # Reconstruction: i_phase[phase_idx] = sign * i_bus_reconstructed
+    # Kirchhoff:      i_phase[kirchhoff_idx] = -(i_ph_v1 + i_ph_v2)
+    # Derivation: i_shunt = sum(i_x for phases where upper switch is ON).
+    # SVM vectors per sector match sector_patterns in SVMGenerator.
+    _SECTOR_OBSERVABLE: dict = {
+        1: ((1, 0), (-1, 2), 1),  # V1=[1,0,0]: bus=+i_a  V2=[1,1,0]: bus=-i_c  KH:i_b
+        2: ((-1, 2), (1, 1), 0),  # V1=[1,1,0]: bus=-i_c  V2=[0,1,0]: bus=+i_b  KH:i_a
+        3: ((1, 1), (-1, 0), 2),  # V1=[0,1,0]: bus=+i_b  V2=[0,1,1]: bus=-i_a  KH:i_c
+        4: ((-1, 0), (1, 2), 1),  # V1=[0,1,1]: bus=-i_a  V2=[0,0,1]: bus=+i_c  KH:i_b
+        5: ((1, 2), (-1, 1), 0),  # V1=[0,0,1]: bus=+i_c  V2=[1,0,1]: bus=-i_b  KH:i_a
+        6: ((-1, 1), (1, 0), 2),  # V1=[1,0,1]: bus=-i_b  V2=[1,0,0]: bus=+i_a  KH:i_c
+    }
 
     def __init__(
         self,
@@ -125,8 +142,48 @@ class InverterCurrentSense:
         i_reco = (v_adc - ch.nominal_offset_v) / (ch.nominal_gain * ch.r_shunt_ohm)
         return i_reco, v_adc, saturated
 
-    def measure(self, currents_abc: np.ndarray, dt: float) -> dict:
-        """Measure and reconstruct phase currents for the configured topology."""
+    @staticmethod
+    def sector_from_voltages(
+        voltages_abc: np.ndarray, min_magnitude: float = 0.1
+    ) -> "int | None":
+        """Derive the SVM sector (1-6) from averaged 3-phase voltages.
+
+        Returns ``None`` when the voltage vector is too small to determine a
+        reliable sector (near-zero modulation index), in which case the
+        single-shunt measurement falls back to the envelope approximation.
+        """
+        v = np.asarray(voltages_abc, dtype=np.float64)
+        v_alpha = (2.0 * v[0] - v[1] - v[2]) / 3.0
+        v_beta = (v[1] - v[2]) / math.sqrt(3.0)
+        magnitude = math.hypot(v_alpha, v_beta)
+        if magnitude < min_magnitude:
+            return None
+        angle = math.atan2(v_beta, v_alpha) % (2.0 * math.pi)
+        sector = int(angle / (math.pi / 3.0)) + 1
+        return max(1, min(6, sector))
+
+    def measure(
+        self,
+        currents_abc: np.ndarray,
+        dt: float,
+        svm_sector: "int | None" = None,
+    ) -> dict:
+        """Measure and reconstruct phase currents for the configured topology.
+
+        Parameters
+        ----------
+        currents_abc:
+            True motor phase currents [i_a, i_b, i_c] from the physics model.
+        dt:
+            Simulation time step [s].
+        svm_sector:
+            Optional SVM sector (1-6) for single-shunt sector-aware
+            reconstruction. When provided, two bus-current samples (one per
+            active vector) are computed from the sector table, passed through
+            the analog channel, and used to recover all three phase currents
+            exactly (ideal channels) or with realistic errors (non-ideal).
+            When ``None``, the fallback envelope approximation is used.
+        """
         currents = np.asarray(currents_abc, dtype=np.float64)
         if currents.shape != (3,):
             raise ValueError(f"Expected currents_abc shape (3,), got {currents.shape}")
@@ -150,17 +207,41 @@ class InverterCurrentSense:
             measured = np.array([i_ra, i_rb, i_rc], dtype=np.float64)
 
         else:
-            # Single-shunt approximation: collector return-current envelope drives
-            # one analog channel; phase vector shape follows internal true-current
-            # ratios (ideal PWM observability approximation for this first slice).
-            i_bus = 0.5 * (abs(i_a) + abs(i_b) + abs(i_c))
-            i_bus_reco, v_adc[0], sat[0] = self._channel_measure(i_bus, dt, 0)
+            if svm_sector is not None and svm_sector in self._SECTOR_OBSERVABLE:
+                # Sector-aware reconstruction: two ADC samples per PWM cycle.
+                # During active vector V1: i_bus_v1 = sign_v1 * i_phase[ph_v1]
+                # During active vector V2: i_bus_v2 = sign_v2 * i_phase[ph_v2]
+                # Both samples flow through the same analog path (single channel).
+                (sign_v1, ph_v1), (sign_v2, ph_v2), ph_kh = self._SECTOR_OBSERVABLE[
+                    svm_sector
+                ]
+                i_bus_v1 = sign_v1 * float(currents[ph_v1])
+                i_bus_v2 = sign_v2 * float(currents[ph_v2])
 
-            denom = max(0.5 * (abs(i_a) + abs(i_b) + abs(i_c)), 1e-9)
-            scale = i_bus_reco / denom
-            measured = np.array(
-                [i_a * scale, i_b * scale, i_c * scale], dtype=np.float64
-            )
+                # Process both samples sequentially through the single channel.
+                # (Both are taken within the same PWM cycle; filter advances once.)
+                i_reco_v1, _, sat_v1 = self._channel_measure(i_bus_v1, dt, 0)
+                i_reco_v2, v_adc[0], sat_v2 = self._channel_measure(i_bus_v2, dt, 0)
+                sat[0] = sat_v1 or sat_v2
+
+                # Recover individual phase currents from bus samples.
+                i_ph_v1 = sign_v1 * i_reco_v1
+                i_ph_v2 = sign_v2 * i_reco_v2
+                i_ph_kh = -(i_ph_v1 + i_ph_v2)
+
+                measured = np.zeros(3, dtype=np.float64)
+                measured[ph_v1] = i_ph_v1
+                measured[ph_v2] = i_ph_v2
+                measured[ph_kh] = i_ph_kh
+            else:
+                # Fallback: bus-current envelope scales the true phase shape.
+                i_bus = 0.5 * (abs(i_a) + abs(i_b) + abs(i_c))
+                i_bus_reco, v_adc[0], sat[0] = self._channel_measure(i_bus, dt, 0)
+                denom = max(0.5 * (abs(i_a) + abs(i_b) + abs(i_c)), 1e-9)
+                scale = i_bus_reco / denom
+                measured = np.array(
+                    [i_a * scale, i_b * scale, i_c * scale], dtype=np.float64
+                )
 
         self._last_measured_currents_abc = measured
         return {

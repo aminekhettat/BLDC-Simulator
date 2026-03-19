@@ -244,6 +244,11 @@ class SimulationEngine:
         # State variables cache
         self._last_state_dict = {}
 
+        # True physics phase-current history (parallel to measured _history_currents_*)
+        self._history_currents_a_true: deque[float] = deque(maxlen=self.max_history)
+        self._history_currents_b_true: deque[float] = deque(maxlen=self.max_history)
+        self._history_currents_c_true: deque[float] = deque(maxlen=self.max_history)
+
     def set_inverter_telemetry(self, telemetry: Optional[Dict[str, Any]]) -> None:
         """Update latest inverter telemetry packet from the modulation stage."""
         if not telemetry:
@@ -372,7 +377,10 @@ class SimulationEngine:
         self.motor.step(effective_voltages, load_torque)
 
         if self.current_sense is not None:
-            sensed = self.current_sense.measure(self.motor.currents, self.dt)
+            svm_sector = self.current_sense.sector_from_voltages(effective_voltages)
+            sensed = self.current_sense.measure(
+                self.motor.currents, self.dt, svm_sector=svm_sector
+            )
             self._measured_phase_currents = np.asarray(
                 sensed["currents_abc_measured"], dtype=np.float64
             )
@@ -427,6 +435,10 @@ class SimulationEngine:
         self._history_currents_a.append(float(self._measured_phase_currents[0]))
         self._history_currents_b.append(float(self._measured_phase_currents[1]))
         self._history_currents_c.append(float(self._measured_phase_currents[2]))
+        # True (physics) phase currents — always from motor ODE, never overridden
+        self._history_currents_a_true.append(state["currents_a"])
+        self._history_currents_b_true.append(state["currents_b"])
+        self._history_currents_c_true.append(state["currents_c"])
         self._history_omega.append(state["omega"])
         self._history_theta.append(state["theta"])
         self._history_speed.append(state["speed_rpm"])
@@ -687,6 +699,10 @@ class SimulationEngine:
         self._history_control_calc_duration_s.clear()
         self._history_control_cpu_load_pct.clear()
 
+        self._history_currents_a_true.clear()
+        self._history_currents_b_true.clear()
+        self._history_currents_c_true.clear()
+
         self._pfc_metrics.update(
             {
                 "power_factor": 0.0,
@@ -779,6 +795,15 @@ class SimulationEngine:
             "currents_a": np.array(self._history_currents_a, dtype=np.float64),
             "currents_b": np.array(self._history_currents_b, dtype=np.float64),
             "currents_c": np.array(self._history_currents_c, dtype=np.float64),
+            "currents_a_true": np.array(
+                self._history_currents_a_true, dtype=np.float64
+            ),
+            "currents_b_true": np.array(
+                self._history_currents_b_true, dtype=np.float64
+            ),
+            "currents_c_true": np.array(
+                self._history_currents_c_true, dtype=np.float64
+            ),
             "omega": np.array(self._history_omega, dtype=np.float64),
             "theta": np.array(self._history_theta, dtype=np.float64),
             "speed": np.array(self._history_speed, dtype=np.float64),
