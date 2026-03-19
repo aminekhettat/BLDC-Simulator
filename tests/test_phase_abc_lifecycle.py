@@ -11,6 +11,7 @@ Atomic features tested in this module:
 - OnCalibOutput
 - OnCalibFinished
 """
+
 import json
 import sys
 from pathlib import Path
@@ -334,7 +335,7 @@ class TestOnCalibProfileChanged:
         monkeypatch.setattr(mw, "MOTOR_PROFILES_DIR", profiles_dir)
         gui._on_calib_profile_changed("some_stem.json")
 
-        assert "âš " not in gui.calib_session_label.text()
+        assert "\u26a0" not in gui.calib_session_label.text()
 
     def test_missing_session_shows_warning_tag(self, gui, tmp_path, monkeypatch):
         import src.ui.main_window as mw
@@ -346,7 +347,7 @@ class TestOnCalibProfileChanged:
         monkeypatch.setattr(mw, "MOTOR_PROFILES_DIR", profiles_dir)
         gui._on_calib_profile_changed("missing_stem.json")
 
-        assert "âš " in gui.calib_session_label.text()
+        assert "\u26a0" in gui.calib_session_label.text()
 
     def test_output_label_is_updated(self, gui, tmp_path, monkeypatch):
         import src.ui.main_window as mw
@@ -626,9 +627,3 @@ class TestOnCalibFinished:
         assert gui.calib_process is None
         assert gui.btn_start_calib.isEnabled() is True
         assert gui.btn_stop_calib.isEnabled() is False
-
-
-
-
-
-
