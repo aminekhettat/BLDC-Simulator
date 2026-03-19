@@ -310,7 +310,7 @@ tests/test_motor.py (22 tests)
   - Simulation engine with supply voltage ✅
   - Motor dynamics (acceleration, back-EMF) ✅
 
-tests/test_power_and_foc.py (7 tests)
+tests/test_feature_power_and_foc.py (7 tests)
   - Supply profile integration ✅
   - FOC controller (polar & cartesian) ✅
   - SVM Cartesian conversion ✅
@@ -376,18 +376,18 @@ python examples/example_vf_control.py
 
 ## 💡 Key Features Summary
 
-| Feature                              | Status | Location                 |
-| ------------------------------------ | ------ | ------------------------ |
+| Feature                                               | Status | Location                 |
+| ----------------------------------------------------- | ------ | ------------------------ |
 | Application Name: BLIND SYSTEMS BLDC Simulator v2.0.0 | ✅     | Window Title             |
-| Finite Duration Simulation           | ✅     | Control Tab              |
-| Infinite Duration Simulation         | ✅     | Control Tab (duration=0) |
-| Real-time Monitoring (13 variables)  | ✅     | Monitoring Tab (Left)    |
-| Live Speed Curve                     | ✅     | Monitoring Tab (Right)   |
-| Menu Bar (File/Tools/Help)           | ✅     | Top of Window            |
-| Keyboard Shortcuts (F5-F7, Ctrl+S/Q) | ✅     | Menu Items               |
-| About Dialog                         | ✅     | Help Menu                |
-| Quick Start Guide                    | ✅     | Help Menu                |
-| Data Export (CSV + Metadata)         | ✅     | File Menu / Ctrl+S       |
+| Finite Duration Simulation                            | ✅     | Control Tab              |
+| Infinite Duration Simulation                          | ✅     | Control Tab (duration=0) |
+| Real-time Monitoring (13 variables)                   | ✅     | Monitoring Tab (Left)    |
+| Live Speed Curve                                      | ✅     | Monitoring Tab (Right)   |
+| Menu Bar (File/Tools/Help)                            | ✅     | Top of Window            |
+| Keyboard Shortcuts (F5-F7, Ctrl+S/Q)                  | ✅     | Menu Items               |
+| About Dialog                                          | ✅     | Help Menu                |
+| Quick Start Guide                                     | ✅     | Help Menu                |
+| Data Export (CSV + Metadata)                          | ✅     | File Menu / Ctrl+S       |
 
 ---
 

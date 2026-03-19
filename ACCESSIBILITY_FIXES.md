@@ -168,7 +168,7 @@ Tous les tests réussissent ✅ :
 Exécuter les tests:
 
 ```bash
-python test_accessibility_fixes.py
+python tests/test_feature_accessibility_integration.py
 ```
 
 ---

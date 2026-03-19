@@ -1,16 +1,12 @@
+﻿"""
+Atomic features tested in this module:
+- MotorModel
+- SVMGenerator
+- VFController
+- LoadProfiles
+- SimulationEngine
+- MotorDynamics
 """
-Unit Tests for BLDC Motor Control System
-
-Tests for core components:
-- Motor model
-- Control blocks
-- Load profiles
-- Simulation engine
-
-Run with:
-    pytest tests/test_motor.py -v
-"""
-
 import pytest
 import numpy as np
 
@@ -390,3 +386,9 @@ class TestMotorDynamics:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+
+
+
+

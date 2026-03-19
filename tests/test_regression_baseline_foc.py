@@ -1,5 +1,7 @@
-"""Regression test for deterministic FOC reference scenarios."""
-
+﻿"""
+Atomic features tested in this module:
+- foc reference regression baseline
+"""
 from pathlib import Path
 import sys
 
@@ -35,3 +37,9 @@ def test_foc_reference_regression_baseline():
         rows = build_drift_report(current=current, baseline_payload=baseline)
         report = format_drift_report(rows, failed_only=True)
         assert False, "\n".join(failures) + "\n\n" + report
+
+
+
+
+
+

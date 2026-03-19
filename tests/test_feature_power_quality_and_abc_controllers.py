@@ -1,12 +1,15 @@
+﻿"""
+Atomic features tested in this module:
+- ComputePowerMetricsEdgeCases
+- RequiredReactiveCompensationErrors
+- ComputeEfficiencyMetricsEdgeCases
+- RecommendEfficiencyAdjustments
+- PowerFactorControllerEdgeCases
+- SrcInitAttributeError
+- AbstractBaseControllerCoverage
+- SupplyProfilesAndAbstractPassLines
+- LoadAndMotorProfilesRemainingBranches
 """
-Comprehensive test suite to achieve 100% code coverage.
-
-Targets missing code paths in:
-- src.core.power_model: compute_power_metrics, required_reactive_compensation,
-  compute_efficiency_metrics, recommend_efficiency_adjustments, PowerFactorController
-- src.__init__: __getattr__ AttributeError path
-"""
-
 import numpy as np
 import pytest
 import sys
@@ -572,3 +575,9 @@ class TestLoadAndMotorProfilesRemainingBranches:
         monkeypatch.setattr(motor_profiles, "DEFAULT_MOTOR_PARAMS", {})
         with pytest.raises(ValueError, match="Missing motor parameters"):
             motor_profiles._normalize_motor_params({})
+
+
+
+
+
+

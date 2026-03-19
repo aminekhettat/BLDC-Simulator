@@ -1,5 +1,8 @@
-"""Integrity checks for frozen regression baseline JSON files."""
-
+﻿"""
+Atomic features tested in this module:
+- baseline files exist and non empty
+- baseline kpi shape and types
+"""
 from __future__ import annotations
 
 import json
@@ -60,3 +63,9 @@ def test_baseline_kpi_shape_and_types():
                 assert isinstance(val, (int, float)), (
                     f"{path}:{scenario_name}:{kpi_name} must be numeric"
                 )
+
+
+
+
+
+

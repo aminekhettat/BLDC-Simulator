@@ -1,5 +1,10 @@
-"""Tests for visualization utilities."""
-
+﻿"""
+Atomic features tested in this module:
+- create multi axis plot
+- create pfc analysis plot
+- create efficiency analysis plot
+- create inverter analysis plot
+"""
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -74,3 +79,9 @@ def test_create_inverter_analysis_plot():
     assert "DC-Link" in axes[0].get_title()
     assert "Loss Breakdown" in axes[2].get_title()
     plt.close(fig)
+
+
+
+
+
+

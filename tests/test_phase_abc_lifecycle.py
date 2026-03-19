@@ -1,8 +1,16 @@
+﻿"""
+Atomic features tested in this module:
+- MarkTask
+- TerminateProcessGracefully
+- CanStartTask
+- CloseEvent
+- StatusBarWidgets
+- OnCalibProfileChanged
+- StartCalibration
+- StopCalibration
+- OnCalibOutput
+- OnCalibFinished
 """
-Tests for Phase A (process lifecycle), Phase B (status bar), and Phase C
-(calibration GUI) coverage in BLDCMotorControlGUI (src/ui/main_window.py).
-"""
-
 import json
 import sys
 from pathlib import Path
@@ -94,7 +102,7 @@ class TestMarkTask:
 
     def test_mark_task_finished_ignores_mismatch(self, gui):
         gui._mark_task_running("simulation")
-        gui._mark_task_finished("calibration")  # different name → no-op
+        gui._mark_task_finished("calibration")  # different name â†’ no-op
         assert gui._get_running_task_name() == "simulation"
         gui._mark_task_finished("simulation")  # cleanup
 
@@ -129,7 +137,7 @@ class TestTerminateProcessGracefully:
         assert fake.killed is False
 
     def test_qprocess_kill_fallback_when_graceful_fails(self, gui):
-        # waitForFinished always returns False → kill must be called
+        # waitForFinished always returns False â†’ kill must be called
         fake = _FakeQProcess(running=True, wait_for_finished=False)
         gui._terminate_process_gracefully(fake)
         assert fake.terminated is True
@@ -326,7 +334,7 @@ class TestOnCalibProfileChanged:
         monkeypatch.setattr(mw, "MOTOR_PROFILES_DIR", profiles_dir)
         gui._on_calib_profile_changed("some_stem.json")
 
-        assert "⚠" not in gui.calib_session_label.text()
+        assert "âš " not in gui.calib_session_label.text()
 
     def test_missing_session_shows_warning_tag(self, gui, tmp_path, monkeypatch):
         import src.ui.main_window as mw
@@ -338,7 +346,7 @@ class TestOnCalibProfileChanged:
         monkeypatch.setattr(mw, "MOTOR_PROFILES_DIR", profiles_dir)
         gui._on_calib_profile_changed("missing_stem.json")
 
-        assert "⚠" in gui.calib_session_label.text()
+        assert "âš " in gui.calib_session_label.text()
 
     def test_output_label_is_updated(self, gui, tmp_path, monkeypatch):
         import src.ui.main_window as mw
@@ -618,3 +626,9 @@ class TestOnCalibFinished:
         assert gui.calib_process is None
         assert gui.btn_start_calib.isEnabled() is True
         assert gui.btn_stop_calib.isEnabled() is False
+
+
+
+
+
+

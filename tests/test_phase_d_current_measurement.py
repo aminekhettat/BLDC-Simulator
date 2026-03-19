@@ -1,3 +1,9 @@
+﻿"""
+Atomic features tested in this module:
+- CurrentSenseModelBuild
+- RuntimeDriftUpdate
+- CurrentSenseStatus
+"""
 import sys
 
 import pytest
@@ -67,3 +73,9 @@ class TestCurrentSenseStatus:
         text = gui.current_sense_status_label.text().lower()
         assert "topology: single" in text
         assert "adc saturation channels: 1" in text
+
+
+
+
+
+

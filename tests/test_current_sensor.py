@@ -1,19 +1,15 @@
+﻿"""
+Atomic features tested in this module:
+- Construction
+- Properties
+- IdealBypassFilter
+- GainError
+- OffsetError
+- LowPassFilter
+- Reset
+- InputValidation
+- GetState
 """
-Tests for CurrentSensorModel (src/hardware/current_sensor.py) — Phase D.
-
-Covers:
-- Construction (valid and invalid parameters)
-- Ideal sensor (gain_error=0, v_offset=0) → pure LP filter behaviour
-- Gain error propagation
-- Offset error propagation
-- Backward-Euler LP filter step response (time-constant accuracy)
-- Filter bypass when c_filter=0
-- reset() clears state
-- measure() input validation
-- get_state() snapshot
-- cutoff_frequency_hz property
-"""
-
 import math
 
 import numpy as np
@@ -110,12 +106,12 @@ class TestProperties:
 
 
 # ---------------------------------------------------------------------------
-# Ideal sensor (no error, no filter) — bypass path
+# Ideal sensor (no error, no filter) â€” bypass path
 # ---------------------------------------------------------------------------
 
 
 class TestIdealBypassFilter:
-    """c_filter=0 → τ=0 → instant response, no distortion."""
+    """c_filter=0 â†’ Ï„=0 â†’ instant response, no distortion."""
 
     def test_single_channel_ideal(self):
         s = CurrentSensorModel(
@@ -153,7 +149,7 @@ class TestGainError:
         s = CurrentSensorModel(gain_error=0.10, c_filter=0.0, n_channels=1)
         i_true = np.array([5.0])
         i_meas = s.measure(i_true, dt=1e-4)
-        # actual_gain = nominal × 1.10, reconstruction uses nominal → factor 1.10
+        # actual_gain = nominal Ã— 1.10, reconstruction uses nominal â†’ factor 1.10
         assert i_meas[0] == pytest.approx(5.0 * 1.10, rel=1e-9)
 
     def test_negative_gain_error_scales_current_down(self):
@@ -207,7 +203,7 @@ class TestOffsetError:
 
 
 # ---------------------------------------------------------------------------
-# LP filter — step response and time-constant accuracy
+# LP filter â€” step response and time-constant accuracy
 # ---------------------------------------------------------------------------
 
 
@@ -216,7 +212,7 @@ class TestLowPassFilter:
         """After many time-constants the filter output must track the input."""
         f_c = 5_000.0  # 5 kHz
         s = _make_ideal(f_c_hz=f_c, n_ch=1)
-        dt = 1e-5  # 100 kHz sample rate → well above cutoff
+        dt = 1e-5  # 100 kHz sample rate â†’ well above cutoff
         i_step = np.array([1.0])
 
         # Simulate ~10 time constants
@@ -225,14 +221,14 @@ class TestLowPassFilter:
         out = None
         for _ in range(n_steps):
             out = s.measure(i_step, dt=dt)
-        # After 10τ the backward-Euler output must be within 0.05 % of the step
+        # After 10Ï„ the backward-Euler output must be within 0.05 % of the step
         assert out[0] == pytest.approx(1.0, abs=5e-4)
 
     def test_step_response_at_one_tau_below_63pct(self):
-        """At t ≈ τ the backward-Euler output should be near 1-exp(-1) ≈ 63 %."""
+        """At t â‰ˆ Ï„ the backward-Euler output should be near 1-exp(-1) â‰ˆ 63 %."""
         f_c = 10_000.0
         s = _make_ideal(f_c_hz=f_c, n_ch=1)
-        dt = 1e-7  # very small step → accurate approximation
+        dt = 1e-7  # very small step â†’ accurate approximation
         i_step = np.array([1.0])
 
         tau = s.tau
@@ -240,7 +236,7 @@ class TestLowPassFilter:
         out = None
         for _ in range(n_steps):
             out = s.measure(i_step, dt=dt)
-        # Theoretical: 1 - exp(-1) ≈ 0.6321; backward Euler converges to this
+        # Theoretical: 1 - exp(-1) â‰ˆ 0.6321; backward Euler converges to this
         assert 0.60 < out[0] < 0.66
 
     def test_filter_attenuates_signal_above_cutoff(self):
@@ -249,7 +245,7 @@ class TestLowPassFilter:
         s = _make_ideal(f_c_hz=f_c, n_ch=1)
         dt = 1e-6  # 1 MHz sample rate
 
-        # Drive with sinewave at 100 × f_c
+        # Drive with sinewave at 100 Ã— f_c
         f_sig = 100.0 * f_c
         omega = 2.0 * math.pi * f_sig
         n_cycles = 5
@@ -262,7 +258,7 @@ class TestLowPassFilter:
             if k > n_steps // 2:  # collect second half (filter settled)
                 amplitudes.append(abs(out[0]))
 
-        # At 100 × f_c the expected gain is ≈ 1/100; allow 3× margin
+        # At 100 Ã— f_c the expected gain is â‰ˆ 1/100; allow 3Ã— margin
         assert max(amplitudes) < 0.03
 
     def test_filter_passes_dc_unchanged(self):
@@ -301,7 +297,7 @@ class TestReset:
             s.measure(np.array([1.0]), dt=dt)
         s.reset()
         out_first = s.measure(np.array([1.0]), dt=dt)
-        # After reset, first output = dt/(τ+dt) × 1.0/R_shunt/gain (from zero)
+        # After reset, first output = dt/(Ï„+dt) Ã— 1.0/R_shunt/gain (from zero)
         tau = s.tau
         expected = dt / (
             tau + dt
@@ -357,6 +353,12 @@ class TestGetState:
         s = CurrentSensorModel(c_filter=0.0, n_channels=1)
         s.measure(np.array([2.0]), dt=1e-4)
         state = s.get_state()
-        # With bypass filter, V_filt = V_amp = gain × R_shunt × I
+        # With bypass filter, V_filt = V_amp = gain Ã— R_shunt Ã— I
         v_amp = s.amplifier_gain * s.r_shunt * 2.0
         assert state["filter_state_v"][0] == pytest.approx(v_amp, rel=1e-9)
+
+
+
+
+
+

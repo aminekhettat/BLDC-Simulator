@@ -1,9 +1,61 @@
-"""Tests for power supply profile and FOC controller behavior.
-
-Ensures that dynamic supply voltages propagate through the engine and that
-FOC controller returns correctly formatted outputs.
+﻿"""
+Atomic features tested in this module:
+- supply profile basic
+- power metrics unity pf for in phase waveforms
+- power metrics near zero pf for quadrature waveforms
+- required reactive compensation reduces target reactive power
+- power factor controller generates non negative command
+- efficiency metrics compute output loss and efficiency
+- efficiency recommendations flag loss and pf issues
+- engine pfc telemetry hook updates metrics
+- engine efficiency telemetry updates metrics
+- engine applies supply voltage
+- engine control timing metrics and history
+- engine compute backend info auto fallback
+- engine uses sensor measured currents for controller path
+- engine reports current measurement metadata
+- foc controller polar output
+- foc controller cartesian output
+- foc auto tune changes params
+- foc optional cascaded speed loop generates bounded iq ref
+- foc current loop voltage is limited by vdq limit
+- foc set current pi gains updates states
+- foc decoupling feedforward changes dq voltage commands
+- foc angle observer modes pll and smo update state
+- foc observer startup transition handoffs to target mode
+- foc observer confidence is bounded and reported
+- foc sensorless blend weight low speed prefers measured angle
+- foc sensorless blend weight high speed uses observer angle
+- foc set sensorless blend validates inputs
+- foc observer startup transition can fallback on degraded conditions
+- foc field weakening is independent toggle
+- foc standard startup sequence skips open loop when measured angle exists
+- foc standard startup sequence handoffs from open loop to closed loop
+- vf standard startup sequence aligns then ramps then runs
+- svm cartesian conversion
+- svm nonidealities reduce voltage magnitude
+- svm current dependent conduction drop reduces voltage
+- svm switching frequency loss reduces voltage
+- svm diode freewheel loss activates on opposing current direction
+- svm minimum pulse suppression zeros small commands
+- svm bus ripple reduces effective bus voltage over time
+- svm thermal coupling raises junction temperature
+- svm phase asymmetry changes phase voltage distribution
+- engine records inverter telemetry in history and info
+- gui supply profile
+- gui foc cascaded speed loop wiring
+- gui foc angle observer wiring
+- gui foc field weakening wiring
+- gui vf startup sequence wiring
+- gui pwm frequency default and engine dt sync
+- gui inverter nonidealities wiring
+- gui pfc wiring to engine configuration
+- gui hardware backend wiring to engine configuration
+- gui monitoring updates pfc status blocks
+- gui monitoring updates efficiency status blocks
+- gui monitoring updates hardware status blocks
+- gui monitoring updates advanced foc status blocks
 """
-
 import numpy as np
 import pytest
 import sys
@@ -1353,3 +1405,9 @@ def test_gui_monitoring_updates_advanced_foc_status_blocks():
     assert gui.status_blocks[
         "startup_handoff_stability_ratio"
     ].current_value == pytest.approx(ctrl_state["startup_handoff_stability_ratio"])
+
+
+
+
+
+

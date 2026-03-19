@@ -1,5 +1,9 @@
-"""Unit tests for adaptive FOC tuner diagnostics and gain search."""
-
+﻿"""
+Atomic features tested in this module:
+- margin estimators return finite values
+- state space checks are true for nominal model
+- tune returns finite positive gains
+"""
 from __future__ import annotations
 
 import os
@@ -67,3 +71,9 @@ def test_tune_returns_finite_positive_gains() -> None:
     assert result.speed_ki > 0.0
     assert np.isfinite(result.current_margin.phase_margin_deg)
     assert np.isfinite(result.speed_margin.phase_margin_deg)
+
+
+
+
+
+

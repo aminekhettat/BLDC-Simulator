@@ -1,3 +1,12 @@
+﻿"""
+Atomic features tested in this module:
+- create 3phase plot and current plot variants
+- multi axis plot skips missing variable with warning
+- pfc efficiency inverter raise on missing or empty time
+- save plot writes file
+- base controller abstract method bodies
+- ui conf setup adds css file
+"""
 import logging
 from pathlib import Path
 
@@ -128,3 +137,9 @@ def test_ui_conf_setup_adds_css_file():
     ui_conf.setup(DummyApp())
     assert called == ["custom.css"]
     assert ui_conf.project == "BLDC Motor Control Simulator"
+
+
+
+
+
+

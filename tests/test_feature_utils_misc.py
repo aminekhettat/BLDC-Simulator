@@ -1,3 +1,20 @@
+﻿"""
+Atomic features tested in this module:
+- src lazy import and missing attribute
+- variable load uses callback
+- variable load interpolates and clamps
+- variable load validates input
+- cyclic load validation and output
+- constant load reset is noop
+- speech can be disabled
+- speech falls back to console
+- speech uses engine and rate
+- compute backend cuda root validation
+- compute backend sets cuda path on windows
+- compute backend resolve modes and as dict
+- data logger saves default name and loads
+- data logger custom path and non numeric load
+"""
 import csv
 from pathlib import Path
 
@@ -219,3 +236,9 @@ def test_data_logger_custom_path_and_non_numeric_load(tmp_path: Path):
 
     loaded = logger.load_simulation_data(broken_csv)
     assert loaded["speed"][0] == pytest.approx(0.0)
+
+
+
+
+
+

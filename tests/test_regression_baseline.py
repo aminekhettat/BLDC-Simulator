@@ -1,9 +1,7 @@
-"""Regression test for deterministic reference scenarios.
-
-This test is intentionally strict once a baseline is frozen.
-If no baseline file exists, the test is skipped and a baseline should be generated.
+﻿"""
+Atomic features tested in this module:
+- reference regression baseline
 """
-
 from pathlib import Path
 import sys
 
@@ -39,3 +37,9 @@ def test_reference_regression_baseline():
         rows = build_drift_report(current=current, baseline_payload=baseline)
         report = format_drift_report(rows, failed_only=True)
         assert False, "\n".join(failures) + "\n\n" + report
+
+
+
+
+
+

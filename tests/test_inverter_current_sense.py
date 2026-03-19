@@ -1,3 +1,12 @@
+﻿"""
+Atomic features tested in this module:
+- InverterCurrentSenseTopology
+- ShuntAmplifierChannelValidation
+- MeasurementAndClamp
+- VoltageDrop
+- RuntimeActualTuning
+- ValidationAndState
+"""
 import numpy as np
 import pytest
 
@@ -166,3 +175,9 @@ class TestValidationAndState:
         assert state["n_shunts"] == 2
         assert len(state["last_measured_currents_abc"]) == 3
         assert len(state["filter_state_v"]) == 2
+
+
+
+
+
+

@@ -116,7 +116,7 @@ Welcome to **⚡ BLIND SYSTEMS BLDC Simulator**, your advanced BLDC motor contro
 
 | #   | Feature                                          | Location         | Doc                                            |
 | --- | ------------------------------------------------ | ---------------- | ---------------------------------------------- |
-| 1   | ⚡ BLIND SYSTEMS BLDC Simulator Branding v2.0.0                   | Window title     | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
+| 1   | ⚡ BLIND SYSTEMS BLDC Simulator Branding v2.0.0  | Window title     | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
 | 2   | Simulation Duration Control (0=infinite)         | Control Tab      | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
 | 3   | Enhanced Monitoring (13 variables + speed curve) | Monitoring Tab   | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
 | 4   | Standard Menu Bar (File/Tools/Help)              | Application Menu | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
@@ -328,7 +328,7 @@ BLDC_motor_control/
 │
 ├── tests/                           # Test suite (29 tests)
 │   ├── test_motor.py               # Motor tests (22)
-│   ├── test_power_and_foc.py       # FOC tests (7)
+│   ├── test_feature_power_and_foc.py       # FOC tests (7)
 │   └── test_plotting.py            # Plotting tests (1)
 │
 ├── examples/                        # Example scripts

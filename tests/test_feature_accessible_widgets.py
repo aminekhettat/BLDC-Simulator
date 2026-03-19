@@ -1,3 +1,17 @@
+﻿"""
+Atomic features tested in this module:
+- accessible double spin box updates tooltip
+- accessible spin box updates tooltip
+- accessible combo box selection updates tooltip
+- accessible button keyboard activation and fallback
+- group and tab widget accessibility defaults
+- labeled spin box signal value and setter
+- labeled combo box signal and selection
+- accessible table widget click selection and keyboard
+- accessible table widget branch without headers
+- accessible list widget selection and keyboard toggle
+- accessible list widget selection changed without current item
+"""
 import sys
 
 import pytest
@@ -182,3 +196,9 @@ def test_accessible_list_widget_selection_changed_without_current_item():
     # Ensure method does not crash when no current item is selected.
     lst._on_selection_changed()
     assert isinstance(lst, QWidget)
+
+
+
+
+
+

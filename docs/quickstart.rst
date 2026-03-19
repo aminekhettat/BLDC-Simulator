@@ -58,7 +58,7 @@ Execute the test suite::
 
 Or run accessibility tests::
 
-    python test_accessibility_fixes.py
+    python tests/test_feature_accessibility_integration.py
 
 Core Concepts
 -------------

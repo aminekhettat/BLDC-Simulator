@@ -1,5 +1,32 @@
-"""Tests for final coverage gaps: visualization and src/__init__."""
-
+﻿"""
+Atomic features tested in this module:
+- accessible list widget keyboard event non arrow non select
+- accessible table widget keyboard event non arrow non select
+- 3phase plot with minor grid and grid spacing y
+- 3phase plot without optional grid params
+- src init attribute error path
+- src init valid imports
+- inverse concordia round trip matches original abc
+- mockdaq errors when not connected and on bad shape
+- motor profiles rejects odd num poles
+- compute backend windows cuda home and auto gpu
+- compute backend non windows is noop
+- vf controller validation and state branches
+- regression baseline make load supply and empty kpis
+- regression baseline save variants and missing rows
+- regression baseline thresholds warn fail and formatting
+- motor model numba fallback and validation branches
+- simulation engine error and reset branches
+- simulation engine log data step paths and getters
+- motor model sinusoidal properties and shape validation
+- motor model dq flux weakening and fast torque helper
+- simulation engine runtime hardware feedback and reconnect error
+- svm generator validation and runtime branches
+- foc helper functions and pi branches
+- vf controller positive setters and state snapshot
+- svm state snapshot and dc voltage update paths
+- foc startup fallback branch behavior
+"""
 import pytest
 import matplotlib
 import builtins
@@ -851,3 +878,9 @@ def test_foc_startup_fallback_branch_behavior():
     )
     assert foc.startup_fallback_event_count >= 1
     assert 0.0 <= foc.startup_handoff_stability_ratio <= 1.0
+
+
+
+
+
+

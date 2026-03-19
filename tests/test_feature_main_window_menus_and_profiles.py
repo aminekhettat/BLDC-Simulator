@@ -1,3 +1,24 @@
+﻿"""
+Atomic features tested in this module:
+- refresh builtin motor menu empty
+- refresh builtin motor menu nonempty triggers loader
+- import motor parameters cancel
+- import motor parameters success
+- import motor parameters error
+- save motor parameters cancel
+- save motor parameters success
+- save motor parameters error
+- load motor profile from path success and error
+- toggle audio assistance
+- open html help missing and existing
+- get simulation params info with and without engine
+- collect and save simulation parameters
+- accessible text block keyboard navigation
+- simulation thread run early return and normal iteration
+- simulation thread cartesian fallback and bad output
+- simulation thread start and stop paths
+- simulation thread max duration break and missing svm io methods
+"""
 import sys
 from pathlib import Path
 
@@ -556,3 +577,9 @@ def test_simulation_thread_max_duration_break_and_missing_svm_io_methods():
     # One control step executes, then loop exits via max-duration break path.
     assert engine.step_calls == 1
     assert svm.sample_time == pytest.approx(engine.dt)
+
+
+
+
+
+

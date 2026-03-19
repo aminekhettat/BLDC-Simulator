@@ -1,23 +1,20 @@
+﻿"""
+Atomic features tested in this module:
+- BuildCurrentSenseModelExtended
+- ApplyToSimulationCurrentSense
+- RuntimeActualsEdgeCases
+- UpdateCurrentSenseStatus
+- CurrentFftWindow
+- OnCalibFinished
+- InitializeDefaults
+- OnSimulationFinished
+- OnControlModeChanged
+- SimulationEngineCurrentSenseIntegration
+- SimulationStartStop
+- UpdateMonitoring
+- ResetSimulation
+- AutoTuneAxis
 """
-Phase D Extended GUI Tests
-==========================
-
-Covers the remaining GUI-level methods introduced or completed in Phase D:
-
-  * ``_build_current_sense_model`` (all three topologies, missing-widget guard)
-  * ``_apply_to_simulation`` with current-sense variants (triple, double, single,
-    disabled), ramp-load, ramp-supply, FOC controller path
-  * ``_update_runtime_current_sense_actuals`` edge-cases (no engine, sense None)
-  * ``_update_current_sense_status`` (disabled, non-dict, broken snapshot)
-  * ``_open_current_fft_window`` / ``_on_current_fft_window_closed``
-  * ``_on_calib_finished`` (success, failure, JSON error, path-None)
-  * ``_initialize_defaults``
-  * ``_on_simulation_finished``
-  * ``_on_control_mode_changed``
-  * ``SimulationEngine.get_controller_phase_currents`` with and without sense
-  * ``SimulationEngine.get_current_state`` with current_sense active
-"""
-
 import json
 import sys
 import tempfile
@@ -56,7 +53,7 @@ def gui(qapp):
 
 
 # ===========================================================================
-# Section 1 – _build_current_sense_model (all topology paths)
+# Section 1 â€“ _build_current_sense_model (all topology paths)
 # ===========================================================================
 
 
@@ -114,7 +111,7 @@ class TestBuildCurrentSenseModelExtended:
 
 
 # ===========================================================================
-# Section 2 – _apply_to_simulation with current-sense variants
+# Section 2 â€“ _apply_to_simulation with current-sense variants
 # ===========================================================================
 
 
@@ -177,7 +174,7 @@ class TestApplyToSimulationCurrentSense:
 
 
 # ===========================================================================
-# Section 3 – _update_runtime_current_sense_actuals edge cases
+# Section 3 â€“ _update_runtime_current_sense_actuals edge cases
 # ===========================================================================
 
 
@@ -208,7 +205,7 @@ class TestRuntimeActualsEdgeCases:
 
 
 # ===========================================================================
-# Section 4 – _update_current_sense_status
+# Section 4 â€“ _update_current_sense_status
 # ===========================================================================
 
 
@@ -267,7 +264,7 @@ class TestUpdateCurrentSenseStatus:
 
 
 # ===========================================================================
-# Section 5 – _open_current_fft_window / _on_current_fft_window_closed
+# Section 5 â€“ _open_current_fft_window / _on_current_fft_window_closed
 # ===========================================================================
 
 
@@ -297,7 +294,7 @@ class TestCurrentFftWindow:
 
 
 # ===========================================================================
-# Section 6 – _on_calib_finished (Phase C calibration result display)
+# Section 6 â€“ _on_calib_finished (Phase C calibration result display)
 # ===========================================================================
 
 
@@ -380,7 +377,7 @@ class TestOnCalibFinished:
 
 
 # ===========================================================================
-# Section 7 – _initialize_defaults
+# Section 7 â€“ _initialize_defaults
 # ===========================================================================
 
 
@@ -404,7 +401,7 @@ class TestInitializeDefaults:
 
 
 # ===========================================================================
-# Section 8 – _on_simulation_finished
+# Section 8 â€“ _on_simulation_finished
 # ===========================================================================
 
 
@@ -438,7 +435,7 @@ class TestOnSimulationFinished:
 
 
 # ===========================================================================
-# Section 9 – _on_control_mode_changed
+# Section 9 â€“ _on_control_mode_changed
 # ===========================================================================
 
 
@@ -460,7 +457,7 @@ class TestOnControlModeChanged:
 
 
 # ===========================================================================
-# Section 10 – SimulationEngine current_sense integration (engine-level tests)
+# Section 10 â€“ SimulationEngine current_sense integration (engine-level tests)
 # ===========================================================================
 
 
@@ -552,7 +549,7 @@ class TestSimulationEngineCurrentSenseIntegration:
 
 
 # ===========================================================================
-# Section 11 – _start_simulation / _stop_simulation
+# Section 11 â€“ _start_simulation / _stop_simulation
 # ===========================================================================
 
 
@@ -667,7 +664,7 @@ class TestSimulationStartStop:
 
 
 # ===========================================================================
-# Section 12 – _update_monitoring (large display-update method)
+# Section 12 â€“ _update_monitoring (large display-update method)
 # ===========================================================================
 
 
@@ -742,7 +739,7 @@ class TestUpdateMonitoring:
 
 
 # ===========================================================================
-# Section 13 – _reset_simulation
+# Section 13 â€“ _reset_simulation
 # ===========================================================================
 
 
@@ -768,7 +765,7 @@ class TestResetSimulation:
 
 
 # ===========================================================================
-# Section 14 – _auto_tune_axis
+# Section 14 â€“ _auto_tune_axis
 # ===========================================================================
 
 
@@ -804,3 +801,9 @@ class TestAutoTuneAxis:
         assert "d" in called
         # restore
         gui.ctrl_mode.setCurrentText("V/f")
+
+
+
+
+
+

@@ -1,5 +1,9 @@
-"""Tests for hardware backend integration in simulation engine."""
-
+﻿"""
+Atomic features tested in this module:
+- mock hardware backend wires into simulation step
+- hardware io failure falls back to simulation path
+- runtime hardware toggle connects and disconnects backend
+"""
 import numpy as np
 import pytest
 
@@ -89,3 +93,9 @@ def test_runtime_hardware_toggle_connects_and_disconnects_backend():
     engine.configure_hardware_interface(True)
     assert engine.get_hardware_state()["enabled"] is True
     assert engine.get_hardware_state()["connected"] is True
+
+
+
+
+
+

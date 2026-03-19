@@ -1,10 +1,11 @@
-"""Unit tests for motor profile persistence utilities.
-
-Covers list_motor_profiles, save_motor_profile, load_motor_profile,
-_normalize_motor_params, and the ld/lq defaulting behaviour added to
-MotorParameters.
+﻿"""
+Atomic features tested in this module:
+- ListMotorProfiles
+- SaveMotorProfile
+- LoadMotorProfile
+- NormalizeMotorParamsValidation
+- MotorParametersLdLq
 """
-
 from __future__ import annotations
 
 import json
@@ -238,7 +239,7 @@ class TestNormalizeMotorParamsValidation:
         fp = tmp_profiles_dir / "incomplete_ok.json"
         save_motor_profile(fp, incomplete, "Incomplete Motor")
         profile = load_motor_profile(fp)
-        # phase_resistance should be filled by the default (2.5 Ω)
+        # phase_resistance should be filled by the default (2.5 Î©)
         from src.utils.config import DEFAULT_MOTOR_PARAMS
 
         assert profile["motor_params"]["phase_resistance"] == pytest.approx(
@@ -273,7 +274,7 @@ class TestNormalizeMotorParamsValidation:
 
 
 # ---------------------------------------------------------------------------
-# MotorParameters — ld/lq defaulting (unit-level)
+# MotorParameters â€” ld/lq defaulting (unit-level)
 # ---------------------------------------------------------------------------
 
 
@@ -304,3 +305,9 @@ class TestMotorParametersLdLq:
         )
         assert params.ld != params.lq
         assert params.lq > params.ld  # typical salient-pole relationship
+
+
+
+
+
+
