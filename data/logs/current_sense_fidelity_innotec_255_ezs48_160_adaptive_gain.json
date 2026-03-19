@@ -1,0 +1,95 @@
+{
+  "profile": "Innotec 255-EZS48-160",
+  "profile_file": "data\\motor_profiles\\innotec_255_ezs48_160.json",
+  "conditions": {
+    "dt_s": 0.0001,
+    "n_steps": 800,
+    "load_torque_nm": 2.0,
+    "voltage_magnitude_v": 24.0,
+    "voltage_frequency_hz": 120.0,
+    "r_shunt_ohm": 0.001,
+    "vcc_v": 3.3,
+    "offset_v": 1.65,
+    "gain_headroom": 0.8
+  },
+  "gain_calibration": {
+    "probe_gain": 0.2,
+    "probe_sat_steps": 0,
+    "estimated_true_peak_current_a": 1685.8197562176567,
+    "recommended_gain": 0.7830018571864301
+  },
+  "results": [
+    {
+      "topology": "triple",
+      "gain": 0.7830018571864301,
+      "sat_steps": 0,
+      "sat_ratio": 0.0,
+      "phase_a": {
+        "max_abs_a": 3.448730552690904e-06,
+        "rms_a": 1.443195041777566e-07,
+        "median_abs_a": 7.593524742333102e-08,
+        "p95_abs_a": 1.1107429216394849e-07
+      },
+      "phase_b": {
+        "max_abs_a": 3.30638992807053e-06,
+        "rms_a": 1.355179728105645e-07,
+        "median_abs_a": 6.736200930390623e-08,
+        "p95_abs_a": 9.754687226859459e-08
+      },
+      "phase_c": {
+        "max_abs_a": 3.306375027989361e-06,
+        "rms_a": 1.3792406792160725e-07,
+        "median_abs_a": 7.235479415612645e-08,
+        "p95_abs_a": 1.0616410577313218e-07
+      }
+    },
+    {
+      "topology": "double",
+      "gain": 0.7830018571864301,
+      "sat_steps": 0,
+      "sat_ratio": 0.0,
+      "phase_a": {
+        "max_abs_a": 3.448730552690904e-06,
+        "rms_a": 1.440569708924668e-07,
+        "median_abs_a": 7.511187050113222e-08,
+        "p95_abs_a": 1.1040151264296582e-07
+      },
+      "phase_b": {
+        "max_abs_a": 3.30638992807053e-06,
+        "rms_a": 1.3602264208375364e-07,
+        "median_abs_a": 6.778964234399609e-08,
+        "p95_abs_a": 1.009333232104836e-07
+      },
+      "phase_c": {
+        "max_abs_a": 6.755120484314148e-06,
+        "rms_a": 2.501151014071616e-07,
+        "median_abs_a": 7.335393092944287e-08,
+        "p95_abs_a": 1.0814609012754772e-07
+      }
+    },
+    {
+      "topology": "single",
+      "gain": 0.7830018571864301,
+      "sat_steps": 0,
+      "sat_ratio": 0.0,
+      "phase_a": {
+        "max_abs_a": 5.409250661614351e-06,
+        "rms_a": 1.8567914105847216e-06,
+        "median_abs_a": 1.3113119621266378e-06,
+        "p95_abs_a": 3.064639571448424e-06
+      },
+      "phase_b": {
+        "max_abs_a": 4.177105893177213e-06,
+        "rms_a": 1.7698386007106444e-06,
+        "median_abs_a": 1.3573410626577243e-06,
+        "p95_abs_a": 2.7361862237285096e-06
+      },
+      "phase_c": {
+        "max_abs_a": 4.342879492469365e-06,
+        "rms_a": 1.7606852766168078e-06,
+        "median_abs_a": 1.3713636235479498e-06,
+        "p95_abs_a": 2.7501595923240527e-06
+      }
+    }
+  ]
+}

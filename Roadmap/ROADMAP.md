@@ -229,6 +229,8 @@ Field weakening injection negative eighteen point five Amperes. System stable."
   - [x] Added integration tests for non-ideal triple/double/single topologies and true-vs-measured history consistency
   - [x] Raised `src/ui/main_window.py` coverage to 84% through Phase D lifecycle and monitoring tests
   - [x] Validated single-shunt sector-aware reconstruction behavior with Kirchhoff-consistent checks and robust tolerances
+  - [x] Added adaptive shunt-amplifier gain calibration (anti-saturation headroom) before fidelity benchmarking on real motor profiles
+  - [x] Documented real-motor measured-vs-true fidelity results in `docs/advanced.rst` with English-only reporting and generated benchmark artifacts under `data/logs/`
 
 **Dependencies**: Existing GUI accessibility foundation, process supervision hooks, and control-loop timing instrumentation
 

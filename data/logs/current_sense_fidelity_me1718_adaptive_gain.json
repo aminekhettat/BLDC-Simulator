@@ -1,0 +1,95 @@
+{
+  "profile": "Motenergy ME1718 48V",
+  "profile_file": "data\\motor_profiles\\motenergy_me1718_48v.json",
+  "conditions": {
+    "dt_s": 0.0001,
+    "n_steps": 800,
+    "load_torque_nm": 2.0,
+    "voltage_magnitude_v": 24.0,
+    "voltage_frequency_hz": 120.0,
+    "r_shunt_ohm": 0.001,
+    "vcc_v": 3.3,
+    "offset_v": 1.65,
+    "gain_headroom": 0.8
+  },
+  "gain_calibration": {
+    "probe_gain": 0.2,
+    "probe_sat_steps": 0,
+    "estimated_true_peak_current_a": 1554.7381012287137,
+    "recommended_gain": 0.8490175927101808
+  },
+  "results": [
+    {
+      "topology": "triple",
+      "gain": 0.8490175927101808,
+      "sat_steps": 0,
+      "sat_ratio": 0.0,
+      "phase_a": {
+        "max_abs_a": 3.1850746680106568e-06,
+        "rms_a": 1.337227629968003e-07,
+        "median_abs_a": 6.391559281837544e-08,
+        "p95_abs_a": 1.2190770029008034e-07
+      },
+      "phase_b": {
+        "max_abs_a": 3.047063945160744e-06,
+        "rms_a": 1.2887545632326253e-07,
+        "median_abs_a": 6.11262862548756e-08,
+        "p95_abs_a": 1.2558051061262175e-07
+      },
+      "phase_c": {
+        "max_abs_a": 3.047021170488051e-06,
+        "rms_a": 1.295105877738264e-07,
+        "median_abs_a": 6.389038276211068e-08,
+        "p95_abs_a": 1.2501235460149474e-07
+      }
+    },
+    {
+      "topology": "double",
+      "gain": 0.8490175927101808,
+      "sat_steps": 0,
+      "sat_ratio": 0.0,
+      "phase_a": {
+        "max_abs_a": 3.1850746680106568e-06,
+        "rms_a": 1.3358064438547182e-07,
+        "median_abs_a": 6.168133381834195e-08,
+        "p95_abs_a": 1.2378890517084072e-07
+      },
+      "phase_b": {
+        "max_abs_a": 3.047063945160744e-06,
+        "rms_a": 1.3019847067918018e-07,
+        "median_abs_a": 6.188867018863675e-08,
+        "p95_abs_a": 1.3214106502346108e-07
+      },
+      "phase_c": {
+        "max_abs_a": 6.232138609618687e-06,
+        "rms_a": 2.317824707688701e-07,
+        "median_abs_a": 6.25367135853594e-08,
+        "p95_abs_a": 1.2772463122701084e-07
+      }
+    },
+    {
+      "topology": "single",
+      "gain": 0.8490175927101808,
+      "sat_steps": 0,
+      "sat_ratio": 0.0,
+      "phase_a": {
+        "max_abs_a": 3.1850746680106568e-06,
+        "rms_a": 9.743160837945422e-07,
+        "median_abs_a": 6.808627688315028e-07,
+        "p95_abs_a": 2.1189820017752937e-06
+      },
+      "phase_b": {
+        "max_abs_a": 3.2310640776245236e-06,
+        "rms_a": 9.750198683777363e-07,
+        "median_abs_a": 6.84065412315249e-07,
+        "p95_abs_a": 1.944711885926153e-06
+      },
+      "phase_c": {
+        "max_abs_a": 3.1711595056549413e-06,
+        "rms_a": 1.0069865632468115e-06,
+        "median_abs_a": 6.471040450151122e-07,
+        "p95_abs_a": 1.947492575027354e-06
+      }
+    }
+  ]
+}
