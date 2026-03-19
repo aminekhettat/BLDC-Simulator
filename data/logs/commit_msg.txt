@@ -1,0 +1,30 @@
+feat: Phase A-D hardware current sensing + GUI lifecycle + coverage 82.34%
+
+Phase A - Process Lifecycle (main_window.py):
+- Add _mark_task_running/finished/_get_running_task_name with _task_lock
+- Add _terminate_process_gracefully (QThread + QProcess, graceful -> kill)
+- Add _can_start_task conflict detection with QMessageBox
+
+Phase B - Status Bar Telemetry (main_window.py):
+- Add status_bar_state/task/time_remaining/cpu_load widgets
+- Add _update_status_bar(snapshot) updating all 4 telemetry fields
+
+Phase C - Calibration Integration (main_window.py):
+- Add _start/_stop_calibration with full QProcess lifecycle
+- Add _on_calib_output/_on_calib_finished milestone parsing
+- Add _on_calib_profile_changed path/session label updates
+
+Phase D - Current Measurement Hardware Model:
+- New src/hardware/current_sensor.py: CurrentSensorModel (shunt + diff amp + IIR LP filter)
+- New src/hardware/inverter_current_sense.py: InverterCurrentSense (single/double/triple shunt)
+- Export InverterCurrentSense + ShuntAmplifierChannel from src/hardware/__init__.py
+- GUI: _build_current_sense_model(), _update_runtime_current_sense_actuals(), status widgets
+
+Tests (98 new tests, all passing):
+- tests/test_current_sensor.py: 31 tests (gain, offset, LP filter, reset, validation)
+- tests/test_inverter_current_sense.py: 14 tests (topology, measurement, voltage drop)
+- tests/test_phase_abc_lifecycle.py: 39 tests (task lifecycle, status bar, calibration GUI)
+- tests/test_phase_d_current_measurement.py: 14 tests (model build, drift, status)
+
+Coverage: 82.34% total (src/) up from ~77% baseline
+Also: example main() path-injection + argparse CLI refactor
