@@ -627,6 +627,134 @@ class SimulationPlotter:
         return fig
 
     @staticmethod
+    def create_measured_vs_true_current_plot(
+        history: Dict[str, np.ndarray],
+        figsize: tuple = (12, 10),
+        grid_on: bool = True,
+        grid_spacing: Optional[float] = None,
+        minor_grid: bool = False,
+        grid_spacing_y: Optional[float] = None,
+    ) -> Figure:
+        """Create a 4-panel overlay plot comparing measured vs true phase currents.
+
+        Requires ``currents_*_true`` keys in *history* (produced by
+        :class:`SimulationEngine` when a current-sense model is attached).
+        Falls back gracefully when the true-current keys are absent.
+
+        Panels (top→bottom):
+        1. Phase A overlay (measured vs true)
+        2. Phase B overlay
+        3. Phase C overlay
+        4. Per-phase RMS error over time (rolling window of 100 samples)
+
+        :param history: History dictionary from SimulationEngine.
+        :param figsize: Figure size.
+        :param grid_on: Show major grid.
+        :param grid_spacing: X-axis major tick spacing [s], ``None`` for auto.
+        :param minor_grid: Show minor grid.
+        :param grid_spacing_y: Y-axis major tick spacing [A], ``None`` for auto.
+        :return: Matplotlib figure.
+        """
+        from matplotlib.ticker import MultipleLocator
+
+        has_true = all(
+            k in history
+            for k in ("currents_a_true", "currents_b_true", "currents_c_true")
+        )
+
+        time = np.asarray(history["time"], dtype=np.float64)
+        phases = (
+            ("a", "Phase A", "#1565C0"),
+            ("b", "Phase B", "#2E7D32"),
+            ("c", "Phase C", "#B71C1C"),
+        )
+
+        n_rows = 4 if has_true else 3
+        fig, axes = plt.subplots(n_rows, 1, figsize=figsize, sharex=True)
+
+        def _style(ax):
+            ax.grid(grid_on, alpha=0.3)
+            if minor_grid:
+                ax.minorticks_on()
+                ax.grid(which="minor", alpha=0.1, linestyle=":")
+            if grid_spacing and grid_spacing > 0:
+                ax.xaxis.set_major_locator(MultipleLocator(grid_spacing))
+            if grid_spacing_y and grid_spacing_y > 0:
+                ax.yaxis.set_major_locator(MultipleLocator(grid_spacing_y))
+
+        for row_idx, (ph, label, color) in enumerate(phases):
+            ax = axes[row_idx]
+            measured = np.asarray(history[f"currents_{ph}"], dtype=np.float64)
+            ax.plot(
+                time, measured, label=f"{label} measured", color=color, linewidth=1.8
+            )
+            if has_true:
+                true_vals = np.asarray(history[f"currents_{ph}_true"], dtype=np.float64)
+                ax.plot(
+                    time,
+                    true_vals,
+                    label=f"{label} true",
+                    color=color,
+                    linewidth=1.0,
+                    linestyle="--",
+                    alpha=0.6,
+                )
+                # Error fill
+                ax.fill_between(
+                    time,
+                    measured,
+                    true_vals,
+                    alpha=0.15,
+                    color=color,
+                    label="error band",
+                )
+            ax.set_ylabel("Current (A)", fontsize=9)
+            ax.set_title(f"{label}: Measured vs True", fontsize=10, fontweight="bold")
+            ax.legend(loc="upper right", fontsize=8)
+            _style(ax)
+
+        if has_true:
+            # Rolling RMS error panel
+            ax_err = axes[3]
+            window = min(100, max(1, len(time) // 20))
+            for ph, label, color in phases:
+                meas = np.asarray(history[f"currents_{ph}"], dtype=np.float64)
+                true_v = np.asarray(history[f"currents_{ph}_true"], dtype=np.float64)
+                err = meas - true_v
+                # Compute rolling RMS
+                sq = err**2
+                kernel = np.ones(window) / window
+                rolling_rms = np.sqrt(np.convolve(sq, kernel, mode="same"))
+                ax_err.plot(
+                    time,
+                    rolling_rms,
+                    label=f"{label} RMS err",
+                    color=color,
+                    linewidth=1.4,
+                )
+            ax_err.set_ylabel("RMS Error (A)", fontsize=9)
+            ax_err.set_xlabel("Time (s)", fontsize=9)
+            ax_err.set_title(
+                f"Per-Phase Measurement RMS Error (window={window} samples)",
+                fontsize=10,
+                fontweight="bold",
+            )
+            ax_err.legend(loc="upper right", fontsize=8)
+            _style(ax_err)
+        else:
+            axes[-1].set_xlabel("Time (s)", fontsize=9)
+
+        plt.suptitle(
+            "Current Sense: Measured vs True Physics"
+            + (" (no true-current data)" if not has_true else ""),
+            fontsize=12,
+            fontweight="bold",
+            y=1.01,
+        )
+        plt.tight_layout()
+        return fig
+
+    @staticmethod
     def save_plot(fig: Figure, filepath: Path, dpi: int = 100) -> None:
         """
         Save figure to file.

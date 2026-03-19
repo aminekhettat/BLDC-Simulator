@@ -223,8 +223,11 @@ Field weakening injection negative eighteen point five Amperes. System stable."
   - [x] Add asynchronous synchronization layer between main window and FFT window
   - [x] Extended Phase D GUI and engine integration coverage with `tests/test_phase_d_gui_extended.py` (68 tests)
   - [x] Validated current-sense engine behavior for single/double/triple topologies in automated tests
+  - [x] Added measured-vs-true current visualization with per-phase rolling RMS error panel
+  - [x] Added current-sense UI monitoring with per-phase RMS/peak error status and periodic spoken narration
+  - [x] Added integration tests for non-ideal triple/double/single topologies and true-vs-measured history consistency
   - [x] Raised `src/ui/main_window.py` coverage to 84% through Phase D lifecycle and monitoring tests
-  - [ ] Validate single-shunt reconstruction strategy with strict PWM sampling windows
+  - [x] Validated single-shunt sector-aware reconstruction behavior with Kirchhoff-consistent checks and robust tolerances
 
 **Dependencies**: Existing GUI accessibility foundation, process supervision hooks, and control-loop timing instrumentation
 

@@ -3234,6 +3234,13 @@ class BLDCMotorControlGUI(QMainWindow):
         btn_efficiency_tips.clicked.connect(self._show_efficiency_recommendations)
         button_layout.addWidget(btn_efficiency_tips)
 
+        btn_plot_measured_vs_true = AccessibleButton(
+            "Plot Measured vs True Currents",
+            "Overlay measured and true physics phase currents with per-phase RMS error (requires current sensing enabled)",
+        )
+        btn_plot_measured_vs_true.clicked.connect(self._plot_measured_vs_true)
+        button_layout.addWidget(btn_plot_measured_vs_true)
+
         btn_plot_custom = AccessibleButton(
             "Plot Selected", "Generate plot for user-selected variables"
         )
@@ -4714,7 +4721,7 @@ class BLDCMotorControlGUI(QMainWindow):
             )
 
     def _update_current_sense_status(self, snapshot: dict) -> None:
-        """Update current sensing status text for non-visual monitoring."""
+        """Update current sensing status and narrate measurement quality metrics."""
         meas = (
             snapshot.get("current_measurement", {})
             if isinstance(snapshot, dict)
@@ -4740,9 +4747,56 @@ class BLDCMotorControlGUI(QMainWindow):
         drop_rms = (
             float(np.sqrt(np.mean(np.square(drop_arr)))) if drop_arr.size else 0.0
         )
-        self.current_sense_status_label.setText(
-            f"Current sensing active. Topology: {topology}, ADC saturation channels: {saturated_count}, phase-drop RMS: {drop_rms:.4f} V"
+
+        # Compute per-phase instantaneous measurement error if true currents available
+        err_text = ""
+        err_speech = ""
+        if self.engine is not None:
+            hist = self.engine.get_history()
+            has_true = (
+                "currents_a_true" in hist
+                and len(hist["currents_a_true"]) > 0
+                and len(hist["currents_a"]) > 0
+            )
+            if has_true:
+                errs_rms = []
+                errs_peak = []
+                for ph in ("a", "b", "c"):
+                    m = np.asarray(hist[f"currents_{ph}"], dtype=np.float64)
+                    t = np.asarray(hist[f"currents_{ph}_true"], dtype=np.float64)
+                    diff = m - t
+                    errs_rms.append(float(np.sqrt(np.mean(diff**2))))
+                    errs_peak.append(float(np.max(np.abs(diff))))
+                err_text = (
+                    f" | Measurement error — "
+                    f"RMS A:{errs_rms[0]:.4f} B:{errs_rms[1]:.4f} C:{errs_rms[2]:.4f} A; "
+                    f"Peak A:{errs_peak[0]:.4f} B:{errs_peak[1]:.4f} C:{errs_peak[2]:.4f} A"
+                )
+                err_speech = (
+                    f" Measurement RMS error: "
+                    f"A {errs_rms[0]:.4f}, B {errs_rms[1]:.4f}, C {errs_rms[2]:.4f} amperes."
+                )
+
+        status_text = (
+            f"Current sensing active. Topology: {topology}, "
+            f"ADC saturation channels: {saturated_count}, "
+            f"phase-drop RMS: {drop_rms:.4f} V" + err_text
         )
+        self.current_sense_status_label.setText(status_text)
+
+        # Periodic audio narration — every ~100 polling cycles to avoid speech spam.
+        # Use a simple counter stored on self.
+        poll_count = getattr(self, "_sense_status_poll_count", 0) + 1
+        self._sense_status_poll_count = poll_count
+        if poll_count % 100 == 1:  # narrate on first call and every 100 thereafter
+            sat_msg = (
+                f"{saturated_count} ADC channel{'s' if saturated_count != 1 else ''} saturated."
+                if saturated_count > 0
+                else "No ADC saturation."
+            )
+            speak(
+                f"Current sensing active. Topology: {topology}. " + sat_msg + err_speech
+            )
 
     def _open_current_fft_window(self) -> None:
         """Open or focus the asynchronous current FFT analysis window."""
@@ -5008,6 +5062,56 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         figure.show()
         speak("Inverter analysis plot generated.")
+
+    def _plot_measured_vs_true(self):
+        """Generate measured-vs-true current overlay with RMS error panel."""
+        if not self.engine or len(self.engine.get_history()["time"]) == 0:
+            QMessageBox.warning(self, "Warning", "No data to plot!")
+            return
+
+        history = self.engine.get_history()
+        has_true = "currents_a_true" in history and len(history["currents_a_true"]) > 0
+        grid_on = (
+            getattr(self, "plot_grid_checkbox", None)
+            and self.plot_grid_checkbox.isChecked()
+        )
+        grid_spacing = (
+            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
+        )
+        minor_grid = (
+            getattr(self, "plot_minor_grid_checkbox", None)
+            and self.plot_minor_grid_checkbox.isChecked()
+        )
+        grid_spacing_y = (
+            getattr(self, "plot_grid_spacing_y", None)
+            and self.plot_grid_spacing_y.value()
+        )
+        figure = SimulationPlotter.create_measured_vs_true_current_plot(
+            history,
+            grid_on=grid_on,
+            grid_spacing=grid_spacing,
+            minor_grid=minor_grid,
+            grid_spacing_y=grid_spacing_y,
+        )
+        figure.show()
+        if has_true:
+            # Compute and narrate summary RMS errors
+            errs = []
+            for ph in ("a", "b", "c"):
+                meas = np.asarray(history[f"currents_{ph}"], dtype=np.float64)
+                true_v = np.asarray(history[f"currents_{ph}_true"], dtype=np.float64)
+                rms = float(np.sqrt(np.mean((meas - true_v) ** 2)))
+                errs.append(rms)
+            speak(
+                f"Measured vs true current plot generated. "
+                f"RMS measurement error: phase A {errs[0]:.4f} A, "
+                f"phase B {errs[1]:.4f} A, phase C {errs[2]:.4f} A."
+            )
+        else:
+            speak(
+                "Measured vs true current plot generated. "
+                "No true-current history available; enable current sensing and re-run simulation."
+            )
 
     def _show_efficiency_recommendations(self):
         """Show heuristic efficiency tuning suggestions for the current setup."""

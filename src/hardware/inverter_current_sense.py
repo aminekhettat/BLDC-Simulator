@@ -246,7 +246,7 @@ class InverterCurrentSense:
         self._last_measured_currents_abc = measured
         return {
             "topology": self.topology,
-            "currents_abc_measured": measured,
+            "currents_abc_measured": measured.copy(),  # copy: prevent aliasing via reset()
             "amplifier_outputs_v": v_adc,
             "adc_saturated": sat,
         }
