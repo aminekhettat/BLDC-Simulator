@@ -210,6 +210,7 @@ Field weakening injection negative eighteen point five Amperes. System stable."
     - [x] CPU load estimate displayed (from simulation snapshot)
     - [x] Estimated remaining simulation time calculation
     - [x] Active process state displayed (simulation/calibration/none)
+    - [x] **CPU/GPU backend display** (March 18, 2026) - Shows selected compute backend (CPU or GPU) with GPU availability indicator
 - [ ] Report estimated CPU load from the ratio between the computation time consumed during each PWM period and the PWM period budget, matching embedded-controller timing analysis
 - [ ] Align simulation scheduling with a real microcontroller execution model for sampling, control computation, and command application timing
 - [ ] **Phase D: ONGOING** -- Topology-aware inverter current measurement and runtime deviation analysis
