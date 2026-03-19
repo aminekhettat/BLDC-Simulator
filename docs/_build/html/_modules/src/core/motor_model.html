@@ -1,0 +1,761 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.core.motor_model &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.core.motor_model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.core.motor_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">BLDC Motor Model</span>
+<span class="sd">================</span>
+
+<span class="sd">This module implements the mathematical model of a Brushless DC (BLDC) motor,</span>
+<span class="sd">including electrical and mechanical dynamics equations. The model accepts 3-phase</span>
+<span class="sd">voltages and produces motor variables (currents, EMF, torque, speed, position).</span>
+
+<span class="sd">The electrical model is based on:</span>
+<span class="sd">- Phase voltage equation: v_phase = R*i_phase + L*di_phase/dt + e_back_phase</span>
+<span class="sd">- Back-EMF generation from rotor position</span>
+
+<span class="sd">The mechanical model includes:</span>
+<span class="sd">- Newton&#39;s second law: tau_electro - tau_load - f*omega = J*d(omega)/dt</span>
+<span class="sd">- Position integration: d(theta)/dt = omega</span>
+
+<span class="sd">:author: BLDC Control Team</span>
+<span class="sd">:version: 1.0.0</span>
+
+<span class="sd">.. versionadded:: 1.0.0</span>
+<span class="sd">    Initial implementation of BLDC motor model</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">njit</span>
+
+    <span class="n">HAS_NUMBA</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">HAS_NUMBA</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># Dummy decorator if numba not available</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">njit</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">f</span>
+
+        <span class="k">return</span> <span class="n">decorator</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">is</span> <span class="kc">False</span> <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="MotorParameters">
+<a class="viewcode-back" href="../../../api/motor_model.html#src.core.motor_model.MotorParameters">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MotorParameters</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Data class containing BLDC motor parameters.</span>
+
+<span class="sd">    :ivar model_type: Type of motor model (&#39;scalar&#39; or &#39;dq&#39;)</span>
+
+<span class="sd">    :ivar nominal_voltage: Nominal DC voltage [V]</span>
+<span class="sd">    :ivar phase_resistance: Phase winding resistance [Ohms]</span>
+<span class="sd">    :ivar phase_inductance: Phase winding inductance [H]</span>
+<span class="sd">    :ivar back_emf_constant: Back-EMF constant [V*s/rad]</span>
+<span class="sd">    :ivar torque_constant: Electromagnetic torque constant [N*m/A]</span>
+<span class="sd">    :ivar rotor_inertia: Rotor moment of inertia [kg*m^2]</span>
+<span class="sd">    :ivar friction_coefficient: Viscous friction coefficient [N*m*s/rad]</span>
+<span class="sd">    :ivar num_poles: Number of magnetic poles</span>
+<span class="sd">    :ivar poles_pairs: Number of pole pairs (num_poles/2)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;scalar&quot;</span>
+    <span class="n">emf_shape</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;trapezoidal&quot;</span>
+
+    <span class="n">nominal_voltage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">48.0</span>
+    <span class="n">phase_resistance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.5</span>
+    <span class="n">phase_inductance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.005</span>
+    <span class="n">back_emf_constant</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">torque_constant</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">rotor_inertia</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0005</span>
+    <span class="n">friction_coefficient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span>
+    <span class="n">num_poles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">poles_pairs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="c1"># d/q inductances (optional). If None, defaults to phase_inductance</span>
+    <span class="n">ld</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">lq</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># Optional Id-dependent PM flux weakening model for dq simulation.</span>
+    <span class="c1"># Effective PM flux ratio is clamped as:</span>
+    <span class="c1">#   ratio = clip(1 + k_fw * min(id, 0), min_ratio, 1)</span>
+    <span class="c1"># where k_fw is in 1/A. Defaults keep legacy behavior.</span>
+    <span class="n">flux_weakening_id_coefficient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">flux_weakening_min_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Ensure ld/lq default to phase_inductance when not provided</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ld</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_inductance</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_inductance</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_weakening_id_coefficient</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;flux_weakening_id_coefficient must be non-negative&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_weakening_min_ratio</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;flux_weakening_min_ratio must be in (0, 1]&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="BLDCMotor">
+<a class="viewcode-back" href="../../../api/motor_model.html#src.core.motor_model.BLDCMotor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BLDCMotor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    BLDC Motor Model</span>
+<span class="sd">    ================</span>
+
+<span class="sd">    Implements a 3-phase BLDC motor model with electrical and mechanical dynamics.</span>
+<span class="sd">    Uses numerical integration (4th-order Runge-Kutta) for state evolution.</span>
+
+<span class="sd">    The motor model tracks:</span>
+<span class="sd">    - Three phase currents: i_a, i_b, i_c [A]</span>
+<span class="sd">    - Rotor angular velocity: omega [rad/s]</span>
+<span class="sd">    - Rotor angular position: theta [rad]</span>
+<span class="sd">    - Phase voltages (input): v_a, v_b, v_c [V]</span>
+
+<span class="sd">    **State Vector:** [i_a, i_b, i_c, omega, theta]</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; params = MotorParameters(</span>
+<span class="sd">        ...     nominal_voltage=48.0,</span>
+<span class="sd">        ...     phase_resistance=2.5,</span>
+<span class="sd">        ...     phase_inductance=0.005,</span>
+<span class="sd">        ...     back_emf_constant=0.1,</span>
+<span class="sd">        ...     torque_constant=0.1,</span>
+<span class="sd">        ...     rotor_inertia=0.0005,</span>
+<span class="sd">        ...     friction_coefficient=0.001,</span>
+<span class="sd">        ...     num_poles=8,</span>
+<span class="sd">        ...     poles_pairs=4</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; motor = BLDCMotor(params, dt=0.0001)</span>
+<span class="sd">        &gt;&gt;&gt; voltages = np.array([10.0, -5.0, -5.0])</span>
+<span class="sd">        &gt;&gt;&gt; motor.step(voltages, load_torque=0.5)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BLDCMotor.__init__">
+<a class="viewcode-back" href="../../../api/motor_model.html#src.core.motor_model.BLDCMotor.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">:</span> <span class="n">MotorParameters</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the BLDC motor model.</span>
+
+<span class="sd">        :param parameters: Motor parameters (:class:`MotorParameters`)</span>
+<span class="sd">        :param dt: Simulation time step [seconds], defaults to 0.0001</span>
+<span class="sd">        :type dt: float</span>
+
+<span class="sd">        :raises ValueError: If dt &lt;= 0</span>
+<span class="sd">        :raises ValueError: If phase_inductance &lt;= 0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dt</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Time step dt must be positive&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parameters</span><span class="o">.</span><span class="n">phase_inductance</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Phase inductance must be positive&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parameters</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s2">&quot;dq&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">parameters</span><span class="o">.</span><span class="n">ld</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;d-axis inductance (Ld) must be positive for dq model&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">parameters</span><span class="o">.</span><span class="n">lq</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;q-axis inductance (Lq) must be positive for dq model&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span>
+
+        <span class="c1"># State vector: [i_a, i_b, i_c, omega, theta]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="c1"># Store last measured values for output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_emf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_currents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">currents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get phase currents [A].</span>
+
+<span class="sd">        :return: Array of [i_a, i_b, i_c]</span>
+<span class="sd">        :rtype: np.ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">omega</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get rotor angular velocity [rad/s].</span>
+
+<span class="sd">        :return: Angular velocity</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">theta</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get rotor angular position [rad].</span>
+
+<span class="sd">        :return: Angular position (wrapped to [0, 2*pi])</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">speed_rpm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get rotor speed in revolutions per minute [RPM].</span>
+
+<span class="sd">        :return: Speed in RPM</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="mf">60.0</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">back_emf</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get back-EMF for each phase [V].</span>
+
+<span class="sd">        :return: Array of [e_a, e_b, e_c]</span>
+<span class="sd">        :rtype: np.ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_emf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">electromagnetic_torque</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get electromagnetic torque [N*m].</span>
+
+<span class="sd">        :return: Torque</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_trapezoidal_fast</span><span class="p">(</span><span class="n">theta_elec</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fast trapezoidal back-EMF lookup (numba-compiled).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">theta_norm</span> <span class="o">=</span> <span class="n">theta_elec</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="n">pi_6</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">6.0</span>
+
+        <span class="k">if</span> <span class="n">theta_norm</span> <span class="o">&lt;</span> <span class="n">pi_6</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1.0</span>
+        <span class="k">elif</span> <span class="n">theta_norm</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">pi_6</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1.0</span>
+        <span class="k">elif</span> <span class="n">theta_norm</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">theta_norm</span><span class="p">)</span> <span class="o">/</span> <span class="n">pi_6</span>
+        <span class="k">elif</span> <span class="n">theta_norm</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">+</span> <span class="n">pi_6</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">1.0</span>
+        <span class="k">elif</span> <span class="n">theta_norm</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">pi_6</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">theta_norm</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="n">pi_6</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sinusoidal_fast</span><span class="p">(</span><span class="n">theta_elec</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fast sinusoidal back-EMF lookup (numba-compiled).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_elec</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_back_emf_sinusoidal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">theta_elec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span> <span class="o">*</span> <span class="n">theta</span>
+        <span class="n">k_emf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">back_emf_constant</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>  <span class="c1"># K * omega</span>
+        <span class="n">emf_a</span> <span class="o">=</span> <span class="n">k_emf</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sinusoidal_fast</span><span class="p">(</span><span class="n">theta_elec</span><span class="p">)</span>
+        <span class="n">emf_b</span> <span class="o">=</span> <span class="n">k_emf</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sinusoidal_fast</span><span class="p">(</span><span class="n">theta_elec</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">emf_c</span> <span class="o">=</span> <span class="n">k_emf</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sinusoidal_fast</span><span class="p">(</span><span class="n">theta_elec</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">emf_a</span><span class="p">,</span> <span class="n">emf_b</span><span class="p">,</span> <span class="n">emf_c</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_back_emf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate back-EMF for three phases using trapezoidal EMF model.</span>
+
+<span class="sd">        For a BLDC motor with trapezoidal back-EMF:</span>
+<span class="sd">        - Phase A: starts at 0°, continues in 120° increments</span>
+<span class="sd">        - Phase B: starts at 120°</span>
+<span class="sd">        - Phase C: starts at 240°</span>
+
+<span class="sd">        :param theta: Rotor position [rad]</span>
+<span class="sd">        :type theta: float</span>
+<span class="sd">        :return: Back-EMF for each phase [V]</span>
+<span class="sd">        :rtype: np.ndarray</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            This uses a simplified trapezoidal model. For sinusoidal motors,</span>
+<span class="sd">            use e = K * omega * sin(pole_pairs * theta + phase_offset)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">emf_shape</span> <span class="o">==</span> <span class="s2">&quot;sinusoidal&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_back_emf_sinusoidal</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Default to trapezoidal</span>
+            <span class="c1"># Convert to electrical angle</span>
+            <span class="n">theta_elec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span> <span class="o">*</span> <span class="n">theta</span>
+
+            <span class="c1"># Trapezoidal EMF model (three 120° shifts)</span>
+            <span class="n">k_emf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">back_emf_constant</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>  <span class="c1"># K * omega</span>
+
+            <span class="n">emf_a</span> <span class="o">=</span> <span class="n">k_emf</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trapezoidal_fast</span><span class="p">(</span><span class="n">theta_elec</span><span class="p">)</span>
+            <span class="n">emf_b</span> <span class="o">=</span> <span class="n">k_emf</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trapezoidal_fast</span><span class="p">(</span><span class="n">theta_elec</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="n">emf_c</span> <span class="o">=</span> <span class="n">k_emf</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trapezoidal_fast</span><span class="p">(</span><span class="n">theta_elec</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">emf_a</span><span class="p">,</span> <span class="n">emf_b</span><span class="p">,</span> <span class="n">emf_c</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_trapezoidal</span><span class="p">(</span><span class="n">angle</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Trapezoidal waveform function used for back-EMF.</span>
+
+<span class="sd">        Generates trapezoidal waveform with:</span>
+<span class="sd">        - Positive flat region: 0 to 120°</span>
+<span class="sd">        - Negative flat region: 180° to 300°</span>
+<span class="sd">        - Linear transitions between them</span>
+
+<span class="sd">        :param angle: Phase angle [rad]</span>
+<span class="sd">        :type angle: float</span>
+<span class="sd">        :return: Trapezoidal value in range [-1, 1]</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Normalize angle to [0, 2*pi]</span>
+        <span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">angle</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># 0 to 120°</span>
+            <span class="k">return</span> <span class="mf">1.0</span>
+        <span class="k">elif</span> <span class="n">angle</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span>  <span class="c1"># 120° to 180°</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">angle</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+        <span class="k">elif</span> <span class="n">angle</span> <span class="o">&lt;</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># 180° to 300°</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># 300° to 360°</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">angle</span> <span class="o">-</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_electromagnetic_torque_fast</span><span class="p">(</span>
+        <span class="n">kt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">currents_a</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">currents_b</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">currents_c</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fast electromagnetic torque calculation (numba-compiled).</span>
+<span class="sd">        For BLDC: tau = K_t * (i_a + i_b + i_c) / 3</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">kt</span> <span class="o">*</span> <span class="p">(</span><span class="n">currents_a</span> <span class="o">+</span> <span class="n">currents_b</span> <span class="o">+</span> <span class="n">currents_c</span><span class="p">)</span> <span class="o">/</span> <span class="mf">3.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_electromagnetic_torque</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">currents</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate electromagnetic torque from phase currents.</span>
+
+<span class="sd">        For a BLDC motor: tau = K_t * i_phase_active</span>
+
+<span class="sd">        :param currents: Phase currents [A]</span>
+<span class="sd">        :type currents: np.ndarray</span>
+<span class="sd">        :return: Electromagnetic torque [N*m]</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Simplified: torque proportional to active phase current</span>
+        <span class="c1"># For trapezoidal BLDC, active phase = max current in conducting phases</span>
+        <span class="n">i_active</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">currents</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">torque_constant</span> <span class="o">*</span> <span class="n">i_active</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_electromagnetic_torque_dq</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">currents</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate electromagnetic torque from d-q currents.</span>
+<span class="sd">        Torque = 3/2 * P * ( (Ld-Lq)*id*iq + iq*lambda_pm )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">src.control.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">clarke_transform</span><span class="p">,</span> <span class="n">park_transform</span>
+
+        <span class="n">ia</span><span class="p">,</span> <span class="n">ib</span><span class="p">,</span> <span class="n">ic</span> <span class="o">=</span> <span class="n">currents</span>
+        <span class="n">i_alpha</span><span class="p">,</span> <span class="n">i_beta</span> <span class="o">=</span> <span class="n">clarke_transform</span><span class="p">(</span><span class="n">ia</span><span class="p">,</span> <span class="n">ib</span><span class="p">,</span> <span class="n">ic</span><span class="p">)</span>
+
+        <span class="n">theta_elec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span> <span class="o">*</span> <span class="n">theta</span>
+        <span class="n">i_d</span><span class="p">,</span> <span class="n">i_q</span> <span class="o">=</span> <span class="n">park_transform</span><span class="p">(</span><span class="n">i_alpha</span><span class="p">,</span> <span class="n">i_beta</span><span class="p">,</span> <span class="n">theta_elec</span><span class="p">)</span>
+
+        <span class="c1"># For non-salient motors (Ld=Lq), torque is proportional to iq</span>
+        <span class="c1"># Torque = (3/2) * P * lambda_pm * iq</span>
+        <span class="c1"># Since Kt = (3/2) * P * lambda_pm for non-salient PMSM,</span>
+        <span class="c1"># Torque = Kt * iq</span>
+        <span class="c1"># We use a simplified model here that is more general.</span>
+        <span class="c1"># For a surface-mount PMSM (non-salient), Ld=Lq, so the first term is zero.</span>
+        <span class="c1"># The permanent magnet flux linkage lambda_pm is related to Kt.</span>
+        <span class="c1"># lambda_pm = Kt / ( (3/2) * P )</span>
+
+        <span class="n">P</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span>
+        <span class="n">lambda_pm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">torque_constant</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.5</span> <span class="o">*</span> <span class="n">P</span><span class="p">)</span>
+        <span class="n">flux_ratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flux_weakening_ratio</span><span class="p">(</span><span class="n">i_d</span><span class="p">)</span>
+        <span class="n">lambda_pm_eff</span> <span class="o">=</span> <span class="n">lambda_pm</span> <span class="o">*</span> <span class="n">flux_ratio</span>
+
+        <span class="n">torque</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mf">1.5</span>
+            <span class="o">*</span> <span class="n">P</span>
+            <span class="o">*</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">ld</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">lq</span><span class="p">)</span> <span class="o">*</span> <span class="n">i_d</span> <span class="o">*</span> <span class="n">i_q</span> <span class="o">+</span> <span class="n">i_q</span> <span class="o">*</span> <span class="n">lambda_pm_eff</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">torque</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_flux_weakening_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i_d</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return effective PM flux ratio after Id-based weakening.&quot;&quot;&quot;</span>
+        <span class="n">id_neg</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i_d</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">ratio</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">flux_weakening_id_coefficient</span> <span class="o">*</span> <span class="n">id_neg</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">flux_weakening_min_ratio</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_torque</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">currents</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s2">&quot;dq&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_electromagnetic_torque_dq</span><span class="p">(</span><span class="n">currents</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># scalar</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_electromagnetic_torque</span><span class="p">(</span><span class="n">currents</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_state_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">voltages</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate state derivatives: d(state)/dt.</span>
+
+<span class="sd">        Uses Kirchhoff&#39;s voltage law and Newton&#39;s second law:</span>
+
+<span class="sd">        **Electrical equation (for each phase i):**</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            v_i = R*i_i + L*\\frac{di_i}{dt} + e_i</span>
+
+<span class="sd">        Rearranged:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{di_i}{dt} = \\frac{1}{L}(v_i - R*i_i - e_i)</span>
+
+<span class="sd">        **Mechanical equation:**</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d\\omega}{dt} = \\frac{1}{J}(\\tau_{em} - \\tau_{load} - f*\\omega)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\frac{d\\theta}{dt} = \\omega</span>
+
+<span class="sd">        :param state: Current state vector [i_a, i_b, i_c, omega, theta]</span>
+<span class="sd">        :type state: np.ndarray</span>
+<span class="sd">        :param voltages: Applied phase voltages [v_a, v_b, v_c]</span>
+<span class="sd">        :type voltages: np.ndarray</span>
+<span class="sd">        :return: State derivatives</span>
+<span class="sd">        :rtype: np.ndarray</span>
+
+<span class="sd">        :raises AssertionError: If voltages array size != 3</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">voltages</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">3</span><span class="p">,),</span> <span class="s2">&quot;Voltages must be 3-phase array&quot;</span>
+
+        <span class="n">currents</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">omega</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+
+        <span class="c1"># Calculate back-EMF</span>
+        <span class="n">emf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_back_emf</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_emf</span> <span class="o">=</span> <span class="n">emf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s2">&quot;dq&quot;</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">src.control.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+                <span class="n">clarke_transform</span><span class="p">,</span>
+                <span class="n">park_transform</span><span class="p">,</span>
+                <span class="n">inverse_park</span><span class="p">,</span>
+                <span class="n">inverse_clarke</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># d-q model requires transforming voltages and currents</span>
+            <span class="n">theta_elec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span> <span class="o">*</span> <span class="n">theta</span>
+            <span class="n">omega_elec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span> <span class="o">*</span> <span class="n">omega</span>
+
+            <span class="c1"># To get Vd, Vq from Va,Vb,Vc</span>
+            <span class="n">v_alpha</span><span class="p">,</span> <span class="n">v_beta</span> <span class="o">=</span> <span class="n">clarke_transform</span><span class="p">(</span><span class="n">voltages</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">voltages</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">voltages</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">v_d</span><span class="p">,</span> <span class="n">v_q</span> <span class="o">=</span> <span class="n">park_transform</span><span class="p">(</span><span class="n">v_alpha</span><span class="p">,</span> <span class="n">v_beta</span><span class="p">,</span> <span class="n">theta_elec</span><span class="p">)</span>
+
+            <span class="c1"># To get id, iq from ia,ib,ic</span>
+            <span class="n">i_alpha</span><span class="p">,</span> <span class="n">i_beta</span> <span class="o">=</span> <span class="n">clarke_transform</span><span class="p">(</span><span class="n">currents</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">currents</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">currents</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">i_d</span><span class="p">,</span> <span class="n">i_q</span> <span class="o">=</span> <span class="n">park_transform</span><span class="p">(</span><span class="n">i_alpha</span><span class="p">,</span> <span class="n">i_beta</span><span class="p">,</span> <span class="n">theta_elec</span><span class="p">)</span>
+
+            <span class="c1"># d-q voltage equations</span>
+            <span class="c1"># back_emf_constant is Ke [V·s/mech.rad]; flux linkage λ_pm = Ke/P.</span>
+            <span class="c1"># BEMF term in q-axis: ωe × λ_pm = ωe × Ke/P = ωmech × Ke = omega × Ke.</span>
+            <span class="n">lambda_pm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">back_emf_constant</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span><span class="p">),</span> <span class="mf">1.0</span>
+            <span class="p">)</span>
+            <span class="n">flux_ratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flux_weakening_ratio</span><span class="p">(</span><span class="n">i_d</span><span class="p">)</span>
+            <span class="n">lambda_pm_eff</span> <span class="o">=</span> <span class="n">lambda_pm</span> <span class="o">*</span> <span class="n">flux_ratio</span>
+            <span class="n">di_d_dt</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">v_d</span>
+                <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">phase_resistance</span> <span class="o">*</span> <span class="n">i_d</span>
+                <span class="o">+</span> <span class="n">omega_elec</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">lq</span> <span class="o">*</span> <span class="n">i_q</span>
+            <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">ld</span>
+            <span class="n">di_q_dt</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">v_q</span>
+                <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">phase_resistance</span> <span class="o">*</span> <span class="n">i_q</span>
+                <span class="o">-</span> <span class="n">omega_elec</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">ld</span> <span class="o">*</span> <span class="n">i_d</span>
+                <span class="o">-</span> <span class="n">omega_elec</span> <span class="o">*</span> <span class="n">lambda_pm_eff</span>
+            <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">lq</span>
+
+            <span class="c1"># Transform DQ derivatives back to stationary-frame (ABC) derivatives.</span>
+            <span class="c1"># Full chain-rule: d/dt(iPark(id, iq, θe)) has a rotational correction</span>
+            <span class="c1"># from dθe/dt = ωe:</span>
+            <span class="c1">#   d(iα)/dt = iPark(diᵈ/dt, diᵍ/dt, θe)[α] − ωe · iβ</span>
+            <span class="c1">#   d(iβ)/dt = iPark(diᵈ/dt, diᵍ/dt, θe)[β] + ωe · iα</span>
+            <span class="c1"># Without this term the ABC state &quot;freezes&quot; while Park transform rotates,</span>
+            <span class="c1"># producing a spurious limit cycle at the electrical frequency.</span>
+            <span class="n">di_alpha_dt_base</span><span class="p">,</span> <span class="n">di_beta_dt_base</span> <span class="o">=</span> <span class="n">inverse_park</span><span class="p">(</span>
+                <span class="n">di_d_dt</span><span class="p">,</span> <span class="n">di_q_dt</span><span class="p">,</span> <span class="n">theta_elec</span>
+            <span class="p">)</span>
+            <span class="n">di_alpha_dt</span> <span class="o">=</span> <span class="n">di_alpha_dt_base</span> <span class="o">-</span> <span class="n">omega_elec</span> <span class="o">*</span> <span class="n">i_beta</span>
+            <span class="n">di_beta_dt</span> <span class="o">=</span> <span class="n">di_beta_dt_base</span> <span class="o">+</span> <span class="n">omega_elec</span> <span class="o">*</span> <span class="n">i_alpha</span>
+            <span class="n">di_dt_a</span><span class="p">,</span> <span class="n">di_dt_b</span><span class="p">,</span> <span class="n">di_dt_c</span> <span class="o">=</span> <span class="n">inverse_clarke</span><span class="p">(</span><span class="n">di_alpha_dt</span><span class="p">,</span> <span class="n">di_beta_dt</span><span class="p">)</span>
+            <span class="n">di_dt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">di_dt_a</span><span class="p">,</span> <span class="n">di_dt_b</span><span class="p">,</span> <span class="n">di_dt_c</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># scalar model</span>
+            <span class="c1"># Electrical dynamics: di/dt = (V - R*i - E) / L</span>
+            <span class="n">di_dt</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">voltages</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">phase_resistance</span> <span class="o">*</span> <span class="n">currents</span> <span class="o">-</span> <span class="n">emf</span>
+            <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">phase_inductance</span>
+
+        <span class="c1"># Electromagnetic torque</span>
+        <span class="n">tau_em</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_torque</span><span class="p">(</span><span class="n">currents</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span> <span class="o">=</span> <span class="n">tau_em</span>
+
+        <span class="c1"># Mechanical dynamics: dω/dt = (τ_em - τ_load - f*ω) / J</span>
+        <span class="c1"># Load torque is added in step() method</span>
+
+        <span class="c1"># Create derivatives array</span>
+        <span class="n">derivatives</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">derivatives</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">di_dt</span>
+        <span class="c1"># omega derivative will be set in step() with load torque</span>
+        <span class="n">derivatives</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">omega</span>  <span class="c1"># dtheta/dt = omega</span>
+
+        <span class="k">return</span> <span class="n">derivatives</span>
+
+<div class="viewcode-block" id="BLDCMotor.step">
+<a class="viewcode-back" href="../../../api/motor_model.html#src.core.motor_model.BLDCMotor.step">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voltages</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">load_torque</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute one simulation step using 4th-order Runge-Kutta integration.</span>
+
+<span class="sd">        Updates internal state: [i_a, i_b, i_c, omega, theta]</span>
+
+<span class="sd">        **Runge-Kutta 4th Order (RK4):**</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            k_1 = f(t_n, y_n)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            k_2 = f(t_n + \\frac{h}{2}, y_n + \\frac{h}{2}k_1)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            k_3 = f(t_n + \\frac{h}{2}, y_n + \\frac{h}{2}k_2)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            k_4 = f(t_n + h, y_n + h*k_3)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            y_{n+1} = y_n + \\frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4)</span>
+
+<span class="sd">        :param voltages: Applied phase voltages [v_a, v_b, v_c] [V]</span>
+<span class="sd">        :type voltages: np.ndarray</span>
+<span class="sd">        :param load_torque: Load torque acting on motor shaft [N*m], defaults to 0.0</span>
+<span class="sd">        :type load_torque: float</span>
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            Voltages must be 3-element array. Use SVM generator for modulated voltages.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># RK4 integration</span>
+        <span class="n">k1_derivatives</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">voltages</span><span class="p">)</span>
+
+        <span class="c1"># Modify k1 to include load torque effect on omega</span>
+        <span class="n">k1_derivatives</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span>
+            <span class="o">-</span> <span class="n">load_torque</span>
+            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">friction_coefficient</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">rotor_inertia</span>
+
+        <span class="c1"># k2</span>
+        <span class="n">state_k2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">k1_derivatives</span>
+        <span class="n">k2_derivatives</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_derivatives</span><span class="p">(</span><span class="n">state_k2</span><span class="p">,</span> <span class="n">voltages</span><span class="p">)</span>
+        <span class="n">k2_derivatives</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span>
+            <span class="o">-</span> <span class="n">load_torque</span>
+            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">friction_coefficient</span> <span class="o">*</span> <span class="n">state_k2</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">rotor_inertia</span>
+
+        <span class="c1"># k3</span>
+        <span class="n">state_k3</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">k2_derivatives</span>
+        <span class="n">k3_derivatives</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_derivatives</span><span class="p">(</span><span class="n">state_k3</span><span class="p">,</span> <span class="n">voltages</span><span class="p">)</span>
+        <span class="n">k3_derivatives</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span>
+            <span class="o">-</span> <span class="n">load_torque</span>
+            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">friction_coefficient</span> <span class="o">*</span> <span class="n">state_k3</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">rotor_inertia</span>
+
+        <span class="c1"># k4</span>
+        <span class="n">state_k4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">*</span> <span class="n">k3_derivatives</span>
+        <span class="n">k4_derivatives</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_derivatives</span><span class="p">(</span><span class="n">state_k4</span><span class="p">,</span> <span class="n">voltages</span><span class="p">)</span>
+        <span class="n">k4_derivatives</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span>
+            <span class="o">-</span> <span class="n">load_torque</span>
+            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">friction_coefficient</span> <span class="o">*</span> <span class="n">state_k4</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">rotor_inertia</span>
+
+        <span class="c1"># Final update</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">+=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">/</span> <span class="mf">6.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">k1_derivatives</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">k2_derivatives</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">k3_derivatives</span> <span class="o">+</span> <span class="n">k4_derivatives</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BLDCMotor.reset">
+<a class="viewcode-back" href="../../../api/motor_model.html#src.core.motor_model.BLDCMotor.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset motor to initial conditions.</span>
+
+<span class="sd">        :param initial_speed: Initial rotor speed [rad/s], defaults to 0.0</span>
+<span class="sd">        :type initial_speed: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">initial_speed</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_emf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_currents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BLDCMotor.get_state_dict">
+<a class="viewcode-back" href="../../../api/motor_model.html#src.core.motor_model.BLDCMotor.get_state_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get all motor state variables as a dictionary.</span>
+
+<span class="sd">        :return: Dictionary containing all motor variables</span>
+<span class="sd">        :rtype: dict</span>
+
+<span class="sd">        **Keys:**</span>
+<span class="sd">            - &#39;currents_a&#39;: Phase A current [A]</span>
+<span class="sd">            - &#39;currents_b&#39;: Phase B current [A]</span>
+<span class="sd">            - &#39;currents_c&#39;: Phase C current [A]</span>
+<span class="sd">            - &#39;omega&#39;: Angular velocity [rad/s]</span>
+<span class="sd">            - &#39;theta&#39;: Angular position [rad]</span>
+<span class="sd">            - &#39;speed_rpm&#39;: Speed [RPM]</span>
+<span class="sd">            - &#39;back_emf_a&#39;: Phase A back-EMF [V]</span>
+<span class="sd">            - &#39;back_emf_b&#39;: Phase B back-EMF [V]</span>
+<span class="sd">            - &#39;back_emf_c&#39;: Phase C back-EMF [V]</span>
+<span class="sd">            - &#39;torque&#39;: Electromagnetic torque [N*m]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;currents_a&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="s2">&quot;currents_b&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="s2">&quot;currents_c&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="s2">&quot;omega&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+            <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span>
+            <span class="s2">&quot;speed_rpm&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_rpm</span><span class="p">,</span>
+            <span class="s2">&quot;back_emf_a&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_emf</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="s2">&quot;back_emf_b&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_emf</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="s2">&quot;back_emf_c&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_emf</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="s2">&quot;torque&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_torque</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

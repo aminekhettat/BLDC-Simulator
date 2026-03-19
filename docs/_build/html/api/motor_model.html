@@ -1,0 +1,506 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motor Model &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Control Module" href="control.html" />
+    <link rel="prev" title="Features" href="../features.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Motor Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#bldc-motor-model">BLDC Motor Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.core.motor_model.MotorParameters"><code class="docutils literal notranslate"><span class="pre">MotorParameters</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.model_type"><code class="docutils literal notranslate"><span class="pre">MotorParameters.model_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.emf_shape"><code class="docutils literal notranslate"><span class="pre">MotorParameters.emf_shape</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.nominal_voltage"><code class="docutils literal notranslate"><span class="pre">MotorParameters.nominal_voltage</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.phase_resistance"><code class="docutils literal notranslate"><span class="pre">MotorParameters.phase_resistance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.phase_inductance"><code class="docutils literal notranslate"><span class="pre">MotorParameters.phase_inductance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.back_emf_constant"><code class="docutils literal notranslate"><span class="pre">MotorParameters.back_emf_constant</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.torque_constant"><code class="docutils literal notranslate"><span class="pre">MotorParameters.torque_constant</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.rotor_inertia"><code class="docutils literal notranslate"><span class="pre">MotorParameters.rotor_inertia</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.friction_coefficient"><code class="docutils literal notranslate"><span class="pre">MotorParameters.friction_coefficient</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.num_poles"><code class="docutils literal notranslate"><span class="pre">MotorParameters.num_poles</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.poles_pairs"><code class="docutils literal notranslate"><span class="pre">MotorParameters.poles_pairs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.ld"><code class="docutils literal notranslate"><span class="pre">MotorParameters.ld</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.lq"><code class="docutils literal notranslate"><span class="pre">MotorParameters.lq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.flux_weakening_id_coefficient"><code class="docutils literal notranslate"><span class="pre">MotorParameters.flux_weakening_id_coefficient</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.flux_weakening_min_ratio"><code class="docutils literal notranslate"><span class="pre">MotorParameters.flux_weakening_min_ratio</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.MotorParameters.__init__"><code class="docutils literal notranslate"><span class="pre">MotorParameters.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.core.motor_model.BLDCMotor"><code class="docutils literal notranslate"><span class="pre">BLDCMotor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.__init__"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.currents"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.currents</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.omega"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.omega</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.theta"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.theta</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.speed_rpm"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.speed_rpm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.back_emf"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.back_emf</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.electromagnetic_torque"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.electromagnetic_torque</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.step"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.step()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.reset"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.reset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.motor_model.BLDCMotor.get_state_dict"><code class="docutils literal notranslate"><span class="pre">BLDCMotor.get_state_dict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Motor Model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/motor_model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-src.core.motor_model">
+<span id="motor-model"></span><h1>Motor Model<a class="headerlink" href="#module-src.core.motor_model" title="Link to this heading"></a></h1>
+<section id="bldc-motor-model">
+<h2>BLDC Motor Model<a class="headerlink" href="#bldc-motor-model" title="Link to this heading"></a></h2>
+<p>This module implements the mathematical model of a Brushless DC (BLDC) motor,
+including electrical and mechanical dynamics equations. The model accepts 3-phase
+voltages and produces motor variables (currents, EMF, torque, speed, position).</p>
+<p>The electrical model is based on:
+- Phase voltage equation: v_phase = R*i_phase + L*di_phase/dt + e_back_phase
+- Back-EMF generation from rotor position</p>
+<p>The mechanical model includes:
+- Newton’s second law: tau_electro - tau_load - f*omega = J*d(omega)/dt
+- Position integration: d(theta)/dt = omega</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial implementation of BLDC motor model</p>
+</div>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.core.motor_model.</span></span><span class="sig-name descname"><span class="pre">MotorParameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scalar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emf_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'trapezoidal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_resistance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_inductance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">back_emf_constant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torque_constant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotor_inertia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">friction_coefficient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_poles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poles_pairs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ld</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_weakening_id_coefficient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_weakening_min_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/core/motor_model.html#MotorParameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.motor_model.MotorParameters" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Data class containing BLDC motor parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_type</strong> – Type of motor model (‘scalar’ or ‘dq’)</p></li>
+<li><p><strong>nominal_voltage</strong> – Nominal DC voltage [V]</p></li>
+<li><p><strong>phase_resistance</strong> – Phase winding resistance [Ohms]</p></li>
+<li><p><strong>phase_inductance</strong> – Phase winding inductance [H]</p></li>
+<li><p><strong>back_emf_constant</strong> – Back-EMF constant [V*s/rad]</p></li>
+<li><p><strong>torque_constant</strong> – Electromagnetic torque constant [N*m/A]</p></li>
+<li><p><strong>rotor_inertia</strong> – Rotor moment of inertia [kg*m^2]</p></li>
+<li><p><strong>friction_coefficient</strong> – Viscous friction coefficient [N*m*s/rad]</p></li>
+<li><p><strong>num_poles</strong> – Number of magnetic poles</p></li>
+<li><p><strong>poles_pairs</strong> – Number of pole pairs (num_poles/2)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.model_type">
+<span class="sig-name descname"><span class="pre">model_type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'scalar'</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.model_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.emf_shape">
+<span class="sig-name descname"><span class="pre">emf_shape</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'trapezoidal'</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.emf_shape" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.nominal_voltage">
+<span class="sig-name descname"><span class="pre">nominal_voltage</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">48.0</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.nominal_voltage" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.phase_resistance">
+<span class="sig-name descname"><span class="pre">phase_resistance</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2.5</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.phase_resistance" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.phase_inductance">
+<span class="sig-name descname"><span class="pre">phase_inductance</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.005</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.phase_inductance" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.back_emf_constant">
+<span class="sig-name descname"><span class="pre">back_emf_constant</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.1</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.back_emf_constant" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.torque_constant">
+<span class="sig-name descname"><span class="pre">torque_constant</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.1</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.torque_constant" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.rotor_inertia">
+<span class="sig-name descname"><span class="pre">rotor_inertia</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0005</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.rotor_inertia" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.friction_coefficient">
+<span class="sig-name descname"><span class="pre">friction_coefficient</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.friction_coefficient" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.num_poles">
+<span class="sig-name descname"><span class="pre">num_poles</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.num_poles" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.poles_pairs">
+<span class="sig-name descname"><span class="pre">poles_pairs</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.poles_pairs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.ld">
+<span class="sig-name descname"><span class="pre">ld</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.ld" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.lq">
+<span class="sig-name descname"><span class="pre">lq</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.lq" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.flux_weakening_id_coefficient">
+<span class="sig-name descname"><span class="pre">flux_weakening_id_coefficient</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.flux_weakening_id_coefficient" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.flux_weakening_min_ratio">
+<span class="sig-name descname"><span class="pre">flux_weakening_min_ratio</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.2</span></span><a class="headerlink" href="#src.core.motor_model.MotorParameters.flux_weakening_min_ratio" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.motor_model.MotorParameters.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scalar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emf_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'trapezoidal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominal_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_resistance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_inductance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">back_emf_constant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torque_constant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotor_inertia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">friction_coefficient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_poles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poles_pairs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ld</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_weakening_id_coefficient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_weakening_min_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.core.motor_model.MotorParameters.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.core.motor_model.</span></span><span class="sig-name descname"><span class="pre">BLDCMotor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/core/motor_model.html#BLDCMotor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.motor_model.BLDCMotor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<section id="id1">
+<h2>BLDC Motor Model<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>Implements a 3-phase BLDC motor model with electrical and mechanical dynamics.
+Uses numerical integration (4th-order Runge-Kutta) for state evolution.</p>
+<p>The motor model tracks:
+- Three phase currents: i_a, i_b, i_c [A]
+- Rotor angular velocity: omega [rad/s]
+- Rotor angular position: theta [rad]
+- Phase voltages (input): v_a, v_b, v_c [V]</p>
+<p><strong>State Vector:</strong> [i_a, i_b, i_c, omega, theta]</p>
+<dl>
+<dt>Example:</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">params</span> <span class="o">=</span> <span class="n">MotorParameters</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">nominal_voltage</span><span class="o">=</span><span class="mf">48.0</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">phase_resistance</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">phase_inductance</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">back_emf_constant</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">torque_constant</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">rotor_inertia</span><span class="o">=</span><span class="mf">0.0005</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">friction_coefficient</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">num_poles</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">poles_pairs</span><span class="o">=</span><span class="mi">4</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">motor</span> <span class="o">=</span> <span class="n">BLDCMotor</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">voltages</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">10.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">5.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">5.0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">motor</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">voltages</span><span class="p">,</span> <span class="n">load_torque</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/core/motor_model.html#BLDCMotor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.motor_model.BLDCMotor.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the BLDC motor model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameters</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#src.core.motor_model.MotorParameters" title="src.core.motor_model.MotorParameters"><code class="xref py py-class docutils literal notranslate"><span class="pre">MotorParameters</span></code></a></span>) – Motor parameters (<a class="reference internal" href="#src.core.motor_model.MotorParameters" title="src.core.motor_model.MotorParameters"><code class="xref py py-class docutils literal notranslate"><span class="pre">MotorParameters</span></code></a>)</p></li>
+<li><p><strong>dt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Simulation time step [seconds], defaults to 0.0001</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If dt &lt;= 0</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If phase_inductance &lt;= 0</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.currents">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">currents</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#src.core.motor_model.BLDCMotor.currents" title="Link to this definition"></a></dt>
+<dd><p>Get phase currents [A].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array of [i_a, i_b, i_c]</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.omega">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">omega</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.core.motor_model.BLDCMotor.omega" title="Link to this definition"></a></dt>
+<dd><p>Get rotor angular velocity [rad/s].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Angular velocity</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.theta">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">theta</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.core.motor_model.BLDCMotor.theta" title="Link to this definition"></a></dt>
+<dd><p>Get rotor angular position [rad].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Angular position (wrapped to [0, 2*pi])</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.speed_rpm">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">speed_rpm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.core.motor_model.BLDCMotor.speed_rpm" title="Link to this definition"></a></dt>
+<dd><p>Get rotor speed in revolutions per minute [RPM].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Speed in RPM</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.back_emf">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">back_emf</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#src.core.motor_model.BLDCMotor.back_emf" title="Link to this definition"></a></dt>
+<dd><p>Get back-EMF for each phase [V].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array of [e_a, e_b, e_c]</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.electromagnetic_torque">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">electromagnetic_torque</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.core.motor_model.BLDCMotor.electromagnetic_torque" title="Link to this definition"></a></dt>
+<dd><p>Get electromagnetic torque [N*m].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Torque</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltages</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_torque</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/core/motor_model.html#BLDCMotor.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.motor_model.BLDCMotor.step" title="Link to this definition"></a></dt>
+<dd><p>Execute one simulation step using 4th-order Runge-Kutta integration.</p>
+<p>Updates internal state: [i_a, i_b, i_c, omega, theta]</p>
+<p><strong>Runge-Kutta 4th Order (RK4):</strong></p>
+<div class="math notranslate nohighlight">
+\[k_1 = f(t_n, y_n)\]</div>
+<div class="math notranslate nohighlight">
+\[k_2 = f(t_n + \frac{h}{2}, y_n + \frac{h}{2}k_1)\]</div>
+<div class="math notranslate nohighlight">
+\[k_3 = f(t_n + \frac{h}{2}, y_n + \frac{h}{2}k_2)\]</div>
+<div class="math notranslate nohighlight">
+\[k_4 = f(t_n + h, y_n + h*k_3)\]</div>
+<div class="math notranslate nohighlight">
+\[y_{n+1} = y_n + \frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>voltages</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span>) – Applied phase voltages [v_a, v_b, v_c] [V]</p></li>
+<li><p><strong>load_torque</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Load torque acting on motor shaft [N*m], defaults to 0.0</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Voltages must be 3-element array. Use SVM generator for modulated voltages.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_speed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/core/motor_model.html#BLDCMotor.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.motor_model.BLDCMotor.reset" title="Link to this definition"></a></dt>
+<dd><p>Reset motor to initial conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>initial_speed</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Initial rotor speed [rad/s], defaults to 0.0</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.motor_model.BLDCMotor.get_state_dict">
+<span class="sig-name descname"><span class="pre">get_state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/core/motor_model.html#BLDCMotor.get_state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.motor_model.BLDCMotor.get_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Get all motor state variables as a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing all motor variables</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt><strong>Keys:</strong></dt><dd><ul class="simple">
+<li><p>‘currents_a’: Phase A current [A]</p></li>
+<li><p>‘currents_b’: Phase B current [A]</p></li>
+<li><p>‘currents_c’: Phase C current [A]</p></li>
+<li><p>‘omega’: Angular velocity [rad/s]</p></li>
+<li><p>‘theta’: Angular position [rad]</p></li>
+<li><p>‘speed_rpm’: Speed [RPM]</p></li>
+<li><p>‘back_emf_a’: Phase A back-EMF [V]</p></li>
+<li><p>‘back_emf_b’: Phase B back-EMF [V]</p></li>
+<li><p>‘back_emf_c’: Phase C back-EMF [V]</p></li>
+<li><p>‘torque’: Electromagnetic torque [N*m]</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../features.html" class="btn btn-neutral float-left" title="Features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="control.html" class="btn btn-neutral float-right" title="Control Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,298 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Architecture &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Advanced Topics" href="advanced.html" />
+    <link rel="prev" title="src.utils.speech" href="api/generated/src.utils.speech.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#project-structure">Project Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#design-patterns">Design Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-simulation-flow">Core Simulation Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-components">Key Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#loaded-calibration-workflow">Loaded Calibration Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-flow">Data Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#threading-model">Threading Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#extensibility-points">Extensibility Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-considerations">Performance Considerations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Architecture</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/architecture.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="architecture">
+<h1>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h1>
+<section id="project-structure">
+<h2>Project Structure<a class="headerlink" href="#project-structure" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>BLDC_motor_control/
+├── src/
+│   ├── core/              # Core motor simulation
+│   │   ├── motor_model.py
+│   │   ├── power_model.py
+│   │   ├── load_model.py
+│   │   └── simulation_engine.py
+│   ├── control/           # Control algorithms
+│   │   ├── base_controller.py
+│   │   ├── foc_controller.py
+│   │   ├── vf_controller.py
+│   │   ├── svm_generator.py
+│   │   └── transforms.py
+│   ├── ui/                # User interface
+│   │   ├── main_window.py
+│   │   └── widgets/
+│   ├── visualization/     # Plotting &amp; display
+│   │   └── visualization.py
+│   └── utils/             # Utilities
+│       ├── config.py
+│       ├── data_logger.py
+│       └── speech.py
+├── examples/              # Example scripts
+├── tests/                 # Test suite
+├── docs/                  # Documentation (Sphinx)
+└── data/                  # Logs and plots
+</pre></div>
+</div>
+</section>
+<section id="design-patterns">
+<h2>Design Patterns<a class="headerlink" href="#design-patterns" title="Link to this heading"></a></h2>
+<p><strong>MVC-Style Architecture</strong>
+- Model: Motor simulation (core module)
+- View: PyQt6 GUI (ui module)
+- Controller: Control algorithms (control module)</p>
+<p><strong>Strategy Pattern</strong>
+- Base controller class with FOC and V/F implementations
+- Pluggable load models</p>
+<p><strong>Observer Pattern</strong>
+- GUI updates on simulation events via signals/slots</p>
+<p><strong>Factory Pattern</strong>
+- Motor configuration loading and initialization</p>
+</section>
+<section id="core-simulation-flow">
+<h2>Core Simulation Flow<a class="headerlink" href="#core-simulation-flow" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Initialization</strong>
+- Load motor parameters
+- Initialize control system
+- Setup GUI and plots</p></li>
+<li><p><strong>Simulation Loop</strong>
+- Update reference signals
+- Execute controller (FOC or V/F)
+- Generate PWM via SVM
+- Update motor dynamics
+- Calculate losses and power</p></li>
+<li><p><strong>Display Update</strong>
+- Refresh plots
+- Update status bar
+- Log data to CSV</p></li>
+</ol>
+</section>
+<section id="key-components">
+<h2>Key Components<a class="headerlink" href="#key-components" title="Link to this heading"></a></h2>
+<p><strong>Motor Model</strong> (<cite>src.core.motor_model</cite>)
+- Grid-based motor parameter storage
+- Phase current and voltage tracking
+- EMF calculation with profile-selected sinusoidal or trapezoidal waveform support
+- Torque computation from currents</p>
+<p><strong>Control Modules</strong> (<cite>src.control.*</cite>)
+- Base controller framework
+- FOC with PI current loops
+- V/F scalar control
+- SVM PWM generation
+- Clark/Park transformations</p>
+<p><strong>Simulation Engine</strong> (<cite>src.core.simulation_engine</cite>)
+- Time-stepping with configurable dt
+- Event dispatch for UI updates
+- Data collection and logging</p>
+<p><strong>UI Layer</strong> (<cite>src.ui.*</cite>)
+- PyQt6 main window
+- Accessible widgets with ARIA labels
+- Real-time plot management
+- Parameter input/output controls</p>
+<p><strong>Visualization</strong> (<cite>src.visualization.visualization</cite>)
+- Matplotlib integration
+- Configurable grid and plot styles
+- Export functionality</p>
+</section>
+<section id="loaded-calibration-workflow">
+<h2>Loaded Calibration Workflow<a class="headerlink" href="#loaded-calibration-workflow" title="Link to this heading"></a></h2>
+<p>The repository includes a dedicated loaded no-field-weakening calibration example:</p>
+<ul class="simple">
+<li><p>Script: <cite>examples/calibrate_no_fw_loaded_point.py</cite></p></li>
+<li><p>Seed source: prior converged unloaded/no-FW tuning session</p></li>
+<li><p>Output: JSON report in <cite>data/logs/</cite></p></li>
+</ul>
+<p>The workflow is intentionally staged:</p>
+<ol class="arabic simple">
+<li><p>Stabilize at the practical no-field-weakening speed cap.</p></li>
+<li><p>Increase load torque with a smooth ramp and retain the highest point that still passes speed tracking.</p></li>
+<li><p>Retune the final operating point with orthogonality and conditioned-efficiency gates.</p></li>
+</ol>
+<p>This keeps torque-feasibility discovery separate from the stricter final loaded-point quality checks.</p>
+</section>
+<section id="data-flow">
+<h2>Data Flow<a class="headerlink" href="#data-flow" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>User Input
+    ↓
+[Controller (FOC/V/F)]
+    ↓
+[SVM Generator]
+    ↓
+[Motor Model]
+    ↓
+[Visualization]
+    ↓
+GUI Display &amp; CSV Log
+</pre></div>
+</div>
+</section>
+<section id="threading-model">
+<h2>Threading Model<a class="headerlink" href="#threading-model" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Main Thread</strong>: PyQt6 GUI and event loop</p></li>
+<li><p><strong>QThread</strong>: Simulation engine runs in background thread</p></li>
+<li><p><strong>Thread-Safe Communication</strong>: Qt signals/slots for thread safety</p></li>
+<li><p><strong>Data Logging</strong>: Asynchronous CSV writing without blocking UI</p></li>
+</ul>
+</section>
+<section id="extensibility-points">
+<h2>Extensibility Points<a class="headerlink" href="#extensibility-points" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>New Control Strategy</strong>
+- Inherit from <cite>BaseController</cite>
+- Implement <cite>update()</cite> and <cite>get_control_law()</cite> methods
+- Register in main_window</p></li>
+<li><p><strong>New Load Model</strong>
+- Extend load parameter definitions
+- Override load torque calculation
+- Update configuration loading</p></li>
+<li><p><strong>New Visualization</strong>
+- Add plots to visualization module
+- Register with matplotlib axes
+- Connect to simulation signals</p></li>
+</ol>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Numba JIT</strong>: Optional compilation for inner loops</p></li>
+<li><p><strong>Numpy Vectorization</strong>: Array operations instead of loops</p></li>
+<li><p><strong>Event-Driven Updates</strong>: Only redraw plots when data changes</p></li>
+<li><p><strong>Configurable Simulation Rate</strong>: Adjust dt and update frequency</p></li>
+<li><p><strong>Efficient Data Structures</strong>: Numpy arrays and dataclasses</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api/generated/src.utils.speech.html" class="btn btn-neutral float-left" title="src.utils.speech" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="advanced.html" class="btn btn-neutral float-right" title="Advanced Topics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,544 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.core.power_model &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.core.power_model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.core.power_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Power Supply Model</span>
+<span class="sd">==================</span>
+
+<span class="sd">This module provides models of the DC power supply feeding the inverter.</span>
+<span class="sd">A time-dependent voltage profile can be defined to simulate battery sag,</span>
+<span class="sd">AC ripple rectification, or other variations.</span>
+
+<span class="sd">:author: BLDC Control Team</span>
+<span class="sd">:version: 1.0.0</span>
+
+<span class="sd">.. versionadded:: 1.0.0</span>
+<span class="sd">    Initial implementation of power supply models</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span>
+
+
+<div class="viewcode-block" id="compute_power_metrics">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.compute_power_metrics">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_power_metrics</span><span class="p">(</span>
+    <span class="n">voltage</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">current</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute basic power-quality metrics from voltage/current waveforms.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    voltage : np.ndarray</span>
+<span class="sd">        Instantaneous voltage samples.</span>
+<span class="sd">    current : np.ndarray</span>
+<span class="sd">        Instantaneous current samples, aligned with ``voltage``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Active/apparent/reactive power, RMS values, and power factor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">use_gpu</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;gpu&quot;</span>
+
+    <span class="k">if</span> <span class="n">use_gpu</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>  <span class="c1"># type: ignore</span>
+
+            <span class="n">v</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">i</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;voltage and current arrays must have the same shape&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;voltage and current arrays must be non-empty&quot;</span><span class="p">)</span>
+
+            <span class="n">v_rms</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">v</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+            <span class="n">i_rms</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">i</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+            <span class="n">active_power</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+            <span class="n">apparent_power</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v_rms</span> <span class="o">*</span> <span class="n">i_rms</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># Safe fallback to CPU path if GPU backend fails at runtime.</span>
+            <span class="n">use_gpu</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">use_gpu</span><span class="p">:</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">i</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;voltage and current arrays must have the same shape&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;voltage and current arrays must be non-empty&quot;</span><span class="p">)</span>
+
+        <span class="n">v_rms</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">v</span><span class="p">)))</span>
+        <span class="n">i_rms</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">i</span><span class="p">)))</span>
+        <span class="n">active_power</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">i</span><span class="p">))</span>
+        <span class="n">apparent_power</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v_rms</span> <span class="o">*</span> <span class="n">i_rms</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">apparent_power</span> <span class="o">&lt;=</span> <span class="mf">1e-12</span><span class="p">:</span>
+        <span class="n">power_factor</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">reactive_power</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">raw_pf</span> <span class="o">=</span> <span class="n">active_power</span> <span class="o">/</span> <span class="n">apparent_power</span>
+        <span class="n">power_factor</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">raw_pf</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+        <span class="n">reactive_power</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">apparent_power</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">active_power</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;voltage_rms_v&quot;</span><span class="p">:</span> <span class="n">v_rms</span><span class="p">,</span>
+        <span class="s2">&quot;current_rms_a&quot;</span><span class="p">:</span> <span class="n">i_rms</span><span class="p">,</span>
+        <span class="s2">&quot;active_power_w&quot;</span><span class="p">:</span> <span class="n">active_power</span><span class="p">,</span>
+        <span class="s2">&quot;apparent_power_va&quot;</span><span class="p">:</span> <span class="n">apparent_power</span><span class="p">,</span>
+        <span class="s2">&quot;reactive_power_var&quot;</span><span class="p">:</span> <span class="n">reactive_power</span><span class="p">,</span>
+        <span class="s2">&quot;power_factor&quot;</span><span class="p">:</span> <span class="n">power_factor</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="required_reactive_compensation">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.required_reactive_compensation">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">required_reactive_compensation</span><span class="p">(</span>
+    <span class="n">active_power_w</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">current_pf</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">target_pf</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate reactive compensation needed to improve power factor.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This helper assumes positive active power and lagging-load correction sizing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">active_power_w</span><span class="p">)</span>
+    <span class="n">pf_now</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">current_pf</span><span class="p">))</span>
+    <span class="n">pf_target</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">target_pf</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">p</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;active_power_w must be positive&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">pf_now</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;current_pf must be in (0, 1]&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">pf_target</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;target_pf must be in (0, 1]&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pf_target</span> <span class="o">&lt;</span> <span class="n">pf_now</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;target_pf must be greater than or equal to current_pf&quot;</span><span class="p">)</span>
+
+    <span class="n">q_now</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">pf_now</span><span class="p">))</span>
+    <span class="n">q_target</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">pf_target</span><span class="p">))</span>
+    <span class="n">compensation</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">q_now</span> <span class="o">-</span> <span class="n">q_target</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;active_power_w&quot;</span><span class="p">:</span> <span class="n">p</span><span class="p">,</span>
+        <span class="s2">&quot;current_pf&quot;</span><span class="p">:</span> <span class="n">pf_now</span><span class="p">,</span>
+        <span class="s2">&quot;target_pf&quot;</span><span class="p">:</span> <span class="n">pf_target</span><span class="p">,</span>
+        <span class="s2">&quot;current_reactive_var&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">q_now</span><span class="p">),</span>
+        <span class="s2">&quot;target_reactive_var&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">q_target</span><span class="p">),</span>
+        <span class="s2">&quot;required_compensation_var&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">compensation</span><span class="p">),</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="compute_efficiency_metrics">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.compute_efficiency_metrics">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_efficiency_metrics</span><span class="p">(</span>
+    <span class="n">input_power_w</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">torque_nm</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">omega_rad_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute simple drivetrain efficiency metrics from power flow values.&quot;&quot;&quot;</span>
+    <span class="n">electrical_input</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">input_power_w</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">shaft_power</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">torque_nm</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">omega_rad_s</span><span class="p">)</span>
+    <span class="n">mechanical_output</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">shaft_power</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">regenerative_power</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="n">shaft_power</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">total_loss</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">electrical_input</span> <span class="o">-</span> <span class="n">mechanical_output</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">electrical_input</span> <span class="o">&lt;=</span> <span class="mf">1e-12</span><span class="p">:</span>
+        <span class="n">efficiency</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">efficiency</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">mechanical_output</span> <span class="o">/</span> <span class="n">electrical_input</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;electrical_input_power_w&quot;</span><span class="p">:</span> <span class="n">electrical_input</span><span class="p">,</span>
+        <span class="s2">&quot;mechanical_output_power_w&quot;</span><span class="p">:</span> <span class="n">mechanical_output</span><span class="p">,</span>
+        <span class="s2">&quot;regenerative_power_w&quot;</span><span class="p">:</span> <span class="n">regenerative_power</span><span class="p">,</span>
+        <span class="s2">&quot;total_loss_power_w&quot;</span><span class="p">:</span> <span class="n">total_loss</span><span class="p">,</span>
+        <span class="s2">&quot;efficiency&quot;</span><span class="p">:</span> <span class="n">efficiency</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="recommend_efficiency_adjustments">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.recommend_efficiency_adjustments">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">recommend_efficiency_adjustments</span><span class="p">(</span>
+    <span class="n">efficiency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">power_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">device_drop_v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">dead_time_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">conduction_resistance_ohm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">switching_frequency_hz</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">switching_loss_coeff_v_per_a_khz</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">target_efficiency</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.90</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return simple heuristic suggestions for improving simulated efficiency.&quot;&quot;&quot;</span>
+    <span class="n">eff</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">efficiency</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+    <span class="n">pf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">power_factor</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">target_efficiency</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+    <span class="n">suggestions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">eff</span> <span class="o">&lt;</span> <span class="n">target</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">device_drop_v</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">suggestions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Reduce inverter device drop or choose lower-Vf switching devices.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">dead_time_fraction</span> <span class="o">&gt;</span> <span class="mf">0.01</span><span class="p">:</span>
+            <span class="n">suggestions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Reduce dead-time fraction if switching margins allow it.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">conduction_resistance_ohm</span> <span class="o">&gt;</span> <span class="mf">0.01</span><span class="p">:</span>
+            <span class="n">suggestions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Lower conduction resistance to reduce current-dependent voltage drop.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">switching_frequency_hz</span> <span class="o">&gt;</span> <span class="mf">12000.0</span> <span class="ow">and</span> <span class="n">switching_loss_coeff_v_per_a_khz</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">suggestions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Lower PWM switching frequency or switching-loss coefficient to trade ripple for lower inverter losses.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">pf</span> <span class="o">&lt;</span> <span class="mf">0.90</span><span class="p">:</span>
+        <span class="n">suggestions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">&quot;Improve power factor with PFC tuning or a less reactive operating point.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">suggestions</span><span class="p">:</span>
+        <span class="n">suggestions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">&quot;Current inverter settings are already near the requested efficiency target.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;efficiency&quot;</span><span class="p">:</span> <span class="n">eff</span><span class="p">,</span>
+        <span class="s2">&quot;power_factor&quot;</span><span class="p">:</span> <span class="n">pf</span><span class="p">,</span>
+        <span class="s2">&quot;target_efficiency&quot;</span><span class="p">:</span> <span class="n">target</span><span class="p">,</span>
+        <span class="s2">&quot;needs_attention&quot;</span><span class="p">:</span> <span class="n">eff</span> <span class="o">&lt;</span> <span class="n">target</span> <span class="ow">or</span> <span class="n">pf</span> <span class="o">&lt;</span> <span class="mf">0.90</span><span class="p">,</span>
+        <span class="s2">&quot;suggestions&quot;</span><span class="p">:</span> <span class="n">suggestions</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="PowerFactorController">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.PowerFactorController">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PowerFactorController</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple closed-loop power factor correction command generator.</span>
+
+<span class="sd">    The controller estimates a reactive compensation command from current PF,</span>
+<span class="sd">    active power, and a target PF. It is designed as a non-invasive telemetry</span>
+<span class="sd">    hook for simulation workflows.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PowerFactorController.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.PowerFactorController.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">target_pf</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">kp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.10</span><span class="p">,</span>
+        <span class="n">ki</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">max_compensation_var</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10000.0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">target_pf</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;target_pf must be in (0, 1]&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kp</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">ki</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;kp and ki must be non-negative&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">max_compensation_var</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;max_compensation_var must be positive&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_pf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">target_pf</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ki</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ki</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_compensation_var</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_compensation_var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">integral</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_command_var</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_error</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="PowerFactorController.reset">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.PowerFactorController.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">integral</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_command_var</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_error</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="PowerFactorController.update">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.PowerFactorController.update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_pf</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">active_power_w</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update controller and return recommended compensation [VAR].&quot;&quot;&quot;</span>
+        <span class="n">pf_now</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">current_pf</span><span class="p">))</span>
+        <span class="n">pf_now</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">pf_now</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">active_power_w</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dt</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">p</span> <span class="o">&lt;=</span> <span class="mf">1e-9</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_pf</span> <span class="o">-</span> <span class="n">pf_now</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_command_var</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_pf</span> <span class="o">-</span> <span class="n">pf_now</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">integral</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">integral</span> <span class="o">+</span> <span class="n">error</span> <span class="o">*</span> <span class="n">dt</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">pf_now</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">baseline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_compensation_var</span>
+        <span class="k">elif</span> <span class="n">pf_now</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_pf</span><span class="p">:</span>
+            <span class="n">baseline</span> <span class="o">=</span> <span class="n">required_reactive_compensation</span><span class="p">(</span>
+                <span class="n">active_power_w</span><span class="o">=</span><span class="n">p</span><span class="p">,</span>
+                <span class="n">current_pf</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">pf_now</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">),</span>
+                <span class="n">target_pf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_pf</span><span class="p">,</span>
+            <span class="p">)[</span><span class="s2">&quot;required_compensation_var&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">baseline</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="n">trim</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kp</span> <span class="o">*</span> <span class="n">error</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ki</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">integral</span><span class="p">)</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">baseline</span> <span class="o">+</span> <span class="n">trim</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_compensation_var</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_error</span> <span class="o">=</span> <span class="n">error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_command_var</span> <span class="o">=</span> <span class="n">command</span>
+        <span class="k">return</span> <span class="n">command</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SupplyProfile">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.SupplyProfile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SupplyProfile</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract base class for supply voltage profiles.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SupplyProfile.get_voltage">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.SupplyProfile.get_voltage">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return supply voltage at time t.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SupplyProfile.reset">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.SupplyProfile.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset profile state if applicable.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ConstantSupply">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.ConstantSupply">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConstantSupply</span><span class="p">(</span><span class="n">SupplyProfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Constant DC voltage supply.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ConstantSupply.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.ConstantSupply.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voltage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">48.0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">voltage</span> <span class="o">=</span> <span class="n">voltage</span></div>
+
+
+<div class="viewcode-block" id="ConstantSupply.get_voltage">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.ConstantSupply.get_voltage">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RampSupply">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.RampSupply">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RampSupply</span><span class="p">(</span><span class="n">SupplyProfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Linear ramp of supply voltage.</span>
+
+<span class="sd">    Allows simulating startup charge or sag.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RampSupply.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.RampSupply.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">final</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Duration must be positive&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial</span> <span class="o">=</span> <span class="n">initial</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final</span> <span class="o">=</span> <span class="n">final</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">duration</span></div>
+
+
+<div class="viewcode-block" id="RampSupply.get_voltage">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.RampSupply.get_voltage">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">time</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial</span>
+        <span class="k">elif</span> <span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">final</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slope</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">final</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial</span> <span class="o">+</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">time</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VariableSupply">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.VariableSupply">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VariableSupply</span><span class="p">(</span><span class="n">SupplyProfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom time-dependent supply using function or data points.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VariableSupply.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.VariableSupply.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">voltage_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_points</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">voltage_points</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">voltage_func</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">time_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Provide either voltage_func or time_points&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">voltage_func</span> <span class="o">=</span> <span class="n">voltage_func</span>
+        <span class="k">if</span> <span class="n">time_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">voltage_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;voltage_points required with time_points&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">time_points</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">voltage_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">voltage_points</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_array</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voltage_array</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;time and voltage lists must have same length&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_array</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_array</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;time_points must be sorted ascending&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_array</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">voltage_array</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="VariableSupply.get_voltage">
+<a class="viewcode-back" href="../../../api/generated/src.core.power_model.html#src.core.power_model.VariableSupply.get_voltage">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voltage_func</span><span class="p">(</span><span class="n">time</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">time</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_array</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_array</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+            <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_array</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_array</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">v0</span><span class="p">,</span> <span class="n">v1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_array</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_array</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">v0</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">v1</span> <span class="o">-</span> <span class="n">v0</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

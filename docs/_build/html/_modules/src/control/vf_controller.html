@@ -1,0 +1,547 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.control.vf_controller &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.control.vf_controller</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.control.vf_controller</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">V/f Controller Module</span>
+<span class="sd">=====================</span>
+
+<span class="sd">This module implements a Voltage-to-Frequency (V/f) control block for BLDC motor.</span>
+
+<span class="sd">V/f control provides a simple, effective way to control motor speed without</span>
+<span class="sd">complex feedback systems. It generates a voltage ramp profile proportional to</span>
+<span class="sd">desired frequency/speed.</span>
+
+<span class="sd">Commonly used for:</span>
+<span class="sd">- Motor soft-start</span>
+<span class="sd">- Speed ramping</span>
+<span class="sd">- Simple open-loop speed control</span>
+<span class="sd">- Sequential voltage buildup</span>
+
+<span class="sd">:author: BLDC Control Team</span>
+<span class="sd">:version: 1.0.0</span>
+
+<span class="sd">.. versionadded:: 1.0.0</span>
+<span class="sd">    Initial V/f controller implementation</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base_controller</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseController</span>
+
+
+<div class="viewcode-block" id="VFController">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VFController</span><span class="p">(</span><span class="n">BaseController</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Voltage-to-Frequency (V/f) Controller</span>
+<span class="sd">    ======================================</span>
+
+<span class="sd">    Implements V/f characteristic for open-loop motor control.</span>
+
+<span class="sd">    **V/f Relationship:**</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        V(f) = V_0 + K_{vf} \\cdot f</span>
+
+<span class="sd">    Where:</span>
+<span class="sd">        - V₀: Starting voltage (to overcome friction)</span>
+<span class="sd">        - K_vf: V/f slope constant</span>
+<span class="sd">        - f: Desired frequency [Hz]</span>
+
+<span class="sd">    **Features:**</span>
+<span class="sd">    - Linear V/f characteristic</span>
+<span class="sd">    - Voltage ramp limiting (soft-start)</span>
+<span class="sd">    - Frequency slew-rate limiting</span>
+<span class="sd">    - Voltage saturation</span>
+<span class="sd">    - Real-time modulation output</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; controller = VFController(</span>
+<span class="sd">        ...     v_nominal=48.0,</span>
+<span class="sd">        ...     f_nominal=100.0,</span>
+<span class="sd">        ...     dc_voltage=48.0</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; controller.set_speed_reference(50.0)  # Hz</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; for i in range(100):</span>
+<span class="sd">        ...     mag, angle = controller.update(dt=0.001)</span>
+<span class="sd">        ...     # Apply to SVM</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VFController.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">v_nominal</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">f_nominal</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">dc_voltage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">48.0</span><span class="p">,</span>
+        <span class="n">v_startup</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">ramp_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize V/f controller.</span>
+
+<span class="sd">        :param v_nominal: Nominal motor voltage [V]</span>
+<span class="sd">        :type v_nominal: float</span>
+<span class="sd">        :param f_nominal: Nominal motor frequency [Hz]</span>
+<span class="sd">        :type f_nominal: float</span>
+<span class="sd">        :param dc_voltage: DC bus voltage [V], defaults to 48.0</span>
+<span class="sd">        :type dc_voltage: float</span>
+<span class="sd">        :param v_startup: Starting voltage to overcome friction [V], defaults to 1.0</span>
+<span class="sd">        :type v_startup: float</span>
+<span class="sd">        :param ramp_rate: Voltage ramp rate limit [V/s], defaults to 10.0</span>
+<span class="sd">        :type ramp_rate: float</span>
+
+<span class="sd">        :raises ValueError: If f_nominal &lt;= 0</span>
+<span class="sd">        :raises ValueError: If v_nominal &lt;= 0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">f_nominal</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Nominal frequency must be positive&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">v_nominal</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Nominal voltage must be positive&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_nominal</span> <span class="o">=</span> <span class="n">v_nominal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_nominal</span> <span class="o">=</span> <span class="n">f_nominal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dc_voltage</span> <span class="o">=</span> <span class="n">dc_voltage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_startup</span> <span class="o">=</span> <span class="n">v_startup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ramp_rate</span> <span class="o">=</span> <span class="n">ramp_rate</span>
+
+        <span class="c1"># V/f slope</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kv_f</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_nominal</span> <span class="o">-</span> <span class="n">v_startup</span><span class="p">)</span> <span class="o">/</span> <span class="n">f_nominal</span> <span class="k">if</span> <span class="n">f_nominal</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="c1"># State</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># Reference frequency [Hz]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># Actual frequency [Hz]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">voltage_actual</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># Actual voltage magnitude [V]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># Voltage angle [rad]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle_velocity</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># dθ/dt = 2π*f</span>
+
+        <span class="c1"># Limits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_voltage</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">dc_voltage</span>  <span class="c1"># For linear SVM</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_slew_rate</span> <span class="o">=</span> <span class="mf">50.0</span>  <span class="c1"># [Hz/s]</span>
+
+        <span class="c1"># Startup boost (optional)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_startup_boost</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_boost_time</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># Duration to apply boost [s]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_timer</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Standard V/f startup sequence: align -&gt; ramp -&gt; steady run.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_enabled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span> <span class="o">=</span> <span class="s2">&quot;run&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_duration_s</span> <span class="o">=</span> <span class="mf">0.05</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_voltage_v</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">v_startup</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_angle</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_ramp_initial_frequency_hz</span> <span class="o">=</span> <span class="mf">2.0</span></div>
+
+
+<div class="viewcode-block" id="VFController.set_startup_sequence">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.set_startup_sequence">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_startup_sequence</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">enable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">align_duration_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">align_voltage_v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span>
+        <span class="n">align_angle_deg</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">ramp_initial_frequency_hz</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure the standard V/f startup sequence.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">align_duration_s</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;align_duration_s must be non-negative&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">align_voltage_v</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;align_voltage_v must be non-negative&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ramp_initial_frequency_hz</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ramp_initial_frequency_hz must be non-negative&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_enabled</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_duration_s</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">align_duration_s</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_voltage_v</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">align_voltage_v</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_angle</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">align_angle_deg</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_ramp_initial_frequency_hz</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ramp_initial_frequency_hz</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_startup_sequence_runtime</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_enter_startup_phase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Switch V/f startup phase and reset phase-local timers.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span> <span class="o">=</span> <span class="n">phase</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="n">phase</span> <span class="o">==</span> <span class="s2">&quot;align&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_angle</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle_velocity</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">elif</span> <span class="n">phase</span> <span class="o">==</span> <span class="s2">&quot;open_loop&quot;</span><span class="p">:</span>
+            <span class="n">sign</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span> <span class="o">=</span> <span class="n">sign</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_ramp_initial_frequency_hz</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span> <span class="o">=</span> <span class="s2">&quot;run&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset_startup_sequence_runtime</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset V/f startup runtime state.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_enabled</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span> <span class="o">=</span> <span class="s2">&quot;run&quot;</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_duration_s</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_enter_startup_phase</span><span class="p">(</span><span class="s2">&quot;align&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_enter_startup_phase</span><span class="p">(</span><span class="s2">&quot;open_loop&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_vf_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute V/f voltage magnitude including startup boost.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">1e-12</span><span class="p">:</span>
+            <span class="n">voltage</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">voltage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_startup</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">kv_f</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_startup_boost</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_timer</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_boost_time</span><span class="p">:</span>
+                <span class="n">boost</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v_startup</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
+                    <span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_timer</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_boost_time</span>
+                <span class="p">)</span>
+                <span class="n">voltage</span> <span class="o">+=</span> <span class="n">boost</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">startup_timer</span> <span class="o">+=</span> <span class="n">dt</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">startup_timer</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">voltage</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_voltage</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">voltage_actual</span> <span class="o">=</span> <span class="n">voltage</span>
+        <span class="k">return</span> <span class="n">voltage</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_open_loop_frequency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Advance frequency reference toward its target with slew limiting.&quot;&quot;&quot;</span>
+        <span class="n">delta_f_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_slew_rate</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="n">delta_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span><span class="p">,</span> <span class="o">-</span><span class="n">delta_f_max</span><span class="p">,</span> <span class="n">delta_f_max</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span> <span class="o">+=</span> <span class="n">delta_f</span>
+
+<div class="viewcode-block" id="VFController.set_speed_reference">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.set_speed_reference">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_speed_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequency</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set reference frequency (speed).</span>
+
+<span class="sd">        :param frequency: Desired frequency [Hz], can be negative for reverse</span>
+<span class="sd">        :type frequency: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VFController.get_speed_reference">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.get_speed_reference">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_speed_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get current speed reference.</span>
+
+<span class="sd">        :return: Reference frequency [Hz]</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span></div>
+
+
+<div class="viewcode-block" id="VFController.update">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update controller state and generate voltage command.</span>
+
+<span class="sd">        **Algorithm:**</span>
+<span class="sd">        1. Apply frequency slew-rate limiting</span>
+<span class="sd">        2. Calculate V/f voltage from frequency</span>
+<span class="sd">        3. Apply startup boost if needed</span>
+<span class="sd">        4. Saturate voltage to maximum</span>
+<span class="sd">        5. Update phase angle</span>
+<span class="sd">        6. Return voltage magnitude and angle</span>
+
+<span class="sd">        :param dt: Time step [seconds]</span>
+<span class="sd">        :type dt: float</span>
+<span class="sd">        :return: Tuple of (magnitude [V], angle [rad])</span>
+<span class="sd">        :rtype: tuple</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            f_{actual}(t+dt) = f_{actual} + \\text{clamp}(f_{ref} - f_{actual},</span>
+<span class="sd">                                                             -\\Delta f, \\Delta f)</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            V(t) = V_0 + K_{vf} \\cdot |f_{actual}|</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\theta(t+dt) = \\theta(t) + 2\\pi \\cdot f_{actual} \\cdot dt</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_elapsed_s</span> <span class="o">+=</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase_elapsed_s</span> <span class="o">+=</span> <span class="n">dt</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_enabled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span> <span class="o">==</span> <span class="s2">&quot;align&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">voltage_actual</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_align_voltage_v</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_voltage</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_angle</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle_velocity</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase_elapsed_s</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_duration_s</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_enter_startup_phase</span><span class="p">(</span><span class="s2">&quot;open_loop&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_actual</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_enabled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;open_loop&quot;</span><span class="p">,</span> <span class="s2">&quot;run&quot;</span><span class="p">}:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_open_loop_frequency</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+            <span class="n">voltage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_vf_voltage</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle_velocity</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle_velocity</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span> <span class="o">==</span> <span class="s2">&quot;open_loop&quot;</span><span class="p">:</span>
+                <span class="n">tol_hz</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">tol_hz</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_enter_startup_phase</span><span class="p">(</span><span class="s2">&quot;run&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">voltage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_open_loop_frequency</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">voltage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_vf_voltage</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+        <span class="c1"># Update phase angle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle_velocity</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle_velocity</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">%</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">voltage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span></div>
+
+
+<div class="viewcode-block" id="VFController.set_vf_characteristic">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.set_vf_characteristic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_vf_characteristic</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">v_startup</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_nominal</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_nominal</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Configure V/f characteristic.</span>
+
+<span class="sd">        :param v_startup: Startup voltage [V]</span>
+<span class="sd">        :type v_startup: float</span>
+<span class="sd">        :param v_nominal: Nominal voltage [V]</span>
+<span class="sd">        :type v_nominal: float</span>
+<span class="sd">        :param f_nominal: Nominal frequency [Hz]</span>
+<span class="sd">        :type f_nominal: float</span>
+
+<span class="sd">        :raises ValueError: If f_nominal &lt;= 0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">f_nominal</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Nominal frequency must be positive&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_startup</span> <span class="o">=</span> <span class="n">v_startup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_nominal</span> <span class="o">=</span> <span class="n">v_nominal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_nominal</span> <span class="o">=</span> <span class="n">f_nominal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kv_f</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_nominal</span> <span class="o">-</span> <span class="n">v_startup</span><span class="p">)</span> <span class="o">/</span> <span class="n">f_nominal</span></div>
+
+
+<div class="viewcode-block" id="VFController.set_frequency_slew_rate">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.set_frequency_slew_rate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_frequency_slew_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slew_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set frequency ramp rate limit.</span>
+
+<span class="sd">        :param slew_rate: Maximum frequency change [Hz/s]</span>
+<span class="sd">        :type slew_rate: float</span>
+
+<span class="sd">        :raises ValueError: If slew_rate &lt; 0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">slew_rate</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Slew rate must be non-negative&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_slew_rate</span> <span class="o">=</span> <span class="n">slew_rate</span></div>
+
+
+<div class="viewcode-block" id="VFController.set_voltage_ramp_rate">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.set_voltage_ramp_rate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_voltage_ramp_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ramp_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set voltage ramp rate limit.</span>
+
+<span class="sd">        :param ramp_rate: Maximum voltage change [V/s]</span>
+<span class="sd">        :type ramp_rate: float</span>
+
+<span class="sd">        :raises ValueError: If ramp_rate &lt; 0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ramp_rate</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ramp rate must be non-negative&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ramp_rate</span> <span class="o">=</span> <span class="n">ramp_rate</span></div>
+
+
+<div class="viewcode-block" id="VFController.enable_startup_boost">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.enable_startup_boost">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_startup_boost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enable/disable startup boost phase.</span>
+
+<span class="sd">        Startup boost applies extra voltage for specified duration to help</span>
+<span class="sd">        break inertia and accelerate the motor faster at low speeds.</span>
+
+<span class="sd">        :param enable: Enable or disable boost</span>
+<span class="sd">        :type enable: bool</span>
+<span class="sd">        :param duration: Boost duration [seconds]</span>
+<span class="sd">        :type duration: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_startup_boost</span> <span class="o">=</span> <span class="n">enable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_boost_time</span> <span class="o">=</span> <span class="n">duration</span></div>
+
+
+<div class="viewcode-block" id="VFController.reset">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset controller to initial state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">voltage_actual</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle_velocity</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_timer</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_startup_sequence_runtime</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="VFController.get_state">
+<a class="viewcode-back" href="../../../api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.get_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get controller state variables.</span>
+
+<span class="sd">        :return: State dictionary</span>
+<span class="sd">        :rtype: dict</span>
+
+<span class="sd">        **Keys:**</span>
+<span class="sd">            - &#39;frequency_ref&#39;: Reference frequency [Hz]</span>
+<span class="sd">            - &#39;frequency_actual&#39;: Actual frequency [Hz]</span>
+<span class="sd">            - &#39;voltage&#39;: Actual voltage magnitude [V]</span>
+<span class="sd">            - &#39;angle&#39;: Voltage phase angle [rad]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;frequency_ref&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_ref</span><span class="p">,</span>
+            <span class="s2">&quot;frequency_actual&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency_actual</span><span class="p">,</span>
+            <span class="s2">&quot;voltage&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_actual</span><span class="p">,</span>
+            <span class="s2">&quot;angle&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">,</span>
+            <span class="s2">&quot;startup_sequence_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_enabled</span><span class="p">,</span>
+            <span class="s2">&quot;startup_phase&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span><span class="p">,</span>
+            <span class="s2">&quot;startup_phase_code&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;align&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;open_loop&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase</span><span class="p">,</span> <span class="mf">0.0</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;startup_sequence_elapsed_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_sequence_elapsed_s</span><span class="p">,</span>
+            <span class="s2">&quot;startup_phase_elapsed_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_phase_elapsed_s</span><span class="p">,</span>
+            <span class="s2">&quot;startup_align_duration_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_duration_s</span><span class="p">,</span>
+            <span class="s2">&quot;startup_align_voltage_v&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_voltage_v</span><span class="p">,</span>
+            <span class="s2">&quot;startup_align_angle_rad&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_angle</span><span class="p">,</span>
+            <span class="s2">&quot;startup_ramp_initial_frequency_hz&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_ramp_initial_frequency_hz</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

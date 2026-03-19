@@ -1,0 +1,1370 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control Module &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="src.control.base_controller" href="generated/src.control.base_controller.html" />
+    <link rel="prev" title="Motor Model" href="motor_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="motor_model.html">Motor Model</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Control Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/src.control.base_controller.html">src.control.base_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/src.control.foc_controller.html">src.control.foc_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/src.control.vf_controller.html">src.control.vf_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/src.control.svm_generator.html">src.control.svm_generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/src.control.transforms.html">src.control.transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#base-controller-module">Base Controller Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.base_controller.BaseController"><code class="docutils literal notranslate"><span class="pre">BaseController</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.base_controller.BaseController.update"><code class="docutils literal notranslate"><span class="pre">BaseController.update()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.base_controller.BaseController.reset"><code class="docutils literal notranslate"><span class="pre">BaseController.reset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.base_controller.BaseController.get_state"><code class="docutils literal notranslate"><span class="pre">BaseController.get_state()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#field-oriented-control-foc-module">Field-Oriented Control (FOC) Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.foc_controller.FOCController"><code class="docutils literal notranslate"><span class="pre">FOCController</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.__init__"><code class="docutils literal notranslate"><span class="pre">FOCController.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_angle_observer"><code class="docutils literal notranslate"><span class="pre">FOCController.set_angle_observer()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_startup_transition"><code class="docutils literal notranslate"><span class="pre">FOCController.set_startup_transition()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_startup_sequence"><code class="docutils literal notranslate"><span class="pre">FOCController.set_startup_sequence()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_pll_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_pll_gains()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_smo_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_smo_gains()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_sensorless_blend"><code class="docutils literal notranslate"><span class="pre">FOCController.set_sensorless_blend()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_cascaded_speed_loop"><code class="docutils literal notranslate"><span class="pre">FOCController.set_cascaded_speed_loop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_speed_pi_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_speed_pi_gains()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_decoupling"><code class="docutils literal notranslate"><span class="pre">FOCController.set_decoupling()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_current_pi_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_current_pi_gains()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_voltage_saturation"><code class="docutils literal notranslate"><span class="pre">FOCController.set_voltage_saturation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_current_references"><code class="docutils literal notranslate"><span class="pre">FOCController.set_current_references()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_speed_reference"><code class="docutils literal notranslate"><span class="pre">FOCController.set_speed_reference()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_field_weakening"><code class="docutils literal notranslate"><span class="pre">FOCController.set_field_weakening()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.auto_tune_pi"><code class="docutils literal notranslate"><span class="pre">FOCController.auto_tune_pi()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.update"><code class="docutils literal notranslate"><span class="pre">FOCController.update()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.reset"><code class="docutils literal notranslate"><span class="pre">FOCController.reset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.get_state"><code class="docutils literal notranslate"><span class="pre">FOCController.get_state()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#v-f-controller-module">V/f Controller Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.vf_controller.VFController"><code class="docutils literal notranslate"><span class="pre">VFController</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.__init__"><code class="docutils literal notranslate"><span class="pre">VFController.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.set_startup_sequence"><code class="docutils literal notranslate"><span class="pre">VFController.set_startup_sequence()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.set_speed_reference"><code class="docutils literal notranslate"><span class="pre">VFController.set_speed_reference()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.get_speed_reference"><code class="docutils literal notranslate"><span class="pre">VFController.get_speed_reference()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.update"><code class="docutils literal notranslate"><span class="pre">VFController.update()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.set_vf_characteristic"><code class="docutils literal notranslate"><span class="pre">VFController.set_vf_characteristic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.set_frequency_slew_rate"><code class="docutils literal notranslate"><span class="pre">VFController.set_frequency_slew_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.set_voltage_ramp_rate"><code class="docutils literal notranslate"><span class="pre">VFController.set_voltage_ramp_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.enable_startup_boost"><code class="docutils literal notranslate"><span class="pre">VFController.enable_startup_boost()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.reset"><code class="docutils literal notranslate"><span class="pre">VFController.reset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.vf_controller.VFController.get_state"><code class="docutils literal notranslate"><span class="pre">VFController.get_state()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#svm-generator-module">SVM Generator Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_device_drop"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_device_drop</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.device_drop_v"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.device_drop_v</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_dead_time"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_dead_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.dead_time_fraction"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.dead_time_fraction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_conduction_drop"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_conduction_drop</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.conduction_resistance_ohm"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.conduction_resistance_ohm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_switching_loss"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_switching_loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.switching_frequency_hz"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.switching_frequency_hz</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.switching_loss_coeff_v_per_a_khz"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.switching_loss_coeff_v_per_a_khz</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_diode_freewheel"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_diode_freewheel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.diode_drop_v"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.diode_drop_v</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.diode_resistance_ohm"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.diode_resistance_ohm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_min_pulse"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_min_pulse</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.min_pulse_fraction"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.min_pulse_fraction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_bus_ripple"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_bus_ripple</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.dc_link_capacitance_f"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.dc_link_capacitance_f</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.dc_link_source_resistance_ohm"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.dc_link_source_resistance_ohm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.dc_link_esr_ohm"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.dc_link_esr_ohm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_thermal_coupling"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_thermal_coupling</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.thermal_resistance_k_per_w"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.thermal_resistance_k_per_w</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.thermal_capacitance_j_per_k"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.thermal_capacitance_j_per_k</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.ambient_temperature_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.ambient_temperature_c</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.temp_coeff_resistance_per_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.temp_coeff_resistance_per_c</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.temp_coeff_drop_per_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.temp_coeff_drop_per_c</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_phase_asymmetry"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_phase_asymmetry</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_a"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_voltage_scale_a</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_b"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_voltage_scale_b</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_voltage_scale_c</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_a"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_drop_scale_a</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_b"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_drop_scale_b</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_drop_scale_c</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.__init__"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator"><code class="docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.__init__"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.set_sample_time"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.set_sample_time()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.reset_realism_state"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.reset_realism_state()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.modulate"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.modulate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.get_maximum_voltage"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.get_maximum_voltage()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.device_drop_v"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.device_drop_v</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.dead_time_fraction"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.dead_time_fraction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.conduction_resistance_ohm"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.conduction_resistance_ohm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.switching_frequency_hz"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.switching_frequency_hz</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.switching_loss_coeff_v_per_a_khz"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.switching_loss_coeff_v_per_a_khz</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.set_nonidealities"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.set_nonidealities()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.set_phase_currents"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.set_phase_currents()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.get_last_telemetry"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.get_last_telemetry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.get_realism_state"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.get_realism_state()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.set_dc_voltage"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.set_dc_voltage()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.svm_generator.CartesianSVMGenerator"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.CartesianSVMGenerator.modulate_cartesian"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator.modulate_cartesian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.CartesianSVMGenerator.cartesian_to_threephase"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator.cartesian_to_threephase()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#coordinate-transformations-for-motor-control">Coordinate Transformations for Motor Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.transforms.clarke_transform"><code class="docutils literal notranslate"><span class="pre">clarke_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.transforms.inverse_clarke"><code class="docutils literal notranslate"><span class="pre">inverse_clarke()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.transforms.park_transform"><code class="docutils literal notranslate"><span class="pre">park_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.transforms.inverse_park"><code class="docutils literal notranslate"><span class="pre">inverse_park()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.transforms.concordia_transform"><code class="docutils literal notranslate"><span class="pre">concordia_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.control.transforms.inverse_concordia"><code class="docutils literal notranslate"><span class="pre">inverse_concordia()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Control Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/control.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="control-module">
+<h1>Control Module<a class="headerlink" href="#control-module" title="Link to this heading"></a></h1>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.base_controller.html#module-src.control.base_controller" title="src.control.base_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.base_controller</span></code></a></p></td>
+<td><p>Base Controller Module</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/src.control.foc_controller.html#module-src.control.foc_controller" title="src.control.foc_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.foc_controller</span></code></a></p></td>
+<td><p>Field-Oriented Control (FOC) Module</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.vf_controller.html#module-src.control.vf_controller" title="src.control.vf_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.vf_controller</span></code></a></p></td>
+<td><p>V/f Controller Module</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/src.control.svm_generator.html#module-src.control.svm_generator" title="src.control.svm_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.svm_generator</span></code></a></p></td>
+<td><p>SVM Generator Module</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.transforms.html#module-src.control.transforms" title="src.control.transforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.transforms</span></code></a></p></td>
+<td><p>Coordinate Transformations for Motor Control
+
+:2: (WARNING/2) Title underline too short.
+
+Coordinate Transformations for Motor Control
+===========================================</p></td>
+</tr>
+</tbody>
+</table>
+<section id="base-controller-module">
+<span id="module-src.control.base_controller"></span><h2>Base Controller Module<a class="headerlink" href="#base-controller-module" title="Link to this heading"></a></h2>
+<p>This module provides the abstract base class for all control blocks.</p>
+<p>Defines the interface that all controllers must implement for consistency
+and future device integration (e.g., FOC, sensorless control).</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial base controller implementation</p>
+</div>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.base_controller.BaseController">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.base_controller.</span></span><span class="sig-name descname"><span class="pre">BaseController</span></span><a class="reference internal" href="../_modules/src/control/base_controller.html#BaseController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.base_controller.BaseController" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Abstract base class for motor controllers.</p>
+<p>All control algorithms (V/f, FOC, etc.) inherit from this class.</p>
+<p><strong>Minimum interface:</strong>
+- update(dt): Calculate control output
+- reset(): Reset to initial state
+- get_state(): Return current state</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.base_controller.BaseController.update">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/base_controller.html#BaseController.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.base_controller.BaseController.update" title="Link to this definition"></a></dt>
+<dd><p>Update controller and calculate control output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time step [seconds]</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Control output (controller-specific)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.base_controller.BaseController.reset">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/base_controller.html#BaseController.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.base_controller.BaseController.reset" title="Link to this definition"></a></dt>
+<dd><p>Reset controller to initial state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.base_controller.BaseController.get_state">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/base_controller.html#BaseController.get_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.base_controller.BaseController.get_state" title="Link to this definition"></a></dt>
+<dd><p>Get controller state variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with controller state</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<section id="field-oriented-control-foc-module">
+<span id="module-src.control.foc_controller"></span><h2>Field-Oriented Control (FOC) Module<a class="headerlink" href="#field-oriented-control-foc-module" title="Link to this heading"></a></h2>
+<p>Implements basic FOC algorithm with PI current regulators and optional
+auto-tuning functionality. Supports choosing Clarke or Concordia
+transforms and running in either polar or Cartesian output modes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial FOC implementation with PI regulators and auto-tune stub</p>
+</div>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.foc_controller.</span></span><span class="sig-name descname"><span class="pre">FOCController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_concordia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_cartesian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_speed_loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="generated/src.control.base_controller.html#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
+<p>Basic Field-Oriented Controller supporting current loops and speed
+reference.  Designed for integration with SVM generator, returning either
+(magnitude, angle) or Cartesian (v_alpha, v_beta) depending on mode.</p>
+<dl class="simple">
+<dt><strong>Features:</strong></dt><dd><ul class="simple">
+<li><p>d/q current PI regulators</p></li>
+<li><p>speed reference (via iq setpoint)</p></li>
+<li><p>optional auto-tuning stub</p></li>
+<li><p>transform choice (clarke or concordia)</p></li>
+<li><p>output in polar or Cartesian</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_concordia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_cartesian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_speed_loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize FOC controller.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>motor</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="motor_model.html#src.core.motor_model.BLDCMotor" title="src.core.motor_model.BLDCMotor"><code class="xref py py-class docutils literal notranslate"><span class="pre">BLDCMotor</span></code></a></span>) – BLDCMotor instance for state feedback</p></li>
+<li><p><strong>use_concordia</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Choose concordia transform instead of Clarke</p></li>
+<li><p><strong>output_cartesian</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If True, return (v_alpha, v_beta) instead of
+magnitude/angle</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_angle_observer">
+<span class="sig-name descname"><span class="pre">set_angle_observer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Measured'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_angle_observer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_angle_observer" title="Link to this definition"></a></dt>
+<dd><p>Set electrical angle observer mode: Measured, PLL or SMO.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_startup_transition">
+<span class="sig-name descname"><span class="pre">set_startup_transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Measured'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_elapsed_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_emf_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_hold_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_hysteresis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fallback_enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fallback_hold_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_startup_transition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_startup_transition" title="Link to this definition"></a></dt>
+<dd><p>Configure observer startup handoff from an initial to target mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_startup_sequence">
+<span class="sig-name descname"><span class="pre">set_startup_sequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_duration_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_current_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_angle_deg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_initial_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_target_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_ramp_time_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_id_ref_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_iq_ref_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_startup_sequence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_startup_sequence" title="Link to this definition"></a></dt>
+<dd><p>Configure a standard sensored/sensorless startup sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_pll_gains">
+<span class="sig-name descname"><span class="pre">set_pll_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ki</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_pll_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_pll_gains" title="Link to this definition"></a></dt>
+<dd><p>Set PLL observer gains.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_smo_gains">
+<span class="sig-name descname"><span class="pre">set_smo_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k_slide</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lpf_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.06</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_smo_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_smo_gains" title="Link to this definition"></a></dt>
+<dd><p>Set SMO-like observer gains and smoothing constants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_sensorless_blend">
+<span class="sig-name descname"><span class="pre">set_sensorless_blend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">250.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.65</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_sensorless_blend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_sensorless_blend" title="Link to this definition"></a></dt>
+<dd><p>Configure low-speed sensorless angle blending behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_cascaded_speed_loop">
+<span class="sig-name descname"><span class="pre">set_cascaded_speed_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iq_limit_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_cascaded_speed_loop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_cascaded_speed_loop" title="Link to this definition"></a></dt>
+<dd><p>Enable/disable cascaded speed-&gt;iq loop and optionally set iq clamp.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_speed_pi_gains">
+<span class="sig-name descname"><span class="pre">set_speed_pi_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ki</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kaw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_speed_pi_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_speed_pi_gains" title="Link to this definition"></a></dt>
+<dd><p>Set speed loop PI gains for cascaded control mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_decoupling">
+<span class="sig-name descname"><span class="pre">set_decoupling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable_d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_decoupling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_decoupling" title="Link to this definition"></a></dt>
+<dd><p>Enable/disable optional d/q decoupling feed-forward compensation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_current_pi_gains">
+<span class="sig-name descname"><span class="pre">set_current_pi_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_ki</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_ki</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kaw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_current_pi_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_current_pi_gains" title="Link to this definition"></a></dt>
+<dd><p>Set d/q current PI gains and anti-windup gain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_voltage_saturation">
+<span class="sig-name descname"><span class="pre">set_voltage_saturation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'proportional'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled_antiwindup_enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled_antiwindup_gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_voltage_saturation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_voltage_saturation" title="Link to this definition"></a></dt>
+<dd><p>Configure dq voltage saturation strategy and optional coupled anti-windup.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_current_references">
+<span class="sig-name descname"><span class="pre">set_current_references</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iq_ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_current_references"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_current_references" title="Link to this definition"></a></dt>
+<dd><p>Set d/q current references.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_speed_reference">
+<span class="sig-name descname"><span class="pre">set_speed_reference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">speed_rpm</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_speed_reference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_speed_reference" title="Link to this definition"></a></dt>
+<dd><p>Set speed reference (rpm). qi reference will be derived from it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_field_weakening">
+<span class="sig-name descname"><span class="pre">set_field_weakening</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_negative_id_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">headroom_target_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_field_weakening"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_field_weakening" title="Link to this definition"></a></dt>
+<dd><p>Configure voltage-headroom-based field-weakening d-axis current injection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.auto_tune_pi">
+<span class="sig-name descname"><span class="pre">auto_tune_pi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'q'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandwidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.auto_tune_pi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.auto_tune_pi" title="Link to this definition"></a></dt>
+<dd><p>Auto-tune PI parameters for given axis (‘d’ or ‘q’).</p>
+<p>This is a placeholder using simple heuristics.  A real implementation
+would perform step responses to estimate Ku and Tu and apply
+Ziegler–Nichols or IMC rules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.update" title="Link to this definition"></a></dt>
+<dd><p>Update controller and return voltage command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time step [s]</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Either (magnitude, angle) or (v_alpha, v_beta) depending on
+<cite>output_cartesian</cite> setting.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.reset" title="Link to this definition"></a></dt>
+<dd><p>Reset controller state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.get_state">
+<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.get_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.get_state" title="Link to this definition"></a></dt>
+<dd><p>Return controller state variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<section id="v-f-controller-module">
+<span id="module-src.control.vf_controller"></span><h2>V/f Controller Module<a class="headerlink" href="#v-f-controller-module" title="Link to this heading"></a></h2>
+<p>This module implements a Voltage-to-Frequency (V/f) control block for BLDC motor.</p>
+<p>V/f control provides a simple, effective way to control motor speed without
+complex feedback systems. It generates a voltage ramp profile proportional to
+desired frequency/speed.</p>
+<p>Commonly used for:
+- Motor soft-start
+- Speed ramping
+- Simple open-loop speed control
+- Sequential voltage buildup</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial V/f controller implementation</p>
+</div>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.vf_controller.</span></span><span class="sig-name descname"><span class="pre">VFController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_startup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ramp_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="generated/src.control.base_controller.html#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
+<section id="voltage-to-frequency-v-f-controller">
+<h2>Voltage-to-Frequency (V/f) Controller<a class="headerlink" href="#voltage-to-frequency-v-f-controller" title="Link to this heading"></a></h2>
+<p>Implements V/f characteristic for open-loop motor control.</p>
+<p><strong>V/f Relationship:</strong></p>
+<div class="math notranslate nohighlight">
+\[V(f) = V_0 + K_{vf} \cdot f\]</div>
+<dl class="simple">
+<dt>Where:</dt><dd><ul class="simple">
+<li><p>V₀: Starting voltage (to overcome friction)</p></li>
+<li><p>K_vf: V/f slope constant</p></li>
+<li><p>f: Desired frequency [Hz]</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Features:</strong>
+- Linear V/f characteristic
+- Voltage ramp limiting (soft-start)
+- Frequency slew-rate limiting
+- Voltage saturation
+- Real-time modulation output</p>
+<dl>
+<dt>Example:</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">controller</span> <span class="o">=</span> <span class="n">VFController</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">v_nominal</span><span class="o">=</span><span class="mf">48.0</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">f_nominal</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dc_voltage</span><span class="o">=</span><span class="mf">48.0</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">controller</span><span class="o">.</span><span class="n">set_speed_reference</span><span class="p">(</span><span class="mf">50.0</span><span class="p">)</span>  <span class="c1"># Hz</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">mag</span><span class="p">,</span> <span class="n">angle</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="c1"># Apply to SVM</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_startup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ramp_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize V/f controller.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_nominal</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Nominal motor voltage [V]</p></li>
+<li><p><strong>f_nominal</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Nominal motor frequency [Hz]</p></li>
+<li><p><strong>dc_voltage</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – DC bus voltage [V], defaults to 48.0</p></li>
+<li><p><strong>v_startup</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Starting voltage to overcome friction [V], defaults to 1.0</p></li>
+<li><p><strong>ramp_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Voltage ramp rate limit [V/s], defaults to 10.0</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If f_nominal &lt;= 0</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If v_nominal &lt;= 0</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.set_startup_sequence">
+<span class="sig-name descname"><span class="pre">set_startup_sequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_duration_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_voltage_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_angle_deg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ramp_initial_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.set_startup_sequence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.set_startup_sequence" title="Link to this definition"></a></dt>
+<dd><p>Configure the standard V/f startup sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.set_speed_reference">
+<span class="sig-name descname"><span class="pre">set_speed_reference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequency</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.set_speed_reference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.set_speed_reference" title="Link to this definition"></a></dt>
+<dd><p>Set reference frequency (speed).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frequency</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Desired frequency [Hz], can be negative for reverse</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.get_speed_reference">
+<span class="sig-name descname"><span class="pre">get_speed_reference</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.get_speed_reference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.get_speed_reference" title="Link to this definition"></a></dt>
+<dd><p>Get current speed reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Reference frequency [Hz]</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.update" title="Link to this definition"></a></dt>
+<dd><p>Update controller state and generate voltage command.</p>
+<p><strong>Algorithm:</strong>
+1. Apply frequency slew-rate limiting
+2. Calculate V/f voltage from frequency
+3. Apply startup boost if needed
+4. Saturate voltage to maximum
+5. Update phase angle
+6. Return voltage magnitude and angle</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time step [seconds]</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (magnitude [V], angle [rad])</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></span></p>
+</dd>
+</dl>
+<div class="math notranslate nohighlight">
+\[f_{actual}(t+dt) = f_{actual} + \text{clamp}(f_{ref} - f_{actual},
+                                                 -\Delta f, \Delta f)\]</div>
+<div class="math notranslate nohighlight">
+\[V(t) = V_0 + K_{vf} \cdot |f_{actual}|\]</div>
+<div class="math notranslate nohighlight">
+\[\theta(t+dt) = \theta(t) + 2\pi \cdot f_{actual} \cdot dt\]</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.set_vf_characteristic">
+<span class="sig-name descname"><span class="pre">set_vf_characteristic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_startup</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_nominal</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.set_vf_characteristic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.set_vf_characteristic" title="Link to this definition"></a></dt>
+<dd><p>Configure V/f characteristic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_startup</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Startup voltage [V]</p></li>
+<li><p><strong>v_nominal</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Nominal voltage [V]</p></li>
+<li><p><strong>f_nominal</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Nominal frequency [Hz]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If f_nominal &lt;= 0</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.set_frequency_slew_rate">
+<span class="sig-name descname"><span class="pre">set_frequency_slew_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slew_rate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.set_frequency_slew_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.set_frequency_slew_rate" title="Link to this definition"></a></dt>
+<dd><p>Set frequency ramp rate limit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>slew_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Maximum frequency change [Hz/s]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If slew_rate &lt; 0</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.set_voltage_ramp_rate">
+<span class="sig-name descname"><span class="pre">set_voltage_ramp_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ramp_rate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.set_voltage_ramp_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.set_voltage_ramp_rate" title="Link to this definition"></a></dt>
+<dd><p>Set voltage ramp rate limit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ramp_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Maximum voltage change [V/s]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If ramp_rate &lt; 0</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.enable_startup_boost">
+<span class="sig-name descname"><span class="pre">enable_startup_boost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.enable_startup_boost"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.enable_startup_boost" title="Link to this definition"></a></dt>
+<dd><p>Enable/disable startup boost phase.</p>
+<p>Startup boost applies extra voltage for specified duration to help
+break inertia and accelerate the motor faster at low speeds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>enable</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Enable or disable boost</p></li>
+<li><p><strong>duration</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Boost duration [seconds]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.reset" title="Link to this definition"></a></dt>
+<dd><p>Reset controller to initial state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.vf_controller.VFController.get_state">
+<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController.get_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController.get_state" title="Link to this definition"></a></dt>
+<dd><p>Get controller state variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>State dictionary</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt><strong>Keys:</strong></dt><dd><ul class="simple">
+<li><p>‘frequency_ref’: Reference frequency [Hz]</p></li>
+<li><p>‘frequency_actual’: Actual frequency [Hz]</p></li>
+<li><p>‘voltage’: Actual voltage magnitude [V]</p></li>
+<li><p>‘angle’: Voltage phase angle [rad]</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<section id="svm-generator-module">
+<span id="module-src.control.svm_generator"></span><h2>SVM Generator Module<a class="headerlink" href="#svm-generator-module" title="Link to this heading"></a></h2>
+<p>This module implements Space Vector Modulation (SVM) for 3-phase voltage
+generation and includes an optional stateful inverter-realism layer.</p>
+<p>The realism layer is deliberately lightweight compared to a switching-device
+transient simulator, but it captures the most important inverter effects used in
+drive-system studies:</p>
+<ul class="simple">
+<li><p>Constant semiconductor conduction drop</p></li>
+<li><p>Current-dependent conduction loss</p></li>
+<li><p>Switching-frequency-dependent voltage loss</p></li>
+<li><p>Direction-aware dead-time distortion</p></li>
+<li><p>Freewheel diode path loss</p></li>
+<li><p>Minimum pulse suppression near zero voltage</p></li>
+<li><p>DC-link capacitor/ESR/source-resistance dynamics</p></li>
+<li><p>Junction-temperature-dependent parameter drift</p></li>
+<li><p>Per-phase asymmetry and mismatch</p></li>
+</ul>
+<p>Each realism feature can be enabled or disabled independently so the simulator
+can be tuned from ideal-average behavior up to a more realistic reduced-order
+inverter model.</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.svm_generator.</span></span><span class="sig-name descname"><span class="pre">InverterRealismConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable_device_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_dead_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_conduction_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_switching_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_diode_freewheel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_min_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_pulse_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_bus_ripple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_capacitance_f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_source_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_esr_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_thermal_coupling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_resistance_k_per_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_capacitance_j_per_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambient_temperature_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_resistance_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_drop_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_phase_asymmetry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#InverterRealismConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Configuration container for all switchable inverter-realism blocks.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_device_drop">
+<span class="sig-name descname"><span class="pre">enable_device_drop</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_device_drop" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.device_drop_v">
+<span class="sig-name descname"><span class="pre">device_drop_v</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.device_drop_v" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_dead_time">
+<span class="sig-name descname"><span class="pre">enable_dead_time</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_dead_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.dead_time_fraction">
+<span class="sig-name descname"><span class="pre">dead_time_fraction</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.dead_time_fraction" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_conduction_drop">
+<span class="sig-name descname"><span class="pre">enable_conduction_drop</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_conduction_drop" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.conduction_resistance_ohm">
+<span class="sig-name descname"><span class="pre">conduction_resistance_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.conduction_resistance_ohm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_switching_loss">
+<span class="sig-name descname"><span class="pre">enable_switching_loss</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_switching_loss" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.switching_frequency_hz">
+<span class="sig-name descname"><span class="pre">switching_frequency_hz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.switching_frequency_hz" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.switching_loss_coeff_v_per_a_khz">
+<span class="sig-name descname"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.switching_loss_coeff_v_per_a_khz" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_diode_freewheel">
+<span class="sig-name descname"><span class="pre">enable_diode_freewheel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_diode_freewheel" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.diode_drop_v">
+<span class="sig-name descname"><span class="pre">diode_drop_v</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.diode_drop_v" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.diode_resistance_ohm">
+<span class="sig-name descname"><span class="pre">diode_resistance_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.diode_resistance_ohm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_min_pulse">
+<span class="sig-name descname"><span class="pre">enable_min_pulse</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_min_pulse" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.min_pulse_fraction">
+<span class="sig-name descname"><span class="pre">min_pulse_fraction</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.min_pulse_fraction" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_bus_ripple">
+<span class="sig-name descname"><span class="pre">enable_bus_ripple</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_bus_ripple" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.dc_link_capacitance_f">
+<span class="sig-name descname"><span class="pre">dc_link_capacitance_f</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.dc_link_capacitance_f" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.dc_link_source_resistance_ohm">
+<span class="sig-name descname"><span class="pre">dc_link_source_resistance_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.dc_link_source_resistance_ohm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.dc_link_esr_ohm">
+<span class="sig-name descname"><span class="pre">dc_link_esr_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.dc_link_esr_ohm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_thermal_coupling">
+<span class="sig-name descname"><span class="pre">enable_thermal_coupling</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_thermal_coupling" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.thermal_resistance_k_per_w">
+<span class="sig-name descname"><span class="pre">thermal_resistance_k_per_w</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.thermal_resistance_k_per_w" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.thermal_capacitance_j_per_k">
+<span class="sig-name descname"><span class="pre">thermal_capacitance_j_per_k</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.thermal_capacitance_j_per_k" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.ambient_temperature_c">
+<span class="sig-name descname"><span class="pre">ambient_temperature_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">25.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.ambient_temperature_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.temp_coeff_resistance_per_c">
+<span class="sig-name descname"><span class="pre">temp_coeff_resistance_per_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.temp_coeff_resistance_per_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.temp_coeff_drop_per_c">
+<span class="sig-name descname"><span class="pre">temp_coeff_drop_per_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.temp_coeff_drop_per_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_phase_asymmetry">
+<span class="sig-name descname"><span class="pre">enable_phase_asymmetry</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_phase_asymmetry" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_a">
+<span class="sig-name descname"><span class="pre">phase_voltage_scale_a</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_a" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_b">
+<span class="sig-name descname"><span class="pre">phase_voltage_scale_b</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_b" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_c">
+<span class="sig-name descname"><span class="pre">phase_voltage_scale_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_drop_scale_a">
+<span class="sig-name descname"><span class="pre">phase_drop_scale_a</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_a" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_drop_scale_b">
+<span class="sig-name descname"><span class="pre">phase_drop_scale_b</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_b" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_drop_scale_c">
+<span class="sig-name descname"><span class="pre">phase_drop_scale_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable_device_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_dead_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_conduction_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_switching_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_diode_freewheel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_min_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_pulse_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_bus_ripple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_capacitance_f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_source_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_esr_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_thermal_coupling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_resistance_k_per_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_capacitance_j_per_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambient_temperature_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_resistance_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_drop_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_phase_asymmetry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.svm_generator.</span></span><span class="sig-name descname"><span class="pre">SVMGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Space Vector Modulation Generator.</p>
+<p>The core SVM implementation remains an averaged inverter model. Realism is
+layered on top of that average model so users can independently enable or
+disable each effect.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.set_sample_time">
+<span class="sig-name descname"><span class="pre">set_sample_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_time_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.set_sample_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.set_sample_time" title="Link to this definition"></a></dt>
+<dd><p>Set simulation step used by bus and thermal state updates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.reset_realism_state">
+<span class="sig-name descname"><span class="pre">reset_realism_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.reset_realism_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.reset_realism_state" title="Link to this definition"></a></dt>
+<dd><p>Reset capacitor voltage, temperature, and cached telemetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.modulate">
+<span class="sig-name descname"><span class="pre">modulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitude</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angle</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.modulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.modulate" title="Link to this definition"></a></dt>
+<dd><p>Generate 3-phase SVM voltages and apply enabled realism blocks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.get_maximum_voltage">
+<span class="sig-name descname"><span class="pre">get_maximum_voltage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.get_maximum_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.get_maximum_voltage" title="Link to this definition"></a></dt>
+<dd><p>Return presently available linear-range SVM voltage magnitude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.device_drop_v">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">device_drop_v</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.device_drop_v" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to configured device drop.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.dead_time_fraction">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dead_time_fraction</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.dead_time_fraction" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to configured dead-time fraction.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.conduction_resistance_ohm">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">conduction_resistance_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.conduction_resistance_ohm" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to conduction resistance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.switching_frequency_hz">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">switching_frequency_hz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.switching_frequency_hz" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to switching frequency.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.switching_loss_coeff_v_per_a_khz">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.switching_loss_coeff_v_per_a_khz" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to switching-loss coefficient.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.set_nonidealities">
+<span class="sig-name descname"><span class="pre">set_nonidealities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_device_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_dead_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_conduction_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_switching_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_diode_freewheel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_min_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_pulse_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_bus_ripple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_capacitance_f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_source_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_esr_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_thermal_coupling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_resistance_k_per_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_capacitance_j_per_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambient_temperature_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_resistance_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_drop_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_phase_asymmetry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.set_nonidealities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.set_nonidealities" title="Link to this definition"></a></dt>
+<dd><p>Configure inverter-realism parameters and explicit feature toggles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.set_phase_currents">
+<span class="sig-name descname"><span class="pre">set_phase_currents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase_currents</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.set_phase_currents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.set_phase_currents" title="Link to this definition"></a></dt>
+<dd><p>Provide phase currents used by current-dependent inverter effects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.get_last_telemetry">
+<span class="sig-name descname"><span class="pre">get_last_telemetry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.get_last_telemetry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.get_last_telemetry" title="Link to this definition"></a></dt>
+<dd><p>Return telemetry from the last modulation step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.get_realism_state">
+<span class="sig-name descname"><span class="pre">get_realism_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.get_realism_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.get_realism_state" title="Link to this definition"></a></dt>
+<dd><p>Return the complete inverter configuration and runtime state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.set_dc_voltage">
+<span class="sig-name descname"><span class="pre">set_dc_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#SVMGenerator.set_dc_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.set_dc_voltage" title="Link to this definition"></a></dt>
+<dd><p>Update the source DC bus value seen by the inverter model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.svm_generator.</span></span><span class="sig-name descname"><span class="pre">CartesianSVMGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#CartesianSVMGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.CartesianSVMGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="generated/src.control.svm_generator.html#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></p>
+<p>Extended SVM generator accepting Cartesian alpha-beta voltages.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator.modulate_cartesian">
+<span class="sig-name descname"><span class="pre">modulate_cartesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">valpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vbeta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#CartesianSVMGenerator.modulate_cartesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.CartesianSVMGenerator.modulate_cartesian" title="Link to this definition"></a></dt>
+<dd><p>Generate SVM voltages from Cartesian alpha-beta coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator.cartesian_to_threephase">
+<span class="sig-name descname"><span class="pre">cartesian_to_threephase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">valpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vbeta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#CartesianSVMGenerator.cartesian_to_threephase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.CartesianSVMGenerator.cartesian_to_threephase" title="Link to this definition"></a></dt>
+<dd><p>Convert Cartesian alpha-beta voltages to 3-phase quantities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<section id="coordinate-transformations-for-motor-control">
+<span id="module-src.control.transforms"></span><h2>Coordinate Transformations for Motor Control<a class="headerlink" href="#coordinate-transformations-for-motor-control" title="Link to this heading"></a></h2>
+<p>Provides Clark, Park, and Concordia transforms used in FOC algorithms.
+Both forward (3-phase to two-axis) and inverse transforms are supported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial implementation of coordinate transforms</p>
+</div>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.clarke_transform">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">clarke_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">va</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/transforms.html#clarke_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.clarke_transform" title="Link to this definition"></a></dt>
+<dd><p>Clarke transform (three-phase to stationary two-axis alpha-beta)
+assuming va + vb + vc = 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>va</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase A voltage/current</p></li>
+<li><p><strong>vb</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase B voltage/current</p></li>
+<li><p><strong>vc</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase C voltage/current</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(v_alpha, v_beta)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.inverse_clarke">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">inverse_clarke</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_beta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/transforms.html#inverse_clarke"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.inverse_clarke" title="Link to this definition"></a></dt>
+<dd><p>Inverse Clarke transform (alpha-beta to three-phase)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_alpha</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Alpha-axis quantity</p></li>
+<li><p><strong>v_beta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Beta-axis quantity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(va, vb, vc)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.park_transform">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">park_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/transforms.html#park_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.park_transform" title="Link to this definition"></a></dt>
+<dd><p>Park transform (alpha-beta to rotating d-q frame).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_alpha</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Alpha-axis quantity</p></li>
+<li><p><strong>v_beta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Beta-axis quantity</p></li>
+<li><p><strong>theta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Rotor electrical angle [rad]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(v_d, v_q)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.inverse_park">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">inverse_park</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/transforms.html#inverse_park"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.inverse_park" title="Link to this definition"></a></dt>
+<dd><p>Inverse Park transform (d-q to alpha-beta frame).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_d</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – d-axis quantity</p></li>
+<li><p><strong>v_q</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – q-axis quantity</p></li>
+<li><p><strong>theta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Rotor electrical angle [rad]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(v_alpha, v_beta)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.concordia_transform">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">concordia_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">va</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/transforms.html#concordia_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.concordia_transform" title="Link to this definition"></a></dt>
+<dd><p>Concordia (also called symmetrical component) transform which is
+formally equivalent to Clark but keeps factor of 2/3 scaling.  Useful
+when zero-sequence components are important.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>va</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase A quantity</p></li>
+<li><p><strong>vb</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase B quantity</p></li>
+<li><p><strong>vc</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase C quantity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(alpha, beta) in same units</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.inverse_concordia">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">inverse_concordia</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/transforms.html#inverse_concordia"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.inverse_concordia" title="Link to this definition"></a></dt>
+<dd><p>Inverse Concordia transform (alpha-beta back to three-phase).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – alpha-axis quantity</p></li>
+<li><p><strong>beta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – beta-axis quantity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(va, vb, vc)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="motor_model.html" class="btn btn-neutral float-left" title="Motor Model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="generated/src.control.base_controller.html" class="btn btn-neutral float-right" title="src.control.base_controller" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

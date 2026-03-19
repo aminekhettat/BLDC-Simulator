@@ -1,0 +1,209 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.utils.speech &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Architecture" href="../../architecture.html" />
+    <link rel="prev" title="src.utils.data_logger" href="src.utils.data_logger.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ui.html">User Interface</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">Utilities</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="src.utils.config.html">src.utils.config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.utils.data_logger.html">src.utils.data_logger</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">src.utils.speech</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.utils.speech.set_audio_assistance_enabled"><code class="docutils literal notranslate"><span class="pre">set_audio_assistance_enabled()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.utils.speech.is_audio_assistance_enabled"><code class="docutils literal notranslate"><span class="pre">is_audio_assistance_enabled()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.utils.speech.speak"><code class="docutils literal notranslate"><span class="pre">speak()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#configuration-module">Configuration Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#data-logger-module">Data Logger Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#src.utils.data_logger.DataLogger"><code class="docutils literal notranslate"><span class="pre">DataLogger</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#src.utils.speech.set_audio_assistance_enabled"><code class="docutils literal notranslate"><span class="pre">set_audio_assistance_enabled()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#src.utils.speech.is_audio_assistance_enabled"><code class="docutils literal notranslate"><span class="pre">is_audio_assistance_enabled()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#src.utils.speech.speak"><code class="docutils literal notranslate"><span class="pre">speak()</span></code></a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../utils.html">Utilities</a></li>
+      <li class="breadcrumb-item active">src.utils.speech</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/api/generated/src.utils.speech.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-src.utils.speech">
+<span id="src-utils-speech"></span><h1>src.utils.speech<a class="headerlink" href="#module-src.utils.speech" title="Link to this heading"></a></h1>
+<p>Simple vocal assistance utility.</p>
+<p>Provides text-to-speech output to assist visually impaired users. The module
+wraps <cite>pyttsx3</cite> if installed, otherwise falls back to printing to console.</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../utils.html#src.utils.speech.is_audio_assistance_enabled" title="src.utils.speech.is_audio_assistance_enabled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_audio_assistance_enabled</span></code></a>()</p></td>
+<td><p>Return current global audio-assistance state.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../utils.html#src.utils.speech.set_audio_assistance_enabled" title="src.utils.speech.set_audio_assistance_enabled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_audio_assistance_enabled</span></code></a>(enabled)</p></td>
+<td><p>Enable or disable text-to-speech output globally.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../utils.html#src.utils.speech.speak" title="src.utils.speech.speak"><code class="xref py py-obj docutils literal notranslate"><span class="pre">speak</span></code></a>(message[, rate])</p></td>
+<td><p>Announce a message vocally.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.utils.speech.set_audio_assistance_enabled">
+<span class="sig-prename descclassname"><span class="pre">src.utils.speech.</span></span><span class="sig-name descname"><span class="pre">set_audio_assistance_enabled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/utils/speech.html#set_audio_assistance_enabled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.utils.speech.set_audio_assistance_enabled" title="Link to this definition"></a></dt>
+<dd><p>Enable or disable text-to-speech output globally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.utils.speech.is_audio_assistance_enabled">
+<span class="sig-prename descclassname"><span class="pre">src.utils.speech.</span></span><span class="sig-name descname"><span class="pre">is_audio_assistance_enabled</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/utils/speech.html#is_audio_assistance_enabled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.utils.speech.is_audio_assistance_enabled" title="Link to this definition"></a></dt>
+<dd><p>Return current global audio-assistance state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.utils.speech.speak">
+<span class="sig-prename descclassname"><span class="pre">src.utils.speech.</span></span><span class="sig-name descname"><span class="pre">speak</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/utils/speech.html#speak"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.utils.speech.speak" title="Link to this definition"></a></dt>
+<dd><p>Announce a message vocally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Text to speak</p></li>
+<li><p><strong>rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – Optional speech rate (words per minute)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="src.utils.data_logger.html" class="btn btn-neutral float-left" title="src.utils.data_logger" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../architecture.html" class="btn btn-neutral float-right" title="Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

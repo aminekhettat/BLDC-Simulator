@@ -1,0 +1,1081 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.core.simulation_engine &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.core.simulation_engine</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.core.simulation_engine</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Simulation Engine Module</span>
+<span class="sd">========================</span>
+
+<span class="sd">This module implements the main simulation loop that coordinates</span>
+<span class="sd">motor model, control blocks, load profile, and data logging.</span>
+
+<span class="sd">Provides efficient real-time simulation with optimized calculations.</span>
+
+<span class="sd">:author: BLDC Control Team</span>
+<span class="sd">:version: 1.0.0</span>
+
+<span class="sd">.. versionadded:: 1.0.0</span>
+<span class="sd">    Initial implementation of simulation engine</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.motor_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">BLDCMotor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.load_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoadProfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.hardware</span><span class="w"> </span><span class="kn">import</span> <span class="n">HardwareInterface</span><span class="p">,</span> <span class="n">InverterCurrentSense</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.compute_backend</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_compute_backend</span><span class="p">,</span> <span class="n">as_dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.power_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SupplyProfile</span><span class="p">,</span>
+    <span class="n">ConstantSupply</span><span class="p">,</span>
+    <span class="n">PowerFactorController</span><span class="p">,</span>
+    <span class="n">compute_efficiency_metrics</span><span class="p">,</span>
+    <span class="n">compute_power_metrics</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="SimulationEngine">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimulationEngine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main simulation engine for BLDC motor control.</span>
+
+<span class="sd">    Orchestrates motor simulation with:</span>
+<span class="sd">    - Motor model state evolution</span>
+<span class="sd">    - Load profile application</span>
+<span class="sd">    - Voltage input (from SVM or control blocks)</span>
+<span class="sd">    - Data logging and history tracking</span>
+
+<span class="sd">    **Features:**</span>
+<span class="sd">    - Efficient NumPy-based calculations</span>
+<span class="sd">    - Real-time data logging</span>
+<span class="sd">    - State history tracking</span>
+<span class="sd">    - Simulation time management</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; params = MotorParameters(...)</span>
+<span class="sd">        &gt;&gt;&gt; motor = BLDCMotor(params, dt=0.0001)</span>
+<span class="sd">        &gt;&gt;&gt; load = ConstantLoad(torque=1.0)</span>
+<span class="sd">        &gt;&gt;&gt; engine = SimulationEngine(motor, load, dt=0.0001)</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; for i in range(10000):</span>
+<span class="sd">        ...     voltages = np.array([10, -5, -5])</span>
+<span class="sd">        ...     engine.step(voltages)</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; history = engine.get_history()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SimulationEngine.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">motor</span><span class="p">:</span> <span class="n">BLDCMotor</span><span class="p">,</span>
+        <span class="n">load_profile</span><span class="p">:</span> <span class="n">LoadProfile</span><span class="p">,</span>
+        <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">,</span>
+        <span class="n">max_history</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">,</span>
+        <span class="n">supply_profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SupplyProfile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">pfc_controller</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PowerFactorController</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">pfc_window_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
+        <span class="n">hardware_interface</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">HardwareInterface</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">current_sense</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InverterCurrentSense</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compute_backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize simulation engine.</span>
+
+<span class="sd">        :param motor: BLDC motor model (:class:`BLDCMotor`)</span>
+<span class="sd">        :type motor: BLDCMotor</span>
+<span class="sd">        :param load_profile: Load profile (:class:`LoadProfile`)</span>
+<span class="sd">        :type load_profile: LoadProfile</span>
+<span class="sd">        :param dt: Simulation time step [seconds], defaults to 0.0001</span>
+<span class="sd">        :type dt: float</span>
+<span class="sd">        :param max_history: Maximum history samples to store, defaults to 100000</span>
+<span class="sd">        :type max_history: int</span>
+
+<span class="sd">        :raises ValueError: If dt &lt;= 0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dt</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Time step dt must be positive&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">motor</span> <span class="o">=</span> <span class="n">motor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_profile</span> <span class="o">=</span> <span class="n">load_profile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_history</span> <span class="o">=</span> <span class="n">max_history</span>
+
+        <span class="c1"># supply profile (dc bus voltage)</span>
+        <span class="k">if</span> <span class="n">supply_profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># default uses nominal constant supply</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">supply_profile</span> <span class="o">=</span> <span class="n">ConstantSupply</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">supply_profile</span> <span class="o">=</span> <span class="n">supply_profile</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span> <span class="o">=</span> <span class="n">pfc_controller</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pfc_window_samples</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">pfc_window_samples</span><span class="p">),</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_enabled</span> <span class="o">=</span> <span class="n">pfc_controller</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span> <span class="o">=</span> <span class="n">hardware_interface</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span> <span class="o">=</span> <span class="n">current_sense</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_enabled</span> <span class="o">=</span> <span class="n">hardware_interface</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_enabled</span><span class="p">,</span>
+            <span class="s2">&quot;connected&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="n">hardware_interface</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">hardware_interface</span> <span class="k">else</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;write_count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;read_count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;last_io_error&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;last_feedback&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compute_backend_state</span> <span class="o">=</span> <span class="n">resolve_compute_backend</span><span class="p">(</span><span class="n">compute_backend</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_sense_state</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;topology&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span><span class="o">.</span><span class="n">topology</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span> <span class="k">else</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;phase_voltage_drop_v&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+            <span class="s2">&quot;amplifier_outputs_v&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">&quot;adc_saturated&quot;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">is_connected</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;last_io_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;power_factor&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;active_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;apparent_power_va&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;reactive_power_var&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;compensation_command_var&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;target_pf&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">pfc_controller</span><span class="o">.</span><span class="n">target_pf</span><span class="p">)</span> <span class="k">if</span> <span class="n">pfc_controller</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;electrical_input_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;mechanical_output_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;regenerative_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;total_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;efficiency&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;inverter_total_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;effective_dc_voltage&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;dc_link_ripple_v&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;dc_link_bus_current_a&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;motor_terminal_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;device_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;conduction_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;switching_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;dead_time_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;diode_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;total_inverter_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;junction_temperature_c&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;common_mode_voltage&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;min_pulse_event_count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;pwm_frequency_hz&quot;</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="s2">&quot;control_period_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="s2">&quot;calc_duration_s&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;calc_duration_avg_s&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;calc_duration_max_s&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;cpu_load_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;cpu_load_avg_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;sample_count&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Simulation state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># History buffers (pre-allocated for efficiency)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_times</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_a</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_b</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_c</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_omega</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_theta</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_speed</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_a</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_b</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_c</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_torque</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_load_torque</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_a</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_b</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_c</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_supply_voltage</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_input_current</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_input_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_pf</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_pfc_command</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_mechanical_output_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_total_loss_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_efficiency</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_effective_dc_voltage</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dc_link_ripple_v</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dc_link_bus_current_a</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_device_loss_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_conduction_loss_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_switching_loss_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dead_time_loss_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_diode_loss_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_inverter_total_loss_power</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_inverter_junction_temp_c</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_common_mode_voltage</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_min_pulse_event_count</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_control_calc_duration_s</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_control_cpu_load_pct</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_history</span>
+        <span class="p">)</span>
+
+        <span class="c1"># State variables cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_state_dict</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.set_inverter_telemetry">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.set_inverter_telemetry">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_inverter_telemetry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">telemetry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update latest inverter telemetry packet from the modulation stage.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">telemetry</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">telemetry</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_inverter_state">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_inverter_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inverter_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return latest inverter telemetry and runtime diagnostics.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.set_pwm_frequency">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.set_pwm_frequency">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_pwm_frequency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pwm_frequency_hz</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure PWM/control period metadata used for timing telemetry.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pwm_frequency_hz</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pwm_frequency_hz must be positive&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;pwm_frequency_hz&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">pwm_frequency_hz</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;control_period_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">pwm_frequency_hz</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.record_control_timing">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.record_control_timing">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">record_control_timing</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">calc_duration_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">control_period_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record controller compute duration and update CPU-load estimates.&quot;&quot;&quot;</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">calc_duration_s</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">control_period_s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">control_period_s</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;control_period_s must be positive&quot;</span><span class="p">)</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">control_period_s</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;control_period_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">period</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;pwm_frequency_hz&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">period</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;control_period_s&quot;</span><span class="p">]),</span> <span class="mf">1e-12</span><span class="p">)</span>
+
+        <span class="n">cpu_load_pct</span> <span class="o">=</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="n">duration</span> <span class="o">/</span> <span class="n">period</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;sample_count&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1.0</span>
+        <span class="n">avg_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;calc_duration_avg_s&quot;</span><span class="p">]</span>
+        <span class="n">avg_cpu_load</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;cpu_load_avg_pct&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;calc_duration_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;calc_duration_avg_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">avg_duration</span> <span class="o">+</span> <span class="p">(</span><span class="n">duration</span> <span class="o">-</span> <span class="n">avg_duration</span><span class="p">)</span> <span class="o">/</span> <span class="n">count</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;calc_duration_max_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;calc_duration_max_s&quot;</span><span class="p">],</span> <span class="n">duration</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;cpu_load_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cpu_load_pct</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;cpu_load_avg_pct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">avg_cpu_load</span> <span class="o">+</span> <span class="p">(</span><span class="n">cpu_load_pct</span> <span class="o">-</span> <span class="n">avg_cpu_load</span><span class="p">)</span> <span class="o">/</span> <span class="n">count</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">[</span><span class="s2">&quot;sample_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_control_timing_state">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_control_timing_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_control_timing_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return runtime control-timing and CPU-load telemetry.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.set_compute_backend">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.set_compute_backend">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_compute_backend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set compute backend policy: auto, cpu, or gpu.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compute_backend_state</span> <span class="o">=</span> <span class="n">resolve_compute_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_compute_backend_state">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_compute_backend_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_compute_backend_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return currently selected compute backend state.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_compute_backend_state</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.step">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.step">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voltages</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">log_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute one simulation step.</span>
+
+<span class="sd">        Updates motor state, applies load, and optionally logs data.</span>
+
+<span class="sd">        :param voltages: 3-phase input voltages [v_a, v_b, v_c] [V]</span>
+<span class="sd">        :type voltages: np.ndarray</span>
+<span class="sd">        :param log_data: Whether to log data to history, defaults to True</span>
+<span class="sd">        :type log_data: bool</span>
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            Set log_data=False during high-frequency real-time control loops,</span>
+<span class="sd">            then call :meth:`log_data` periodically to reduce overhead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># supply voltage at this time</span>
+        <span class="n">supply_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">supply_profile</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+        <span class="c1"># Get load torque at current simulation time</span>
+        <span class="n">load_torque</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_profile</span><span class="o">.</span><span class="n">get_torque</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+        <span class="n">effective_voltages</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">voltages</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">effective_voltages</span><span class="p">,</span> <span class="n">phase_drop</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span><span class="o">.</span><span class="n">apply_shunt_voltage_drop</span><span class="p">(</span>
+                    <span class="n">effective_voltages</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">currents</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_current_sense_state</span><span class="p">[</span><span class="s2">&quot;phase_voltage_drop_v&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">phase_drop</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_enabled</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">is_connected</span>
+        <span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">write_phase_voltages</span><span class="p">(</span>
+                    <span class="n">effective_voltages</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;write_count&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="n">feedback</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">read_feedback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;read_count&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;last_feedback&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">feedback</span><span class="p">)</span>
+
+                <span class="n">fb_voltages</span> <span class="o">=</span> <span class="n">feedback</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;applied_voltages&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">fb_voltages</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">candidate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fb_voltages</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">candidate</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">3</span><span class="p">,):</span>
+                        <span class="n">effective_voltages</span> <span class="o">=</span> <span class="n">candidate</span>
+
+                <span class="n">fb_load_torque</span> <span class="o">=</span> <span class="n">feedback</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;load_torque&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">fb_load_torque</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">load_torque</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fb_load_torque</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;last_io_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="c1"># Fallback to pure simulation path if hardware I/O fails.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;last_io_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+        <span class="c1"># Execute motor dynamics step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">effective_voltages</span><span class="p">,</span> <span class="n">load_torque</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sensed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">currents</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                <span class="n">sensed</span><span class="p">[</span><span class="s2">&quot;currents_abc_measured&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_current_sense_state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;topology&quot;</span><span class="p">:</span> <span class="n">sensed</span><span class="p">[</span><span class="s2">&quot;topology&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;amplifier_outputs_v&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                        <span class="n">sensed</span><span class="p">[</span><span class="s2">&quot;amplifier_outputs_v&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                    <span class="s2">&quot;adc_saturated&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                        <span class="n">sensed</span><span class="p">[</span><span class="s2">&quot;adc_saturated&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">currents</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Log data if requested</span>
+        <span class="k">if</span> <span class="n">log_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_data</span><span class="p">(</span><span class="n">effective_voltages</span><span class="p">,</span> <span class="n">load_torque</span><span class="p">,</span> <span class="n">supply_v</span><span class="p">)</span>
+
+        <span class="c1"># Advance simulation time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_log_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">voltages</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">load_torque</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">supply_voltage</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Log simulation data to history buffers.</span>
+
+<span class="sd">        :param voltages: Applied 3-phase voltages [V]</span>
+<span class="sd">        :type voltages: np.ndarray</span>
+<span class="sd">        :param load_torque: Load torque [N*m]</span>
+<span class="sd">        :type load_torque: float</span>
+<span class="sd">        :param supply_voltage: DC bus voltage [V]</span>
+<span class="sd">        :type supply_voltage: float</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            History buffers are limited to max_history size.</span>
+<span class="sd">            When full, oldest data is dropped.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get motor state</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">get_state_dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_state_dict</span> <span class="o">=</span> <span class="n">state</span>
+
+        <span class="c1"># Append to history</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_b</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_omega</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;omega&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_theta</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_speed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;speed_rpm&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;back_emf_a&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_b</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;back_emf_b&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;back_emf_c&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_torque</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;torque&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_load_torque</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">load_torque</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">voltages</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_b</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">voltages</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">voltages</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_supply_voltage</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">supply_voltage</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_effective_dc_voltage</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;effective_dc_voltage&quot;</span><span class="p">,</span> <span class="n">supply_voltage</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dc_link_ripple_v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dc_link_ripple_v&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dc_link_bus_current_a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dc_link_bus_current_a&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_device_loss_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;device_loss_power_w&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_conduction_loss_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;conduction_loss_power_w&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_switching_loss_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;switching_loss_power_w&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dead_time_loss_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dead_time_loss_power_w&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_diode_loss_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diode_loss_power_w&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_inverter_total_loss_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_inverter_loss_power_w&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_inverter_junction_temp_c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;junction_temperature_c&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_common_mode_voltage</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;common_mode_voltage&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_min_pulse_event_count</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_pulse_event_count&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_control_calc_duration_s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;calc_duration_s&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_control_cpu_load_pct</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cpu_load_pct&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="n">i_abc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_a&quot;</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_b&quot;</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_c&quot;</span><span class="p">]],</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">p_motor_terminal</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">voltages</span><span class="p">,</span> <span class="n">i_abc</span><span class="p">))</span>
+        <span class="n">inverter_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_inverter_loss_power_w&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">p_instant</span> <span class="o">=</span> <span class="n">p_motor_terminal</span> <span class="o">+</span> <span class="n">inverter_loss</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">supply_voltage</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-9</span><span class="p">:</span>
+            <span class="n">i_in</span> <span class="o">=</span> <span class="n">p_instant</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">supply_voltage</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">i_in</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_input_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p_instant</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_input_current</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i_in</span><span class="p">)</span>
+
+        <span class="n">efficiency_metrics</span> <span class="o">=</span> <span class="n">compute_efficiency_metrics</span><span class="p">(</span>
+            <span class="n">input_power_w</span><span class="o">=</span><span class="n">p_instant</span><span class="p">,</span>
+            <span class="n">torque_nm</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;torque&quot;</span><span class="p">],</span>
+            <span class="n">omega_rad_s</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;omega&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">efficiency_metrics</span><span class="p">[</span><span class="s2">&quot;inverter_total_loss_power_w&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inverter_loss</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">efficiency_metrics</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_mechanical_output_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">efficiency_metrics</span><span class="p">[</span><span class="s2">&quot;mechanical_output_power_w&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_total_loss_power</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">efficiency_metrics</span><span class="p">[</span><span class="s2">&quot;total_loss_power_w&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_efficiency</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">efficiency_metrics</span><span class="p">[</span><span class="s2">&quot;efficiency&quot;</span><span class="p">])</span>
+
+        <span class="n">pf_now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;power_factor&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_history_pf</span> <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="n">cmd_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;compensation_command_var&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_input_current</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">8</span><span class="p">:</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pfc_window_samples</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_input_current</span><span class="p">))</span>
+            <span class="n">recent_supply</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_supply_voltage</span><span class="p">)[</span><span class="o">-</span><span class="n">w</span><span class="p">:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">)</span>
+            <span class="n">recent_input_current</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_input_current</span><span class="p">)[</span><span class="o">-</span><span class="n">w</span><span class="p">:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">)</span>
+            <span class="n">metrics</span> <span class="o">=</span> <span class="n">compute_power_metrics</span><span class="p">(</span>
+                <span class="n">recent_supply</span><span class="p">,</span>
+                <span class="n">recent_input_current</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compute_backend_state</span><span class="o">.</span><span class="n">selected</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">pf_now</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;power_factor&quot;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;power_factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pf_now</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;active_power_w&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;active_power_w&quot;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;apparent_power_va&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;apparent_power_va&quot;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;reactive_power_var&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;reactive_power_var&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_enabled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">cmd_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">current_pf</span><span class="o">=</span><span class="n">pf_now</span><span class="p">,</span>
+                    <span class="n">active_power_w</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;active_power_w&quot;</span><span class="p">]),</span>
+                    <span class="n">dt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;compensation_command_var&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cmd_var</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;target_pf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span><span class="o">.</span><span class="n">target_pf</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_pf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pf_now</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_pfc_command</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cmd_var</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SimulationEngine.configure_power_factor_control">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.configure_power_factor_control">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configure_power_factor_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">target_pf</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">kp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.10</span><span class="p">,</span>
+        <span class="n">ki</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">max_compensation_var</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10000.0</span><span class="p">,</span>
+        <span class="n">window_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enable/disable closed-loop PFC telemetry hook.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_enabled</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enabled</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pfc_window_samples</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">window_samples</span><span class="p">),</span> <span class="mi">8</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_enabled</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;target_pf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;compensation_command_var&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span> <span class="o">=</span> <span class="n">PowerFactorController</span><span class="p">(</span>
+            <span class="n">target_pf</span><span class="o">=</span><span class="n">target_pf</span><span class="p">,</span>
+            <span class="n">kp</span><span class="o">=</span><span class="n">kp</span><span class="p">,</span>
+            <span class="n">ki</span><span class="o">=</span><span class="n">ki</span><span class="p">,</span>
+            <span class="n">max_compensation_var</span><span class="o">=</span><span class="n">max_compensation_var</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">[</span><span class="s2">&quot;target_pf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">target_pf</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_power_factor_control_state">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_power_factor_control_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_power_factor_control_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return current PFC telemetry and controller state.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_enabled</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_efficiency_state">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_efficiency_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_efficiency_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return current efficiency and loss telemetry.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_efficiency_metrics</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.configure_hardware_interface">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.configure_hardware_interface">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configure_hardware_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enable or disable hardware I/O execution path at runtime.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_enabled</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enabled</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_enabled</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_enabled</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">is_connected</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">is_connected</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;last_io_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;last_io_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_enabled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">is_connected</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_hardware_state">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_hardware_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_hardware_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return hardware backend execution status and diagnostics.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.log_data">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.log_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">load_torque</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Manual data logging (for external control loops).</span>
+
+<span class="sd">        Call this periodically when using :meth:`step` with log_data=False.</span>
+
+<span class="sd">        :param load_torque: Load torque to log. If None, uses current load profile value.</span>
+<span class="sd">        :type load_torque: float, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">load_torque</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">load_torque</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_profile</span><span class="o">.</span><span class="n">get_torque</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+        <span class="c1"># Get last voltages (assume still applied)</span>
+        <span class="n">voltages</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_a</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_a</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_b</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_b</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_c</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_c</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># in manual logging we may not know supply; use current supply_profile value</span>
+        <span class="n">supply_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">supply_profile</span><span class="o">.</span><span class="n">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_data</span><span class="p">(</span><span class="n">voltages</span><span class="p">,</span> <span class="n">load_torque</span><span class="p">,</span> <span class="n">supply_v</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.reset">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset simulation to initial state.</span>
+
+<span class="sd">        Clears all history and resets motor and load profile.</span>
+
+<span class="sd">        :param initial_speed: Initial motor speed [rad/s], defaults to 0.0</span>
+<span class="sd">        :type initial_speed: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">initial_speed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_profile</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="c1"># Clear history</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_times</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_a</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_b</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_c</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_omega</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_theta</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_speed</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_a</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_b</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_c</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_torque</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_load_torque</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_a</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_b</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_c</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_supply_voltage</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_input_current</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_input_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_pf</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_pfc_command</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_mechanical_output_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_total_loss_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_efficiency</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_effective_dc_voltage</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dc_link_ripple_v</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dc_link_bus_current_a</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_device_loss_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_conduction_loss_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_switching_loss_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_dead_time_loss_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_diode_loss_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_inverter_total_loss_power</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_inverter_junction_temp_c</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_common_mode_voltage</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_min_pulse_event_count</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_control_calc_duration_s</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_history_control_cpu_load_pct</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pfc_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;power_factor&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;active_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;apparent_power_va&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;reactive_power_var&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;compensation_command_var&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;target_pf&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span><span class="o">.</span><span class="n">target_pf</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span>
+                <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_efficiency_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;electrical_input_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;mechanical_output_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;regenerative_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;total_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;efficiency&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;inverter_total_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inverter_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;effective_dc_voltage&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;dc_link_ripple_v&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;dc_link_bus_current_a&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;motor_terminal_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;device_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;conduction_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;switching_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;dead_time_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;diode_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;total_inverter_loss_power_w&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;junction_temperature_c&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;common_mode_voltage&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;min_pulse_event_count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_timing_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;pwm_frequency_hz&quot;</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+                <span class="s2">&quot;control_period_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+                <span class="s2">&quot;calc_duration_s&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;calc_duration_avg_s&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;calc_duration_max_s&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;cpu_load_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;cpu_load_avg_pct&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;sample_count&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pfc_controller</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;connected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardware_interface</span><span class="o">.</span><span class="n">is_connected</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;last_feedback&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hardware_state</span><span class="p">[</span><span class="s2">&quot;last_io_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_history">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_history">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get all simulation history as numpy arrays.</span>
+
+<span class="sd">        :return: Dictionary with history data arrays</span>
+<span class="sd">        :rtype: dict</span>
+
+<span class="sd">        **Keys:**</span>
+<span class="sd">            - &#39;time&#39;: Simulation time points [s]</span>
+<span class="sd">            - &#39;currents_a&#39;: Phase A currents [A]</span>
+<span class="sd">            - &#39;currents_b&#39;: Phase B currents [A]</span>
+<span class="sd">            - &#39;currents_c&#39;: Phase C currents [A]</span>
+<span class="sd">            - &#39;omega&#39;: Angular velocity [rad/s]</span>
+<span class="sd">            - &#39;theta&#39;: Angular position [rad]</span>
+<span class="sd">            - &#39;speed&#39;: Speed [RPM]</span>
+<span class="sd">            - &#39;emf_a&#39;: Back-EMF phase A [V]</span>
+<span class="sd">            - &#39;emf_b&#39;: Back-EMF phase B [V]</span>
+<span class="sd">            - &#39;emf_c&#39;: Back-EMF phase C [V]</span>
+<span class="sd">            - &#39;torque&#39;: Electromagnetic torque [N*m]</span>
+<span class="sd">            - &#39;load_torque&#39;: Load torque [N*m]</span>
+<span class="sd">            - &#39;voltages_a&#39;: Applied voltage phase A [V]</span>
+<span class="sd">            - &#39;voltages_b&#39;: Applied voltage phase B [V]</span>
+<span class="sd">            - &#39;voltages_c&#39;: Applied voltage phase C [V]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_times</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;currents_a&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;currents_b&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_b</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;currents_c&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_currents_c</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;omega&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_omega</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_theta</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;speed&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_speed</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;emf_a&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;emf_b&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_b</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;emf_c&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_emf_c</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;torque&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_torque</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;load_torque&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_load_torque</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;voltages_a&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;voltages_b&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_b</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;voltages_c&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_voltages_c</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;supply_voltage&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_supply_voltage</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;effective_dc_voltage&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_effective_dc_voltage</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;dc_link_ripple_v&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_dc_link_ripple_v</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;dc_link_bus_current_a&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_dc_link_bus_current_a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;input_current&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_input_current</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;input_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_input_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;power_factor&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_pf</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;pfc_command_var&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_pfc_command</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="s2">&quot;device_loss_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_device_loss_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;conduction_loss_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_conduction_loss_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;switching_loss_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_switching_loss_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;dead_time_loss_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_dead_time_loss_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;diode_loss_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_diode_loss_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;inverter_total_loss_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_inverter_total_loss_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;inverter_junction_temp_c&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_inverter_junction_temp_c</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;common_mode_voltage&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_common_mode_voltage</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;min_pulse_event_count&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_min_pulse_event_count</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;control_calc_duration_s&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_control_calc_duration_s</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;control_cpu_load_pct&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_control_cpu_load_pct</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;mechanical_output_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_mechanical_output_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;total_loss_power&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_history_total_loss_power</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;efficiency&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_efficiency</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_current_state">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_current_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_current_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get current motor state.</span>
+
+<span class="sd">        :return: Current motor state variables</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">get_state_dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_a_true&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_a&quot;</span><span class="p">]</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_b_true&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_b&quot;</span><span class="p">]</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_c_true&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_c&quot;</span><span class="p">]</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_a&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_b&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;currents_c&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">state</span><span class="p">[</span><span class="s2">&quot;current_measurement&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_sense_state</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">state</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_controller_phase_currents">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_controller_phase_currents">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_controller_phase_currents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return phase currents as seen by the control algorithm.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_measured_phase_currents</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">currents</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationEngine.get_simulation_info">
+<a class="viewcode-back" href="../../../api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.get_simulation_info">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_simulation_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get simulation metadata.</span>
+
+<span class="sd">        :return: Simulation information</span>
+<span class="sd">        :rtype: dict</span>
+
+<span class="sd">        **Keys:**</span>
+<span class="sd">            - &#39;time&#39;: Current simulation time [s]</span>
+<span class="sd">            - &#39;step_count&#39;: Number of steps executed</span>
+<span class="sd">            - &#39;dt&#39;: Time step [s]</span>
+<span class="sd">            - &#39;history_size&#39;: Number of logged data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+            <span class="s2">&quot;step_count&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span><span class="p">,</span>
+            <span class="s2">&quot;dt&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="s2">&quot;history_size&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history_times</span><span class="p">),</span>
+            <span class="s2">&quot;pfc&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_power_factor_control_state</span><span class="p">(),</span>
+            <span class="s2">&quot;efficiency_metrics&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_efficiency_state</span><span class="p">(),</span>
+            <span class="s2">&quot;inverter&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_inverter_state</span><span class="p">(),</span>
+            <span class="s2">&quot;control_timing&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_control_timing_state</span><span class="p">(),</span>
+            <span class="s2">&quot;compute_backend&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_compute_backend_state</span><span class="p">(),</span>
+            <span class="s2">&quot;hardware&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_hardware_state</span><span class="p">(),</span>
+            <span class="s2">&quot;current_measurement&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_sense_state</span><span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

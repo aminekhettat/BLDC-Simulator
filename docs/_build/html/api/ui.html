@@ -1,0 +1,864 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Interface &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="src.ui.main_window" href="generated/src.ui.main_window.html" />
+    <link rel="prev" title="src.core.load_model" href="generated/src.core.load_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="core.html">Core Module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">User Interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/src.ui.main_window.html">src.ui.main_window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/src.ui.widgets.accessible_widgets.html">src.ui.widgets.accessible_widgets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#main-gui-window-module">Main GUI Window Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.main_window.QAccessible"><code class="docutils literal notranslate"><span class="pre">QAccessible</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.main_window.AccessibleTextBlock"><code class="docutils literal notranslate"><span class="pre">AccessibleTextBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.AccessibleTextBlock.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleTextBlock.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.AccessibleTextBlock.update_value"><code class="docutils literal notranslate"><span class="pre">AccessibleTextBlock.update_value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.AccessibleTextBlock.keyPressEvent"><code class="docutils literal notranslate"><span class="pre">AccessibleTextBlock.keyPressEvent()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.main_window.SimulationThread"><code class="docutils literal notranslate"><span class="pre">SimulationThread</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.update_signal"><code class="docutils literal notranslate"><span class="pre">SimulationThread.update_signal</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.finished_signal"><code class="docutils literal notranslate"><span class="pre">SimulationThread.finished_signal</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.__init__"><code class="docutils literal notranslate"><span class="pre">SimulationThread.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.engine"><code class="docutils literal notranslate"><span class="pre">SimulationThread.engine</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.svm"><code class="docutils literal notranslate"><span class="pre">SimulationThread.svm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.controller"><code class="docutils literal notranslate"><span class="pre">SimulationThread.controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.get_latest_state"><code class="docutils literal notranslate"><span class="pre">SimulationThread.get_latest_state()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.set_simulation"><code class="docutils literal notranslate"><span class="pre">SimulationThread.set_simulation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.start_simulation"><code class="docutils literal notranslate"><span class="pre">SimulationThread.start_simulation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.stop_simulation"><code class="docutils literal notranslate"><span class="pre">SimulationThread.stop_simulation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.SimulationThread.run"><code class="docutils literal notranslate"><span class="pre">SimulationThread.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.closed"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.closed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.__init__"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.set_window_size"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.set_window_size()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.push_snapshot"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.push_snapshot()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.closeEvent"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.closeEvent()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.__init__"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.motor"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.motor</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.engine"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.engine</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.svm"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.svm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.controller"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.sim_thread"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.sim_thread</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.calib_process"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.calib_process</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.calib_output_path"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.calib_output_path</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.current_fft_window"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.current_fft_window</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.get_simulation_params_info"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.get_simulation_params_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.main_window.BLDCMotorControlGUI.closeEvent"><code class="docutils literal notranslate"><span class="pre">BLDCMotorControlGUI.closeEvent()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#accessible-widgets-module">Accessible Widgets Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleDoubleSpinBox"><code class="docutils literal notranslate"><span class="pre">AccessibleDoubleSpinBox</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleDoubleSpinBox.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleDoubleSpinBox.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleSpinBox"><code class="docutils literal notranslate"><span class="pre">AccessibleSpinBox</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleSpinBox.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleSpinBox.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleComboBox"><code class="docutils literal notranslate"><span class="pre">AccessibleComboBox</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleComboBox.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleComboBox.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleButton"><code class="docutils literal notranslate"><span class="pre">AccessibleButton</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleButton.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleButton.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleButton.keyPressEvent"><code class="docutils literal notranslate"><span class="pre">AccessibleButton.keyPressEvent()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleGroupBox"><code class="docutils literal notranslate"><span class="pre">AccessibleGroupBox</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleGroupBox.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleGroupBox.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleTabWidget"><code class="docutils literal notranslate"><span class="pre">AccessibleTabWidget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleTabWidget.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleTabWidget.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox"><code class="docutils literal notranslate"><span class="pre">LabeledSpinBox</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox.valueChanged"><code class="docutils literal notranslate"><span class="pre">LabeledSpinBox.valueChanged</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox.__init__"><code class="docutils literal notranslate"><span class="pre">LabeledSpinBox.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox.value"><code class="docutils literal notranslate"><span class="pre">LabeledSpinBox.value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox.setValue"><code class="docutils literal notranslate"><span class="pre">LabeledSpinBox.setValue()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledComboBox"><code class="docutils literal notranslate"><span class="pre">LabeledComboBox</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledComboBox.currentTextChanged"><code class="docutils literal notranslate"><span class="pre">LabeledComboBox.currentTextChanged</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledComboBox.__init__"><code class="docutils literal notranslate"><span class="pre">LabeledComboBox.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledComboBox.currentText"><code class="docutils literal notranslate"><span class="pre">LabeledComboBox.currentText()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.LabeledComboBox.setCurrentText"><code class="docutils literal notranslate"><span class="pre">LabeledComboBox.setCurrentText()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleTableWidget"><code class="docutils literal notranslate"><span class="pre">AccessibleTableWidget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleTableWidget.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleTableWidget.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleTableWidget.keyPressEvent"><code class="docutils literal notranslate"><span class="pre">AccessibleTableWidget.keyPressEvent()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleListWidget"><code class="docutils literal notranslate"><span class="pre">AccessibleListWidget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleListWidget.__init__"><code class="docutils literal notranslate"><span class="pre">AccessibleListWidget.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.ui.widgets.accessible_widgets.AccessibleListWidget.keyPressEvent"><code class="docutils literal notranslate"><span class="pre">AccessibleListWidget.keyPressEvent()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">User Interface</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/ui.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="user-interface">
+<h1>User Interface<a class="headerlink" href="#user-interface" title="Link to this heading"></a></h1>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#module-src.ui.main_window" title="src.ui.main_window"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.ui.main_window</span></code></a></p></td>
+<td><p>Main GUI Window Module</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#module-src.ui.widgets.accessible_widgets" title="src.ui.widgets.accessible_widgets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.ui.widgets.accessible_widgets</span></code></a></p></td>
+<td><p>Accessible Widgets Module</p></td>
+</tr>
+</tbody>
+</table>
+<section id="main-gui-window-module">
+<span id="module-src.ui.main_window"></span><h2>Main GUI Window Module<a class="headerlink" href="#main-gui-window-module" title="Link to this heading"></a></h2>
+<p>Main application window for BLDC motor control simulator.</p>
+<p>Provides comprehensive GUI for:
+- Motor parameter configuration
+- Load profile definition
+- Control and monitoring
+- Real-time plotting
+- Data export</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+</section>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.QAccessible">
+<span class="sig-prename descclassname"><span class="pre">src.ui.main_window.</span></span><span class="sig-name descname"><span class="pre">QAccessible</span></span><a class="headerlink" href="#src.ui.main_window.QAccessible" title="Link to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">_DummyQAccessible</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.main_window.AccessibleTextBlock">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.main_window.</span></span><span class="sig-name descname"><span class="pre">AccessibleTextBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#AccessibleTextBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.AccessibleTextBlock" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QFrame</span></code></p>
+<p>Accessible visual text block component for monitoring values.
+Each block displays a labeled monitoring value with units.
+Optimized for screen reader detection and visual distinction.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.AccessibleTextBlock.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#AccessibleTextBlock.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.AccessibleTextBlock.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.AccessibleTextBlock.update_value">
+<span class="sig-name descname"><span class="pre">update_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#AccessibleTextBlock.update_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.AccessibleTextBlock.update_value" title="Link to this definition"></a></dt>
+<dd><p>Update the displayed value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.AccessibleTextBlock.keyPressEvent">
+<span class="sig-name descname"><span class="pre">keyPressEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#AccessibleTextBlock.keyPressEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.AccessibleTextBlock.keyPressEvent" title="Link to this definition"></a></dt>
+<dd><p>Handle keyboard navigation for accessibility.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.main_window.</span></span><span class="sig-name descname"><span class="pre">SimulationThread</span></span><a class="reference internal" href="../_modules/src/ui/main_window.html#SimulationThread"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.SimulationThread" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QThread</span></code></p>
+<p>Background simulation thread.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.update_signal">
+<span class="sig-name descname"><span class="pre">update_signal</span></span><a class="headerlink" href="#src.ui.main_window.SimulationThread.update_signal" title="Link to this definition"></a></dt>
+<dd><p>pyqtSignal(<a href="#id1"><span class="problematic" id="id2">*</span></a>types, name: str = …, revision: int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.finished_signal">
+<span class="sig-name descname"><span class="pre">finished_signal</span></span><a class="headerlink" href="#src.ui.main_window.SimulationThread.finished_signal" title="Link to this definition"></a></dt>
+<dd><p>pyqtSignal(<a href="#id3"><span class="problematic" id="id4">*</span></a>types, name: str = …, revision: int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#SimulationThread.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.SimulationThread.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.engine">
+<span class="sig-name descname"><span class="pre">engine</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine" title="src.core.simulation_engine.SimulationEngine"><span class="pre">SimulationEngine</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.SimulationThread.engine" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.svm">
+<span class="sig-name descname"><span class="pre">svm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="generated/src.control.svm_generator.html#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><span class="pre">SVMGenerator</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.SimulationThread.svm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.controller">
+<span class="sig-name descname"><span class="pre">controller</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="generated/src.control.base_controller.html#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><span class="pre">BaseController</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.SimulationThread.controller" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.get_latest_state">
+<span class="sig-name descname"><span class="pre">get_latest_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#SimulationThread.get_latest_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.SimulationThread.get_latest_state" title="Link to this definition"></a></dt>
+<dd><p>Return the latest simulation snapshot without blocking control loop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.set_simulation">
+<span class="sig-name descname"><span class="pre">set_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">svm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">controller</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#SimulationThread.set_simulation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.SimulationThread.set_simulation" title="Link to this definition"></a></dt>
+<dd><p>Assign engine, svm and controller before running thread.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.start_simulation">
+<span class="sig-name descname"><span class="pre">start_simulation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#SimulationThread.start_simulation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.SimulationThread.start_simulation" title="Link to this definition"></a></dt>
+<dd><p>Flag thread to begin executing the simulation loop.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.stop_simulation">
+<span class="sig-name descname"><span class="pre">stop_simulation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#SimulationThread.stop_simulation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.SimulationThread.stop_simulation" title="Link to this definition"></a></dt>
+<dd><p>Stop simulation loop.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.SimulationThread.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#SimulationThread.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.SimulationThread.run" title="Link to this definition"></a></dt>
+<dd><p>Main simulation loop.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.main_window.CurrentSpectrumWindow">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.main_window.</span></span><span class="sig-name descname"><span class="pre">CurrentSpectrumWindow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window_size_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#CurrentSpectrumWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.CurrentSpectrumWindow" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QMainWindow</span></code></p>
+<p>Dedicated FFT window for controller-facing current harmonics.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.CurrentSpectrumWindow.closed">
+<span class="sig-name descname"><span class="pre">closed</span></span><a class="headerlink" href="#src.ui.main_window.CurrentSpectrumWindow.closed" title="Link to this definition"></a></dt>
+<dd><p>pyqtSignal(<a href="#id5"><span class="problematic" id="id6">*</span></a>types, name: str = …, revision: int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.CurrentSpectrumWindow.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window_size_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#CurrentSpectrumWindow.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.CurrentSpectrumWindow.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.CurrentSpectrumWindow.set_window_size">
+<span class="sig-name descname"><span class="pre">set_window_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#CurrentSpectrumWindow.set_window_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.CurrentSpectrumWindow.set_window_size" title="Link to this definition"></a></dt>
+<dd><p>Update FFT window length and preserve newest samples when possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.CurrentSpectrumWindow.push_snapshot">
+<span class="sig-name descname"><span class="pre">push_snapshot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snapshot</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#CurrentSpectrumWindow.push_snapshot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.CurrentSpectrumWindow.push_snapshot" title="Link to this definition"></a></dt>
+<dd><p>Consume latest simulation snapshot without blocking control loop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.CurrentSpectrumWindow.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#CurrentSpectrumWindow.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.CurrentSpectrumWindow.closeEvent" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.main_window.</span></span><span class="sig-name descname"><span class="pre">BLDCMotorControlGUI</span></span><a class="reference internal" href="../_modules/src/ui/main_window.html#BLDCMotorControlGUI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QMainWindow</span></code></p>
+<section id="main-bldc-motor-control-gui">
+<h2>Main BLDC Motor Control GUI<a class="headerlink" href="#main-bldc-motor-control-gui" title="Link to this heading"></a></h2>
+<p>Comprehensive application for BLDC motor simulation and control.</p>
+<p>Features:
+- Screen reader accessible
+- Real-time motor simulation
+- V/f speed control
+- Data logging and export
+- Visualization tools</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#BLDCMotorControlGUI.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.motor">
+<span class="sig-name descname"><span class="pre">motor</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="motor_model.html#src.core.motor_model.BLDCMotor" title="src.core.motor_model.BLDCMotor"><span class="pre">BLDCMotor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.motor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.engine">
+<span class="sig-name descname"><span class="pre">engine</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine" title="src.core.simulation_engine.SimulationEngine"><span class="pre">SimulationEngine</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.engine" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.svm">
+<span class="sig-name descname"><span class="pre">svm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="generated/src.control.svm_generator.html#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><span class="pre">SVMGenerator</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.svm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.controller">
+<span class="sig-name descname"><span class="pre">controller</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="generated/src.control.vf_controller.html#src.control.vf_controller.VFController" title="src.control.vf_controller.VFController"><span class="pre">VFController</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.controller" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.sim_thread">
+<span class="sig-name descname"><span class="pre">sim_thread</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.ui.main_window.SimulationThread" title="src.ui.main_window.SimulationThread"><span class="pre">SimulationThread</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.sim_thread" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.calib_process">
+<span class="sig-name descname"><span class="pre">calib_process</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">QProcess</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.calib_process" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.calib_output_path">
+<span class="sig-name descname"><span class="pre">calib_output_path</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.calib_output_path" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.current_fft_window">
+<span class="sig-name descname"><span class="pre">current_fft_window</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow" title="src.ui.main_window.CurrentSpectrumWindow"><span class="pre">CurrentSpectrumWindow</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.current_fft_window" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.get_simulation_params_info">
+<span class="sig-name descname"><span class="pre">get_simulation_params_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#BLDCMotorControlGUI.get_simulation_params_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.get_simulation_params_info" title="Link to this definition"></a></dt>
+<dd><p>Return a string with current dt and motor time constants (for testing).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.BLDCMotorControlGUI.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/main_window.html#BLDCMotorControlGUI.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.BLDCMotorControlGUI.closeEvent" title="Link to this definition"></a></dt>
+<dd><p>Override closeEvent to ensure all background processes are properly terminated.
+This prevents orphaned processes when the GUI is closed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<section id="accessible-widgets-module">
+<span id="module-src.ui.widgets.accessible_widgets"></span><h2>Accessible Widgets Module<a class="headerlink" href="#accessible-widgets-module" title="Link to this heading"></a></h2>
+<p>Provides accessible PyQt6 widgets with proper ARIA labels and keyboard navigation.</p>
+<p>All widgets support:
+- Screen reader accessibility
+- Tab key navigation
+- Clear keyboard shortcuts
+- Descriptive labels and help text</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleDoubleSpinBox">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">AccessibleDoubleSpinBox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleDoubleSpinBox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleDoubleSpinBox" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QDoubleSpinBox</span></code></p>
+<p>Accessible double precision spinner with screen reader support.</p>
+<p>Features:
+- Auto-generated ARIA labels
+- Clear status text for screen readers
+- Keyboard-friendly increment/decrement</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleDoubleSpinBox.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleDoubleSpinBox.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleDoubleSpinBox.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize accessible spinner.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Descriptive label for screen readers</p></li>
+<li><p><strong>min_val</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Minimum value</p></li>
+<li><p><strong>max_val</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Maximum value</p></li>
+<li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Initial value</p></li>
+<li><p><strong>step</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Step size for increment/decrement</p></li>
+<li><p><strong>decimals</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Decimal places</p></li>
+<li><p><strong>suffix</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Unit suffix (e.g., “ V”, “ A”)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleSpinBox">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">AccessibleSpinBox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleSpinBox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleSpinBox" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QSpinBox</span></code></p>
+<p>Accessible integer spinner for screen readers.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleSpinBox.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleSpinBox.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleSpinBox.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize accessible integer spinner.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Descriptive label</p></li>
+<li><p><strong>min_val</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Minimum value</p></li>
+<li><p><strong>max_val</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Maximum value</p></li>
+<li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Initial value</p></li>
+<li><p><strong>step</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Step size</p></li>
+<li><p><strong>suffix</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Unit suffix</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleComboBox">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">AccessibleComboBox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleComboBox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleComboBox" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QComboBox</span></code></p>
+<p>Accessible combo box with screen reader support.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleComboBox.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleComboBox.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleComboBox.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize accessible combo box.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Field label</p></li>
+<li><p><strong>items</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></span>) – List of items to add</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleButton">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">AccessibleButton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tooltip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleButton" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QPushButton</span></code></p>
+<p>Accessible button with clear labeling.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleButton.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tooltip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleButton.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleButton.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize accessible button.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Button text</p></li>
+<li><p><strong>tooltip</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Tooltip text (shown to screen readers)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleButton.keyPressEvent">
+<span class="sig-name descname"><span class="pre">keyPressEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleButton.keyPressEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleButton.keyPressEvent" title="Link to this definition"></a></dt>
+<dd><p>Handle keyboard activation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleGroupBox">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">AccessibleGroupBox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleGroupBox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleGroupBox" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QGroupBox</span></code></p>
+<p>Accessible group box for organizing related controls.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleGroupBox.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleGroupBox.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleGroupBox.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize accessible group box.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>title</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Group title</p></li>
+<li><p><strong>description</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Description for screen readers</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleTabWidget">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">AccessibleTabWidget</span></span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleTabWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleTabWidget" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QTabWidget</span></code></p>
+<p>Accessible tab widget with keyboard navigation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleTabWidget.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleTabWidget.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleTabWidget.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize accessible tab widget.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledSpinBox">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">LabeledSpinBox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#LabeledSpinBox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QWidget</span></code></p>
+<p>Convenience widget combining a label and spinner.</p>
+<p>Simplifies accessibility by grouping related elements.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledSpinBox.valueChanged">
+<span class="sig-name descname"><span class="pre">valueChanged</span></span><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox.valueChanged" title="Link to this definition"></a></dt>
+<dd><p>pyqtSignal(<a href="#id7"><span class="problematic" id="id8">*</span></a>types, name: str = …, revision: int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledSpinBox.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#LabeledSpinBox.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize labeled spinner.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Field label</p></li>
+<li><p><strong>min_val</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Minimum value</p></li>
+<li><p><strong>max_val</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Maximum value</p></li>
+<li><p><strong>initial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Initial value</p></li>
+<li><p><strong>step</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Step size</p></li>
+<li><p><strong>decimals</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Decimal places</p></li>
+<li><p><strong>suffix</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Unit suffix</p></li>
+<li><p><strong>description</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Accessibility description</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledSpinBox.value">
+<span class="sig-name descname"><span class="pre">value</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#LabeledSpinBox.value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox.value" title="Link to this definition"></a></dt>
+<dd><p>Get current value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledSpinBox.setValue">
+<span class="sig-name descname"><span class="pre">setValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#LabeledSpinBox.setValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledSpinBox.setValue" title="Link to this definition"></a></dt>
+<dd><p>Set value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledComboBox">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">LabeledComboBox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#LabeledComboBox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledComboBox" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QWidget</span></code></p>
+<p>Convenience widget combining label and combo box.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledComboBox.currentTextChanged">
+<span class="sig-name descname"><span class="pre">currentTextChanged</span></span><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledComboBox.currentTextChanged" title="Link to this definition"></a></dt>
+<dd><p>pyqtSignal(<a href="#id9"><span class="problematic" id="id10">*</span></a>types, name: str = …, revision: int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledComboBox.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#LabeledComboBox.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledComboBox.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize labeled combo box.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Field label</p></li>
+<li><p><strong>items</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></span>) – List of items</p></li>
+<li><p><strong>description</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Accessibility description</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledComboBox.currentText">
+<span class="sig-name descname"><span class="pre">currentText</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#LabeledComboBox.currentText"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledComboBox.currentText" title="Link to this definition"></a></dt>
+<dd><p>Get selected text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.LabeledComboBox.setCurrentText">
+<span class="sig-name descname"><span class="pre">setCurrentText</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#LabeledComboBox.setCurrentText"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.LabeledComboBox.setCurrentText" title="Link to this definition"></a></dt>
+<dd><p>Set selected text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleTableWidget">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">AccessibleTableWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleTableWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleTableWidget" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QTableWidget</span></code></p>
+<p>Accessible table widget with screen reader support and keyboard navigation.</p>
+<p>Features:
+- ARIA labels for screen readers
+- Arrow key navigation (Up, Down, Left, Right)
+- Space/Enter for selection
+- Tab key moves to next table
+- Announces current cell to screen readers</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleTableWidget.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleTableWidget.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleTableWidget.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize accessible table widget.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Accessible name for the table</p></li>
+<li><p><strong>description</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Description for screen readers</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleTableWidget.keyPressEvent">
+<span class="sig-name descname"><span class="pre">keyPressEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleTableWidget.keyPressEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleTableWidget.keyPressEvent" title="Link to this definition"></a></dt>
+<dd><p>Handle keyboard navigation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleListWidget">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.ui.widgets.accessible_widgets.</span></span><span class="sig-name descname"><span class="pre">AccessibleListWidget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleListWidget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleListWidget" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QListWidget</span></code></p>
+<p>Accessible list widget with screen reader support and keyboard navigation.</p>
+<p>Features:
+- ARIA labels for screen readers
+- Arrow key navigation
+- Space/Enter for selection
+- Announces list position to screen readers</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleListWidget.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleListWidget.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleListWidget.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize accessible list widget.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Accessible name for the list</p></li>
+<li><p><strong>description</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Description for screen readers</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.widgets.accessible_widgets.AccessibleListWidget.keyPressEvent">
+<span class="sig-name descname"><span class="pre">keyPressEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/ui/widgets/accessible_widgets.html#AccessibleListWidget.keyPressEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.widgets.accessible_widgets.AccessibleListWidget.keyPressEvent" title="Link to this definition"></a></dt>
+<dd><p>Handle keyboard navigation.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="generated/src.core.load_model.html" class="btn btn-neutral float-left" title="src.core.load_model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="generated/src.ui.main_window.html" class="btn btn-neutral float-right" title="src.ui.main_window" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

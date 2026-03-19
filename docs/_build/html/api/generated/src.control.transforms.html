@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.control.transforms &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Visualization" href="../visualization.html" />
+    <link rel="prev" title="src.control.svm_generator" href="src.control.svm_generator.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../motor_model.html">Motor Model</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../control.html">Control Module</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="src.control.base_controller.html">src.control.base_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.foc_controller.html">src.control.foc_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.vf_controller.html">src.control.vf_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.svm_generator.html">src.control.svm_generator</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">src.control.transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#coordinate-transformations-for-motor-control">Coordinate Transformations for Motor Control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.transforms.clarke_transform"><code class="docutils literal notranslate"><span class="pre">clarke_transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.transforms.inverse_clarke"><code class="docutils literal notranslate"><span class="pre">inverse_clarke()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.transforms.park_transform"><code class="docutils literal notranslate"><span class="pre">park_transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.transforms.inverse_park"><code class="docutils literal notranslate"><span class="pre">inverse_park()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.transforms.concordia_transform"><code class="docutils literal notranslate"><span class="pre">concordia_transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.transforms.inverse_concordia"><code class="docutils literal notranslate"><span class="pre">inverse_concordia()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#base-controller-module">Base Controller Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.base_controller.BaseController"><code class="docutils literal notranslate"><span class="pre">BaseController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#field-oriented-control-foc-module">Field-Oriented Control (FOC) Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.foc_controller.FOCController"><code class="docutils literal notranslate"><span class="pre">FOCController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#v-f-controller-module">V/f Controller Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.vf_controller.VFController"><code class="docutils literal notranslate"><span class="pre">VFController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#svm-generator-module">SVM Generator Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.InverterRealismConfig"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.SVMGenerator"><code class="docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.CartesianSVMGenerator"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#coordinate-transformations-for-motor-control">Coordinate Transformations for Motor Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.clarke_transform"><code class="docutils literal notranslate"><span class="pre">clarke_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_clarke"><code class="docutils literal notranslate"><span class="pre">inverse_clarke()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.park_transform"><code class="docutils literal notranslate"><span class="pre">park_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_park"><code class="docutils literal notranslate"><span class="pre">inverse_park()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.concordia_transform"><code class="docutils literal notranslate"><span class="pre">concordia_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_concordia"><code class="docutils literal notranslate"><span class="pre">inverse_concordia()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../control.html">Control Module</a></li>
+      <li class="breadcrumb-item active">src.control.transforms</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/api/generated/src.control.transforms.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-src.control.transforms">
+<span id="src-control-transforms"></span><h1>src.control.transforms<a class="headerlink" href="#module-src.control.transforms" title="Link to this heading"></a></h1>
+<section id="coordinate-transformations-for-motor-control">
+<h2>Coordinate Transformations for Motor Control<a class="headerlink" href="#coordinate-transformations-for-motor-control" title="Link to this heading"></a></h2>
+<p>Provides Clark, Park, and Concordia transforms used in FOC algorithms.
+Both forward (3-phase to two-axis) and inverse transforms are supported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial implementation of coordinate transforms</p>
+</div>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.control.transforms.clarke_transform" title="src.control.transforms.clarke_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clarke_transform</span></code></a>(va, vb, vc)</p></td>
+<td><p>Clarke transform (three-phase to stationary two-axis alpha-beta) assuming va + vb + vc = 0.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.control.transforms.concordia_transform" title="src.control.transforms.concordia_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">concordia_transform</span></code></a>(va, vb, vc)</p></td>
+<td><p>Concordia (also called symmetrical component) transform which is formally equivalent to Clark but keeps factor of 2/3 scaling.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.control.transforms.inverse_clarke" title="src.control.transforms.inverse_clarke"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_clarke</span></code></a>(v_alpha, v_beta)</p></td>
+<td><p>Inverse Clarke transform (alpha-beta to three-phase)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.control.transforms.inverse_concordia" title="src.control.transforms.inverse_concordia"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_concordia</span></code></a>(alpha, beta)</p></td>
+<td><p>Inverse Concordia transform (alpha-beta back to three-phase).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.control.transforms.inverse_park" title="src.control.transforms.inverse_park"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_park</span></code></a>(v_d, v_q, theta)</p></td>
+<td><p>Inverse Park transform (d-q to alpha-beta frame).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.control.transforms.park_transform" title="src.control.transforms.park_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">park_transform</span></code></a>(v_alpha, v_beta, theta)</p></td>
+<td><p>Park transform (alpha-beta to rotating d-q frame).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.clarke_transform">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">clarke_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">va</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/transforms.html#clarke_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.clarke_transform" title="Link to this definition"></a></dt>
+<dd><p>Clarke transform (three-phase to stationary two-axis alpha-beta)
+assuming va + vb + vc = 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>va</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase A voltage/current</p></li>
+<li><p><strong>vb</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase B voltage/current</p></li>
+<li><p><strong>vc</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase C voltage/current</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(v_alpha, v_beta)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.inverse_clarke">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">inverse_clarke</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_beta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/transforms.html#inverse_clarke"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.inverse_clarke" title="Link to this definition"></a></dt>
+<dd><p>Inverse Clarke transform (alpha-beta to three-phase)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_alpha</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Alpha-axis quantity</p></li>
+<li><p><strong>v_beta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Beta-axis quantity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(va, vb, vc)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.park_transform">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">park_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/transforms.html#park_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.park_transform" title="Link to this definition"></a></dt>
+<dd><p>Park transform (alpha-beta to rotating d-q frame).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_alpha</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Alpha-axis quantity</p></li>
+<li><p><strong>v_beta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Beta-axis quantity</p></li>
+<li><p><strong>theta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Rotor electrical angle [rad]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(v_d, v_q)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.inverse_park">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">inverse_park</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/transforms.html#inverse_park"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.inverse_park" title="Link to this definition"></a></dt>
+<dd><p>Inverse Park transform (d-q to alpha-beta frame).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_d</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – d-axis quantity</p></li>
+<li><p><strong>v_q</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – q-axis quantity</p></li>
+<li><p><strong>theta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Rotor electrical angle [rad]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(v_alpha, v_beta)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.concordia_transform">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">concordia_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">va</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/transforms.html#concordia_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.concordia_transform" title="Link to this definition"></a></dt>
+<dd><p>Concordia (also called symmetrical component) transform which is
+formally equivalent to Clark but keeps factor of 2/3 scaling.  Useful
+when zero-sequence components are important.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>va</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase A quantity</p></li>
+<li><p><strong>vb</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase B quantity</p></li>
+<li><p><strong>vc</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Phase C quantity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(alpha, beta) in same units</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.control.transforms.inverse_concordia">
+<span class="sig-prename descclassname"><span class="pre">src.control.transforms.</span></span><span class="sig-name descname"><span class="pre">inverse_concordia</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/transforms.html#inverse_concordia"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.transforms.inverse_concordia" title="Link to this definition"></a></dt>
+<dd><p>Inverse Concordia transform (alpha-beta back to three-phase).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – alpha-axis quantity</p></li>
+<li><p><strong>beta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – beta-axis quantity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(va, vb, vc)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="src.control.svm_generator.html" class="btn btn-neutral float-left" title="src.control.svm_generator" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../visualization.html" class="btn btn-neutral float-right" title="Visualization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

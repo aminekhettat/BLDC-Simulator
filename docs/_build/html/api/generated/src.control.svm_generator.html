@@ -1,0 +1,590 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.control.svm_generator &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="src.control.transforms" href="src.control.transforms.html" />
+    <link rel="prev" title="src.control.vf_controller" href="src.control.vf_controller.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../motor_model.html">Motor Model</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../control.html">Control Module</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="src.control.base_controller.html">src.control.base_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.foc_controller.html">src.control.foc_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.vf_controller.html">src.control.vf_controller</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">src.control.svm_generator</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#svm-generator-module">SVM Generator Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_device_drop"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_device_drop</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.device_drop_v"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.device_drop_v</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_dead_time"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_dead_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.dead_time_fraction"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.dead_time_fraction</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_conduction_drop"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_conduction_drop</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.conduction_resistance_ohm"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.conduction_resistance_ohm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_switching_loss"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_switching_loss</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.switching_frequency_hz"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.switching_frequency_hz</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.switching_loss_coeff_v_per_a_khz"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.switching_loss_coeff_v_per_a_khz</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_diode_freewheel"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_diode_freewheel</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.diode_drop_v"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.diode_drop_v</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.diode_resistance_ohm"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.diode_resistance_ohm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_min_pulse"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_min_pulse</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.min_pulse_fraction"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.min_pulse_fraction</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_bus_ripple"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_bus_ripple</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.dc_link_capacitance_f"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.dc_link_capacitance_f</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.dc_link_source_resistance_ohm"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.dc_link_source_resistance_ohm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.dc_link_esr_ohm"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.dc_link_esr_ohm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_thermal_coupling"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_thermal_coupling</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.thermal_resistance_k_per_w"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.thermal_resistance_k_per_w</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.thermal_capacitance_j_per_k"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.thermal_capacitance_j_per_k</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.ambient_temperature_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.ambient_temperature_c</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.temp_coeff_resistance_per_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.temp_coeff_resistance_per_c</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.temp_coeff_drop_per_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.temp_coeff_drop_per_c</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.enable_phase_asymmetry"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.enable_phase_asymmetry</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_a"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_voltage_scale_a</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_b"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_voltage_scale_b</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_voltage_scale_c</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_a"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_drop_scale_a</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_b"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_drop_scale_b</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_c"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.phase_drop_scale_c</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig.__init__"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator"><code class="docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.__init__"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.set_sample_time"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.set_sample_time()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.reset_realism_state"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.reset_realism_state()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.modulate"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.modulate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.get_maximum_voltage"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.get_maximum_voltage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.device_drop_v"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.device_drop_v</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.dead_time_fraction"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.dead_time_fraction</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.conduction_resistance_ohm"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.conduction_resistance_ohm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.switching_frequency_hz"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.switching_frequency_hz</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.switching_loss_coeff_v_per_a_khz"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.switching_loss_coeff_v_per_a_khz</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.set_nonidealities"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.set_nonidealities()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.set_phase_currents"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.set_phase_currents()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.get_last_telemetry"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.get_last_telemetry()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.get_realism_state"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.get_realism_state()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.SVMGenerator.set_dc_voltage"><code class="docutils literal notranslate"><span class="pre">SVMGenerator.set_dc_voltage()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.svm_generator.CartesianSVMGenerator"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.CartesianSVMGenerator.modulate_cartesian"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator.modulate_cartesian()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.svm_generator.CartesianSVMGenerator.cartesian_to_threephase"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator.cartesian_to_threephase()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.transforms.html">src.control.transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#base-controller-module">Base Controller Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.base_controller.BaseController"><code class="docutils literal notranslate"><span class="pre">BaseController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#field-oriented-control-foc-module">Field-Oriented Control (FOC) Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.foc_controller.FOCController"><code class="docutils literal notranslate"><span class="pre">FOCController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#v-f-controller-module">V/f Controller Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.vf_controller.VFController"><code class="docutils literal notranslate"><span class="pre">VFController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#svm-generator-module">SVM Generator Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.InverterRealismConfig"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.SVMGenerator"><code class="docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.CartesianSVMGenerator"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#coordinate-transformations-for-motor-control">Coordinate Transformations for Motor Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.clarke_transform"><code class="docutils literal notranslate"><span class="pre">clarke_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_clarke"><code class="docutils literal notranslate"><span class="pre">inverse_clarke()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.park_transform"><code class="docutils literal notranslate"><span class="pre">park_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_park"><code class="docutils literal notranslate"><span class="pre">inverse_park()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.concordia_transform"><code class="docutils literal notranslate"><span class="pre">concordia_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_concordia"><code class="docutils literal notranslate"><span class="pre">inverse_concordia()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../control.html">Control Module</a></li>
+      <li class="breadcrumb-item active">src.control.svm_generator</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/api/generated/src.control.svm_generator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-src.control.svm_generator">
+<span id="src-control-svm-generator"></span><h1>src.control.svm_generator<a class="headerlink" href="#module-src.control.svm_generator" title="Link to this heading"></a></h1>
+<section id="svm-generator-module">
+<h2>SVM Generator Module<a class="headerlink" href="#svm-generator-module" title="Link to this heading"></a></h2>
+<p>This module implements Space Vector Modulation (SVM) for 3-phase voltage
+generation and includes an optional stateful inverter-realism layer.</p>
+<p>The realism layer is deliberately lightweight compared to a switching-device
+transient simulator, but it captures the most important inverter effects used in
+drive-system studies:</p>
+<ul class="simple">
+<li><p>Constant semiconductor conduction drop</p></li>
+<li><p>Current-dependent conduction loss</p></li>
+<li><p>Switching-frequency-dependent voltage loss</p></li>
+<li><p>Direction-aware dead-time distortion</p></li>
+<li><p>Freewheel diode path loss</p></li>
+<li><p>Minimum pulse suppression near zero voltage</p></li>
+<li><p>DC-link capacitor/ESR/source-resistance dynamics</p></li>
+<li><p>Junction-temperature-dependent parameter drift</p></li>
+<li><p>Per-phase asymmetry and mismatch</p></li>
+</ul>
+<p>Each realism feature can be enabled or disabled independently so the simulator
+can be tuned from ideal-average behavior up to a more realistic reduced-order
+inverter model.</p>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.control.svm_generator.CartesianSVMGenerator" title="src.control.svm_generator.CartesianSVMGenerator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CartesianSVMGenerator</span></code></a>([dc_voltage, ...])</p></td>
+<td><p>Extended SVM generator accepting Cartesian alpha-beta voltages.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.control.svm_generator.InverterRealismConfig" title="src.control.svm_generator.InverterRealismConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InverterRealismConfig</span></code></a>([enable_device_drop, ...])</p></td>
+<td><p>Configuration container for all switchable inverter-realism blocks.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a>([dc_voltage, device_drop_v, ...])</p></td>
+<td><p>Space Vector Modulation Generator.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.svm_generator.</span></span><span class="sig-name descname"><span class="pre">InverterRealismConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable_device_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_dead_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_conduction_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_switching_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_diode_freewheel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_min_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_pulse_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_bus_ripple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_capacitance_f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_source_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_esr_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_thermal_coupling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_resistance_k_per_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_capacitance_j_per_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambient_temperature_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_resistance_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_drop_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_phase_asymmetry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#InverterRealismConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Configuration container for all switchable inverter-realism blocks.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_device_drop">
+<span class="sig-name descname"><span class="pre">enable_device_drop</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_device_drop" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.device_drop_v">
+<span class="sig-name descname"><span class="pre">device_drop_v</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.device_drop_v" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_dead_time">
+<span class="sig-name descname"><span class="pre">enable_dead_time</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_dead_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.dead_time_fraction">
+<span class="sig-name descname"><span class="pre">dead_time_fraction</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.dead_time_fraction" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_conduction_drop">
+<span class="sig-name descname"><span class="pre">enable_conduction_drop</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_conduction_drop" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.conduction_resistance_ohm">
+<span class="sig-name descname"><span class="pre">conduction_resistance_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.conduction_resistance_ohm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_switching_loss">
+<span class="sig-name descname"><span class="pre">enable_switching_loss</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_switching_loss" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.switching_frequency_hz">
+<span class="sig-name descname"><span class="pre">switching_frequency_hz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.switching_frequency_hz" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.switching_loss_coeff_v_per_a_khz">
+<span class="sig-name descname"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.switching_loss_coeff_v_per_a_khz" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_diode_freewheel">
+<span class="sig-name descname"><span class="pre">enable_diode_freewheel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_diode_freewheel" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.diode_drop_v">
+<span class="sig-name descname"><span class="pre">diode_drop_v</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.diode_drop_v" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.diode_resistance_ohm">
+<span class="sig-name descname"><span class="pre">diode_resistance_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.diode_resistance_ohm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_min_pulse">
+<span class="sig-name descname"><span class="pre">enable_min_pulse</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_min_pulse" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.min_pulse_fraction">
+<span class="sig-name descname"><span class="pre">min_pulse_fraction</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.min_pulse_fraction" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_bus_ripple">
+<span class="sig-name descname"><span class="pre">enable_bus_ripple</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_bus_ripple" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.dc_link_capacitance_f">
+<span class="sig-name descname"><span class="pre">dc_link_capacitance_f</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.dc_link_capacitance_f" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.dc_link_source_resistance_ohm">
+<span class="sig-name descname"><span class="pre">dc_link_source_resistance_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.dc_link_source_resistance_ohm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.dc_link_esr_ohm">
+<span class="sig-name descname"><span class="pre">dc_link_esr_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.dc_link_esr_ohm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_thermal_coupling">
+<span class="sig-name descname"><span class="pre">enable_thermal_coupling</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_thermal_coupling" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.thermal_resistance_k_per_w">
+<span class="sig-name descname"><span class="pre">thermal_resistance_k_per_w</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.thermal_resistance_k_per_w" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.thermal_capacitance_j_per_k">
+<span class="sig-name descname"><span class="pre">thermal_capacitance_j_per_k</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.thermal_capacitance_j_per_k" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.ambient_temperature_c">
+<span class="sig-name descname"><span class="pre">ambient_temperature_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">25.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.ambient_temperature_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.temp_coeff_resistance_per_c">
+<span class="sig-name descname"><span class="pre">temp_coeff_resistance_per_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.temp_coeff_resistance_per_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.temp_coeff_drop_per_c">
+<span class="sig-name descname"><span class="pre">temp_coeff_drop_per_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.temp_coeff_drop_per_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.enable_phase_asymmetry">
+<span class="sig-name descname"><span class="pre">enable_phase_asymmetry</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.enable_phase_asymmetry" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_a">
+<span class="sig-name descname"><span class="pre">phase_voltage_scale_a</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_a" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_b">
+<span class="sig-name descname"><span class="pre">phase_voltage_scale_b</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_b" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_c">
+<span class="sig-name descname"><span class="pre">phase_voltage_scale_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_voltage_scale_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_drop_scale_a">
+<span class="sig-name descname"><span class="pre">phase_drop_scale_a</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_a" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_drop_scale_b">
+<span class="sig-name descname"><span class="pre">phase_drop_scale_b</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_b" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.phase_drop_scale_c">
+<span class="sig-name descname"><span class="pre">phase_drop_scale_c</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.phase_drop_scale_c" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.InverterRealismConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable_device_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_dead_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_conduction_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_switching_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_diode_freewheel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_min_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_pulse_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_bus_ripple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_capacitance_f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_source_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_esr_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_thermal_coupling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_resistance_k_per_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_capacitance_j_per_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambient_temperature_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_resistance_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_drop_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_phase_asymmetry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.control.svm_generator.InverterRealismConfig.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.svm_generator.</span></span><span class="sig-name descname"><span class="pre">SVMGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Space Vector Modulation Generator.</p>
+<p>The core SVM implementation remains an averaged inverter model. Realism is
+layered on top of that average model so users can independently enable or
+disable each effect.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.set_sample_time">
+<span class="sig-name descname"><span class="pre">set_sample_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_time_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.set_sample_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.set_sample_time" title="Link to this definition"></a></dt>
+<dd><p>Set simulation step used by bus and thermal state updates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.reset_realism_state">
+<span class="sig-name descname"><span class="pre">reset_realism_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.reset_realism_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.reset_realism_state" title="Link to this definition"></a></dt>
+<dd><p>Reset capacitor voltage, temperature, and cached telemetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.modulate">
+<span class="sig-name descname"><span class="pre">modulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitude</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angle</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.modulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.modulate" title="Link to this definition"></a></dt>
+<dd><p>Generate 3-phase SVM voltages and apply enabled realism blocks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.get_maximum_voltage">
+<span class="sig-name descname"><span class="pre">get_maximum_voltage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.get_maximum_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.get_maximum_voltage" title="Link to this definition"></a></dt>
+<dd><p>Return presently available linear-range SVM voltage magnitude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.device_drop_v">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">device_drop_v</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.device_drop_v" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to configured device drop.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.dead_time_fraction">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dead_time_fraction</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.dead_time_fraction" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to configured dead-time fraction.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.conduction_resistance_ohm">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">conduction_resistance_ohm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.conduction_resistance_ohm" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to conduction resistance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.switching_frequency_hz">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">switching_frequency_hz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.switching_frequency_hz" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to switching frequency.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.switching_loss_coeff_v_per_a_khz">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.switching_loss_coeff_v_per_a_khz" title="Link to this definition"></a></dt>
+<dd><p>Backward-compatible access to switching-loss coefficient.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.set_nonidealities">
+<span class="sig-name descname"><span class="pre">set_nonidealities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_device_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_dead_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_conduction_drop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_switching_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_diode_freewheel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_min_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_pulse_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_bus_ripple</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_capacitance_f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_source_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_link_esr_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_thermal_coupling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_resistance_k_per_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_capacitance_j_per_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambient_temperature_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_resistance_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_drop_per_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_phase_asymmetry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_drop_scale_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.set_nonidealities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.set_nonidealities" title="Link to this definition"></a></dt>
+<dd><p>Configure inverter-realism parameters and explicit feature toggles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.set_phase_currents">
+<span class="sig-name descname"><span class="pre">set_phase_currents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase_currents</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.set_phase_currents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.set_phase_currents" title="Link to this definition"></a></dt>
+<dd><p>Provide phase currents used by current-dependent inverter effects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.get_last_telemetry">
+<span class="sig-name descname"><span class="pre">get_last_telemetry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.get_last_telemetry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.get_last_telemetry" title="Link to this definition"></a></dt>
+<dd><p>Return telemetry from the last modulation step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.get_realism_state">
+<span class="sig-name descname"><span class="pre">get_realism_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.get_realism_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.get_realism_state" title="Link to this definition"></a></dt>
+<dd><p>Return the complete inverter configuration and runtime state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.SVMGenerator.set_dc_voltage">
+<span class="sig-name descname"><span class="pre">set_dc_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#SVMGenerator.set_dc_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.SVMGenerator.set_dc_voltage" title="Link to this definition"></a></dt>
+<dd><p>Update the source DC bus value seen by the inverter model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.svm_generator.</span></span><span class="sig-name descname"><span class="pre">CartesianSVMGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#CartesianSVMGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.CartesianSVMGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></p>
+<p>Extended SVM generator accepting Cartesian alpha-beta voltages.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator.modulate_cartesian">
+<span class="sig-name descname"><span class="pre">modulate_cartesian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">valpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vbeta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#CartesianSVMGenerator.modulate_cartesian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.CartesianSVMGenerator.modulate_cartesian" title="Link to this definition"></a></dt>
+<dd><p>Generate SVM voltages from Cartesian alpha-beta coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator.cartesian_to_threephase">
+<span class="sig-name descname"><span class="pre">cartesian_to_threephase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">valpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vbeta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/svm_generator.html#CartesianSVMGenerator.cartesian_to_threephase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.CartesianSVMGenerator.cartesian_to_threephase" title="Link to this definition"></a></dt>
+<dd><p>Convert Cartesian alpha-beta voltages to 3-phase quantities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="src.control.vf_controller.html" class="btn btn-neutral float-left" title="src.control.vf_controller" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="src.control.transforms.html" class="btn btn-neutral float-right" title="src.control.transforms" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

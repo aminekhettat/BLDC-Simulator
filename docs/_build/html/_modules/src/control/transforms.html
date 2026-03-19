@@ -1,0 +1,245 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.control.transforms &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.control.transforms</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.control.transforms</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Coordinate Transformations for Motor Control</span>
+<span class="sd">===========================================</span>
+
+<span class="sd">Provides Clark, Park, and Concordia transforms used in FOC algorithms.</span>
+<span class="sd">Both forward (3-phase to two-axis) and inverse transforms are supported.</span>
+
+<span class="sd">:author: BLDC Control Team</span>
+<span class="sd">:version: 1.0.0</span>
+
+<span class="sd">.. versionadded:: 1.0.0</span>
+<span class="sd">    Initial implementation of coordinate transforms</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span>
+
+
+<div class="viewcode-block" id="clarke_transform">
+<a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.clarke_transform">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">clarke_transform</span><span class="p">(</span><span class="n">va</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vc</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clarke transform (three-phase to stationary two-axis alpha-beta)</span>
+<span class="sd">    assuming va + vb + vc = 0.</span>
+
+<span class="sd">    :param va: Phase A voltage/current</span>
+<span class="sd">    :param vb: Phase B voltage/current</span>
+<span class="sd">    :param vc: Phase C voltage/current</span>
+<span class="sd">    :return: (v_alpha, v_beta)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">v_alpha</span> <span class="o">=</span> <span class="n">va</span>
+    <span class="n">v_beta</span> <span class="o">=</span> <span class="p">(</span><span class="n">vb</span> <span class="o">-</span> <span class="n">vc</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">v_alpha</span><span class="p">,</span> <span class="n">v_beta</span></div>
+
+
+
+<div class="viewcode-block" id="inverse_clarke">
+<a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.inverse_clarke">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">inverse_clarke</span><span class="p">(</span><span class="n">v_alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inverse Clarke transform (alpha-beta to three-phase)</span>
+
+<span class="sd">    :param v_alpha: Alpha-axis quantity</span>
+<span class="sd">    :param v_beta: Beta-axis quantity</span>
+<span class="sd">    :return: (va, vb, vc)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">va</span> <span class="o">=</span> <span class="n">v_alpha</span>
+    <span class="n">vb</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">v_alpha</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">v_beta</span>
+    <span class="n">vc</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">v_alpha</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">v_beta</span>
+    <span class="k">return</span> <span class="n">va</span><span class="p">,</span> <span class="n">vb</span><span class="p">,</span> <span class="n">vc</span></div>
+
+
+
+<div class="viewcode-block" id="park_transform">
+<a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.park_transform">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">park_transform</span><span class="p">(</span><span class="n">v_alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Park transform (alpha-beta to rotating d-q frame).</span>
+
+<span class="sd">    :param v_alpha: Alpha-axis quantity</span>
+<span class="sd">    :param v_beta: Beta-axis quantity</span>
+<span class="sd">    :param theta: Rotor electrical angle [rad]</span>
+<span class="sd">    :return: (v_d, v_q)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cos_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">sin_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">v_d</span> <span class="o">=</span> <span class="n">v_alpha</span> <span class="o">*</span> <span class="n">cos_t</span> <span class="o">+</span> <span class="n">v_beta</span> <span class="o">*</span> <span class="n">sin_t</span>
+    <span class="n">v_q</span> <span class="o">=</span> <span class="o">-</span><span class="n">v_alpha</span> <span class="o">*</span> <span class="n">sin_t</span> <span class="o">+</span> <span class="n">v_beta</span> <span class="o">*</span> <span class="n">cos_t</span>
+    <span class="k">return</span> <span class="n">v_d</span><span class="p">,</span> <span class="n">v_q</span></div>
+
+
+
+<div class="viewcode-block" id="inverse_park">
+<a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.inverse_park">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">inverse_park</span><span class="p">(</span><span class="n">v_d</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_q</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inverse Park transform (d-q to alpha-beta frame).</span>
+
+<span class="sd">    :param v_d: d-axis quantity</span>
+<span class="sd">    :param v_q: q-axis quantity</span>
+<span class="sd">    :param theta: Rotor electrical angle [rad]</span>
+<span class="sd">    :return: (v_alpha, v_beta)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cos_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">sin_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">v_alpha</span> <span class="o">=</span> <span class="n">v_d</span> <span class="o">*</span> <span class="n">cos_t</span> <span class="o">-</span> <span class="n">v_q</span> <span class="o">*</span> <span class="n">sin_t</span>
+    <span class="n">v_beta</span> <span class="o">=</span> <span class="n">v_d</span> <span class="o">*</span> <span class="n">sin_t</span> <span class="o">+</span> <span class="n">v_q</span> <span class="o">*</span> <span class="n">cos_t</span>
+    <span class="k">return</span> <span class="n">v_alpha</span><span class="p">,</span> <span class="n">v_beta</span></div>
+
+
+
+<div class="viewcode-block" id="concordia_transform">
+<a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.concordia_transform">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">concordia_transform</span><span class="p">(</span><span class="n">va</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vc</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Concordia (also called symmetrical component) transform which is</span>
+<span class="sd">    formally equivalent to Clark but keeps factor of 2/3 scaling.  Useful</span>
+<span class="sd">    when zero-sequence components are important.</span>
+
+<span class="sd">    :param va: Phase A quantity</span>
+<span class="sd">    :param vb: Phase B quantity</span>
+<span class="sd">    :param vc: Phase C quantity</span>
+<span class="sd">    :return: (alpha, beta) in same units</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">va</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">vb</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">vc</span><span class="p">)</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">vb</span> <span class="o">-</span> <span class="n">vc</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span></div>
+
+
+
+<div class="viewcode-block" id="inverse_concordia">
+<a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.inverse_concordia">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">inverse_concordia</span><span class="p">(</span><span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inverse Concordia transform (alpha-beta back to three-phase).</span>
+
+<span class="sd">    :param alpha: alpha-axis quantity</span>
+<span class="sd">    :param beta: beta-axis quantity</span>
+<span class="sd">    :return: (va, vb, vc)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">va</span> <span class="o">=</span> <span class="n">alpha</span>
+    <span class="n">vb</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">beta</span>
+    <span class="n">vc</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">beta</span>
+    <span class="k">return</span> <span class="n">va</span><span class="p">,</span> <span class="n">vb</span><span class="p">,</span> <span class="n">vc</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,446 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.control.foc_controller &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="src.control.vf_controller" href="src.control.vf_controller.html" />
+    <link rel="prev" title="src.control.base_controller" href="src.control.base_controller.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../motor_model.html">Motor Model</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../control.html">Control Module</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="src.control.base_controller.html">src.control.base_controller</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">src.control.foc_controller</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#field-oriented-control-foc-module">Field-Oriented Control (FOC) Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController"><code class="docutils literal notranslate"><span class="pre">FOCController</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.__init__"><code class="docutils literal notranslate"><span class="pre">FOCController.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_angle_observer"><code class="docutils literal notranslate"><span class="pre">FOCController.set_angle_observer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_startup_transition"><code class="docutils literal notranslate"><span class="pre">FOCController.set_startup_transition()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_startup_sequence"><code class="docutils literal notranslate"><span class="pre">FOCController.set_startup_sequence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_pll_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_pll_gains()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_smo_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_smo_gains()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_sensorless_blend"><code class="docutils literal notranslate"><span class="pre">FOCController.set_sensorless_blend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_cascaded_speed_loop"><code class="docutils literal notranslate"><span class="pre">FOCController.set_cascaded_speed_loop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_speed_pi_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_speed_pi_gains()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_decoupling"><code class="docutils literal notranslate"><span class="pre">FOCController.set_decoupling()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_current_pi_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_current_pi_gains()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_voltage_saturation"><code class="docutils literal notranslate"><span class="pre">FOCController.set_voltage_saturation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_current_references"><code class="docutils literal notranslate"><span class="pre">FOCController.set_current_references()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_speed_reference"><code class="docutils literal notranslate"><span class="pre">FOCController.set_speed_reference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_field_weakening"><code class="docutils literal notranslate"><span class="pre">FOCController.set_field_weakening()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.auto_tune_pi"><code class="docutils literal notranslate"><span class="pre">FOCController.auto_tune_pi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.update"><code class="docutils literal notranslate"><span class="pre">FOCController.update()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.reset"><code class="docutils literal notranslate"><span class="pre">FOCController.reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.get_state"><code class="docutils literal notranslate"><span class="pre">FOCController.get_state()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.vf_controller.html">src.control.vf_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.svm_generator.html">src.control.svm_generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.control.transforms.html">src.control.transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#base-controller-module">Base Controller Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.base_controller.BaseController"><code class="docutils literal notranslate"><span class="pre">BaseController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#field-oriented-control-foc-module">Field-Oriented Control (FOC) Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.foc_controller.FOCController"><code class="docutils literal notranslate"><span class="pre">FOCController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#v-f-controller-module">V/f Controller Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.vf_controller.VFController"><code class="docutils literal notranslate"><span class="pre">VFController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#svm-generator-module">SVM Generator Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.InverterRealismConfig"><code class="docutils literal notranslate"><span class="pre">InverterRealismConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.SVMGenerator"><code class="docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.svm_generator.CartesianSVMGenerator"><code class="docutils literal notranslate"><span class="pre">CartesianSVMGenerator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#coordinate-transformations-for-motor-control">Coordinate Transformations for Motor Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.clarke_transform"><code class="docutils literal notranslate"><span class="pre">clarke_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_clarke"><code class="docutils literal notranslate"><span class="pre">inverse_clarke()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.park_transform"><code class="docutils literal notranslate"><span class="pre">park_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_park"><code class="docutils literal notranslate"><span class="pre">inverse_park()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.concordia_transform"><code class="docutils literal notranslate"><span class="pre">concordia_transform()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../control.html#src.control.transforms.inverse_concordia"><code class="docutils literal notranslate"><span class="pre">inverse_concordia()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../control.html">Control Module</a></li>
+      <li class="breadcrumb-item active">src.control.foc_controller</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/api/generated/src.control.foc_controller.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-src.control.foc_controller">
+<span id="src-control-foc-controller"></span><h1>src.control.foc_controller<a class="headerlink" href="#module-src.control.foc_controller" title="Link to this heading"></a></h1>
+<section id="field-oriented-control-foc-module">
+<h2>Field-Oriented Control (FOC) Module<a class="headerlink" href="#field-oriented-control-foc-module" title="Link to this heading"></a></h2>
+<p>Implements basic FOC algorithm with PI current regulators and optional
+auto-tuning functionality. Supports choosing Clarke or Concordia
+transforms and running in either polar or Cartesian output modes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial FOC implementation with PI regulators and auto-tune stub</p>
+</div>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.control.foc_controller.FOCController" title="src.control.foc_controller.FOCController"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FOCController</span></code></a>(motor[, use_concordia, ...])</p></td>
+<td><p>Basic Field-Oriented Controller supporting current loops and speed reference.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.foc_controller.</span></span><span class="sig-name descname"><span class="pre">FOCController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_concordia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_cartesian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_speed_loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="src.control.base_controller.html#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
+<p>Basic Field-Oriented Controller supporting current loops and speed
+reference.  Designed for integration with SVM generator, returning either
+(magnitude, angle) or Cartesian (v_alpha, v_beta) depending on mode.</p>
+<dl class="simple">
+<dt><strong>Features:</strong></dt><dd><ul class="simple">
+<li><p>d/q current PI regulators</p></li>
+<li><p>speed reference (via iq setpoint)</p></li>
+<li><p>optional auto-tuning stub</p></li>
+<li><p>transform choice (clarke or concordia)</p></li>
+<li><p>output in polar or Cartesian</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_concordia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_cartesian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_speed_loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize FOC controller.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>motor</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="../motor_model.html#src.core.motor_model.BLDCMotor" title="src.core.motor_model.BLDCMotor"><code class="xref py py-class docutils literal notranslate"><span class="pre">BLDCMotor</span></code></a></span>) – BLDCMotor instance for state feedback</p></li>
+<li><p><strong>use_concordia</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Choose concordia transform instead of Clarke</p></li>
+<li><p><strong>output_cartesian</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If True, return (v_alpha, v_beta) instead of
+magnitude/angle</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_angle_observer">
+<span class="sig-name descname"><span class="pre">set_angle_observer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Measured'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_angle_observer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_angle_observer" title="Link to this definition"></a></dt>
+<dd><p>Set electrical angle observer mode: Measured, PLL or SMO.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_startup_transition">
+<span class="sig-name descname"><span class="pre">set_startup_transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Measured'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_elapsed_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_emf_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_hold_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_hysteresis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fallback_enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fallback_hold_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_startup_transition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_startup_transition" title="Link to this definition"></a></dt>
+<dd><p>Configure observer startup handoff from an initial to target mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_startup_sequence">
+<span class="sig-name descname"><span class="pre">set_startup_sequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_duration_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_current_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_angle_deg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_initial_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_target_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_ramp_time_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_id_ref_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_loop_iq_ref_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_startup_sequence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_startup_sequence" title="Link to this definition"></a></dt>
+<dd><p>Configure a standard sensored/sensorless startup sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_pll_gains">
+<span class="sig-name descname"><span class="pre">set_pll_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ki</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_pll_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_pll_gains" title="Link to this definition"></a></dt>
+<dd><p>Set PLL observer gains.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_smo_gains">
+<span class="sig-name descname"><span class="pre">set_smo_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k_slide</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lpf_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.06</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_smo_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_smo_gains" title="Link to this definition"></a></dt>
+<dd><p>Set SMO-like observer gains and smoothing constants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_sensorless_blend">
+<span class="sig-name descname"><span class="pre">set_sensorless_blend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">250.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.65</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_sensorless_blend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_sensorless_blend" title="Link to this definition"></a></dt>
+<dd><p>Configure low-speed sensorless angle blending behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_cascaded_speed_loop">
+<span class="sig-name descname"><span class="pre">set_cascaded_speed_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iq_limit_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_cascaded_speed_loop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_cascaded_speed_loop" title="Link to this definition"></a></dt>
+<dd><p>Enable/disable cascaded speed-&gt;iq loop and optionally set iq clamp.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_speed_pi_gains">
+<span class="sig-name descname"><span class="pre">set_speed_pi_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ki</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kaw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_speed_pi_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_speed_pi_gains" title="Link to this definition"></a></dt>
+<dd><p>Set speed loop PI gains for cascaded control mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_decoupling">
+<span class="sig-name descname"><span class="pre">set_decoupling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable_d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_decoupling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_decoupling" title="Link to this definition"></a></dt>
+<dd><p>Enable/disable optional d/q decoupling feed-forward compensation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_current_pi_gains">
+<span class="sig-name descname"><span class="pre">set_current_pi_gains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_ki</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_ki</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kaw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_current_pi_gains"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_current_pi_gains" title="Link to this definition"></a></dt>
+<dd><p>Set d/q current PI gains and anti-windup gain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_voltage_saturation">
+<span class="sig-name descname"><span class="pre">set_voltage_saturation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'proportional'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled_antiwindup_enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coupled_antiwindup_gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_voltage_saturation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_voltage_saturation" title="Link to this definition"></a></dt>
+<dd><p>Configure dq voltage saturation strategy and optional coupled anti-windup.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_current_references">
+<span class="sig-name descname"><span class="pre">set_current_references</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iq_ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_current_references"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_current_references" title="Link to this definition"></a></dt>
+<dd><p>Set d/q current references.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_speed_reference">
+<span class="sig-name descname"><span class="pre">set_speed_reference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">speed_rpm</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_speed_reference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_speed_reference" title="Link to this definition"></a></dt>
+<dd><p>Set speed reference (rpm). qi reference will be derived from it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_field_weakening">
+<span class="sig-name descname"><span class="pre">set_field_weakening</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_negative_id_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">headroom_target_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_field_weakening"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_field_weakening" title="Link to this definition"></a></dt>
+<dd><p>Configure voltage-headroom-based field-weakening d-axis current injection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.auto_tune_pi">
+<span class="sig-name descname"><span class="pre">auto_tune_pi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'q'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandwidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.auto_tune_pi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.auto_tune_pi" title="Link to this definition"></a></dt>
+<dd><p>Auto-tune PI parameters for given axis (‘d’ or ‘q’).</p>
+<p>This is a placeholder using simple heuristics.  A real implementation
+would perform step responses to estimate Ku and Tu and apply
+Ziegler–Nichols or IMC rules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.update" title="Link to this definition"></a></dt>
+<dd><p>Update controller and return voltage command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time step [s]</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Either (magnitude, angle) or (v_alpha, v_beta) depending on
+<cite>output_cartesian</cite> setting.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.reset" title="Link to this definition"></a></dt>
+<dd><p>Reset controller state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.get_state">
+<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.get_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.get_state" title="Link to this definition"></a></dt>
+<dd><p>Return controller state variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="src.control.base_controller.html" class="btn btn-neutral float-left" title="src.control.base_controller" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="src.control.vf_controller.html" class="btn btn-neutral float-right" title="src.control.vf_controller" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

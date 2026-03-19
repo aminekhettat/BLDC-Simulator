@@ -1,0 +1,229 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Features &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Motor Model" href="api/motor_model.html" />
+    <link rel="prev" title="Quick Start Guide" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#core-simulation-features">Core Simulation Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#control-algorithms">Control Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-features">Advanced Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#user-interface">User Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-export">Data &amp; Export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optimization">Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#extensibility">Extensibility</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Features</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/features.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="features">
+<h1>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h1>
+<section id="core-simulation-features">
+<h2>Core Simulation Features<a class="headerlink" href="#core-simulation-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>3-Phase Motor Model</strong>: Complete mathematical model of BLDC motor dynamics</p></li>
+<li><p><strong>Profile-Driven EMF Shapes</strong>: Supports sinusoidal dq/PMSM-style profiles and trapezoidal BLDC waveforms</p></li>
+<li><p><strong>Accurate EMF Calculation</strong>: Based on space vector PWM and motor parameters</p></li>
+<li><p><strong>Torque Computation</strong>: Accounting for load dynamics and motor characteristics</p></li>
+</ul>
+</section>
+<section id="control-algorithms">
+<h2>Control Algorithms<a class="headerlink" href="#control-algorithms" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Field-Oriented Control (FOC)</strong>
+- Decoupled torque and flux control
+- Park and Clarke transformations
+- PI compensators for current control
+- Superior performance and efficiency</p></li>
+<li><p><strong>Voltage-Frequency Control (V/F)</strong>
+- Scalar control strategy
+- Simple and robust operation
+- Suitable for basic applications</p></li>
+<li><p><strong>Space Vector Modulation (SVM)</strong>
+- PWM generation for 3-phase inverter
+- Near-sinusoidal current output
+- Optimized voltage utilization</p></li>
+</ol>
+</section>
+<section id="advanced-features">
+<h2>Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Monte Carlo Simulations</strong>: Statistical analysis of motor performance across parameter variations</p></li>
+<li><p><strong>Real-time Monitoring</strong>: Live display of motor parameters, currents, voltages, and power</p></li>
+<li><p><strong>Data Logging</strong>: CSV export with metadata for offline analysis</p></li>
+<li><p><strong>Power Analysis</strong>: Loss calculations including copper, iron, and mechanical losses</p></li>
+<li><p><strong>Power Factor Analysis</strong>: Waveform-based active/reactive/apparent power and PF metrics with reactive compensation sizing helpers</p></li>
+<li><p><strong>PFC Telemetry Hook</strong>: Optional closed-loop PF target tracking in simulation metadata/history (<cite>pfc_command_var</cite>, PF trend)</p></li>
+<li><p><strong>Efficiency Telemetry</strong>: Input power, mechanical output power, estimated total loss, and system efficiency tracked in simulation metadata/history</p></li>
+<li><p><strong>Efficiency Tuning Suggestions</strong>: Heuristic recommendations for switching-frequency and inverter-loss tradeoff tuning from measured efficiency/PF</p></li>
+<li><p><strong>Loaded No-FW Calibration</strong>: Staged loaded-point search that separates speed feasibility, orthogonality, and conditioned efficiency acceptance</p></li>
+<li><p><strong>Standard Startup Sequencing</strong>: Configurable alignment and open-loop startup flows for both FOC and V/f controllers</p></li>
+<li><p><strong>Inverter Realism Blocks</strong>: Independently switchable drop/loss/ripple/thermal/asymmetry effects with runtime telemetry</p></li>
+<li><p><strong>Inverter Analysis Plot</strong>: Dedicated multi-panel plotting for bus ripple, loss breakdown, junction temperature, and common-mode voltage</p></li>
+<li><p><strong>Hardware Backend Abstraction</strong>: Communication backend interface with mock DAQ support for dry-run hardware integration</p></li>
+<li><p><strong>Control Timing Telemetry</strong>: Control-cycle calculation duration and CPU-load metrics, including MCU load estimation helpers</p></li>
+<li><p><strong>Compute Backend Policy</strong>: Runtime backend selection (<cite>auto</cite>, <cite>cpu</cite>, <cite>gpu</cite>) with safe fallback and CuPy acceleration for power metrics when available</p></li>
+</ul>
+</section>
+<section id="user-interface">
+<h2>User Interface<a class="headerlink" href="#user-interface" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Accessible PyQt6 GUI</strong>
+- Screen reader support (NVDA, JAWS compatible)
+- Keyboard-only navigation
+- High contrast display support</p></li>
+<li><p><strong>Interactive Controls</strong>
+- Real-time parameter adjustment
+- Simulation speed control
+- Grid display with customizable spacing
+- Plot export functionality</p></li>
+<li><p><strong>Monitoring Dashboard</strong>
+- Status bar with simulation parameters
+- Real-time waveform plots
+- Phase current and voltage visualization
+- Torque and power monitoring</p></li>
+</ul>
+</section>
+<section id="data-export">
+<h2>Data &amp; Export<a class="headerlink" href="#data-export" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>CSV Export</strong>: Save simulation results with metadata</p></li>
+<li><p><strong>Custom Export Paths</strong>: Choose custom directories for data storage</p></li>
+<li><p><strong>JSON Metadata</strong>: Simulation parameters saved with results</p></li>
+<li><p><strong>Full Simulation History</strong>: All time-series data available for analysis</p></li>
+</ul>
+</section>
+<section id="optimization">
+<h2>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Numba JIT Compilation</strong>: Optional performance boost for computationally intensive calculations</p></li>
+<li><p><strong>Fallback Fallback Decorators</strong>: Graceful degradation if Numba unavailable</p></li>
+<li><p><strong>Efficient Algorithms</strong>: Optimized matrix operations and transformations</p></li>
+</ul>
+</section>
+<section id="extensibility">
+<h2>Extensibility<a class="headerlink" href="#extensibility" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Modular Architecture</strong>: Easy to add new control strategies</p></li>
+<li><p><strong>Plugin-Style Load Models</strong>: Support for different load characteristics</p></li>
+<li><p><strong>Custom Parameter Sets</strong>: Pre-defined motor configurations</p></li>
+<li><p><strong>Event-Driven Simulation</strong>: Clear separation between control and visualization</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quick Start Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api/motor_model.html" class="btn btn-neutral float-right" title="Motor Model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

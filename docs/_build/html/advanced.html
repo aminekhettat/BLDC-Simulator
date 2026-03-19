@@ -1,0 +1,662 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Topics &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Branch Protection Setup" href="branch_protection.html" />
+    <link rel="prev" title="Architecture" href="architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Advanced Topics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#field-oriented-control-foc-implementation">Field-Oriented Control (FOC) Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#space-vector-modulation-svm">Space Vector Modulation (SVM)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#loaded-no-field-weakening-calibration">Loaded No-Field-Weakening Calibration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#monte-carlo-simulation">Monte Carlo Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inductance-management">Inductance Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#power-loss-analysis">Power Loss Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gui-accessibility-features">GUI Accessibility Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-logger-features">Data Logger Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributing-control-algorithms">Contributing Control Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#research-grade-fidelity-roadmap-phase-1">Research-Grade Fidelity Roadmap (Phase 1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#foc-observer-and-inverter-tuning-guide">FOC Observer and Inverter Tuning Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#advanced-inverter-realism-blocks">Advanced inverter realism blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#observer-mode-selection">Observer mode selection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#suggested-initial-observer-gains">Suggested initial observer gains</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#suggested-inverter-non-ideality-starting-points">Suggested inverter non-ideality starting points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tuning-workflow-recommended">Tuning workflow (recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#telemetry-exposed-by-the-inverter-model">Telemetry exposed by the inverter model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sensorless-low-speed-maturity-enhancement">Sensorless low-speed maturity enhancement</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Advanced Topics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/advanced.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="advanced-topics">
+<h1>Advanced Topics<a class="headerlink" href="#advanced-topics" title="Link to this heading"></a></h1>
+<section id="field-oriented-control-foc-implementation">
+<h2>Field-Oriented Control (FOC) Implementation<a class="headerlink" href="#field-oriented-control-foc-implementation" title="Link to this heading"></a></h2>
+<p><strong>Overview</strong>
+FOC decouples torque and flux control by transforming stator currents into a rotating reference frame aligned with the rotor flux.</p>
+<p><strong>Mathematical Foundation</strong></p>
+<ol class="arabic">
+<li><p><strong>Clark Transformation</strong> (3-phase to 2-phase)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>iα = ia
+iβ = (ia + 2*ib) / √3
+</pre></div>
+</div>
+</li>
+<li><p><strong>Park Transformation</strong> (stationary to rotating frame)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">id</span> <span class="o">=</span> <span class="n">iα</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">θ</span><span class="p">)</span> <span class="o">+</span> <span class="n">iβ</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">θ</span><span class="p">)</span>
+<span class="n">iq</span> <span class="o">=</span> <span class="o">-</span><span class="n">iα</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">θ</span><span class="p">)</span> <span class="o">+</span> <span class="n">iβ</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">θ</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Inverse Park Transformation</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Uα</span> <span class="o">=</span> <span class="n">Ud</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">θ</span><span class="p">)</span> <span class="o">-</span> <span class="n">Uq</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">θ</span><span class="p">)</span>
+<span class="n">Uβ</span> <span class="o">=</span> <span class="n">Ud</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">θ</span><span class="p">)</span> <span class="o">+</span> <span class="n">Uq</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">θ</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Control Strategy</strong>
+- Direct-axis (d): Controls flux magnitude
+- Quadrature-axis (q): Controls torque
+- Independent PI controllers for each axis
+- Decoupling terms for cross-coupling compensation</p>
+<p><strong>Performance Metrics</strong>
+- Steady-state error: &lt; 2% under load steps
+- Response time: &lt; 50 ms to step change
+- Efficiency: 94-96% at rated operation</p>
+</section>
+<section id="space-vector-modulation-svm">
+<h2>Space Vector Modulation (SVM)<a class="headerlink" href="#space-vector-modulation-svm" title="Link to this heading"></a></h2>
+<p><strong>Principle</strong>
+SVM generates PWM signals that approximate a desired voltage vector using the eight voltage vectors of a 3-phase inverter.</p>
+<p><strong>SVM Duty Cycles</strong>
+The three phases are controlled by calculating:
+- Neutral point displacement
+- Sector identification
+- Time calculations for active vectors</p>
+<p><strong>Advantages</strong>
+- Near-sinusoidal current reproduction
+- 15% higher DC link utilization vs. sinusoidal PWM
+- Better harmonic performance
+- Lower acoustic noise</p>
+<p><strong>Implementation</strong>
+See <cite>src.control.svm_generator.SVMGenerator.generate_pwm()</cite> for details.</p>
+</section>
+<section id="loaded-no-field-weakening-calibration">
+<h2>Loaded No-Field-Weakening Calibration<a class="headerlink" href="#loaded-no-field-weakening-calibration" title="Link to this heading"></a></h2>
+<p>The repository includes a staged loaded-point calibration workflow in <cite>examples/calibrate_no_fw_loaded_point.py</cite>.</p>
+<p><strong>Why staged acceptance is used</strong></p>
+<ul class="simple">
+<li><p>A strict all-criteria gate can reject candidates too early when the real question is whether the motor can hold speed under load.</p></li>
+<li><p>The workflow therefore checks speed feasibility first, then orthogonality, then efficiency only when the mechanical power/load is large enough for efficiency to be meaningful.</p></li>
+</ul>
+<p><strong>Acceptance stages</strong></p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">speed_tracking_passed</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">orthogonality_stage_passed</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">efficiency_conditioned_passed</span></code></p></li>
+</ol>
+<p><strong>Current measured outcome</strong></p>
+<ul class="simple">
+<li><p>Practical no-FW target speed: about <code class="docutils literal notranslate"><span class="pre">1617.44</span> <span class="pre">rpm</span></code></p></li>
+<li><p>Selected speed-feasible torque: about <code class="docutils literal notranslate"><span class="pre">9.99</span> <span class="pre">Nm</span></code></p></li>
+<li><p>Final high-fidelity verification still fails orthogonality and conditioned efficiency, so the report remains informative rather than fully accepted.</p></li>
+</ul>
+</section>
+<section id="monte-carlo-simulation">
+<h2>Monte Carlo Simulation<a class="headerlink" href="#monte-carlo-simulation" title="Link to this heading"></a></h2>
+<p><strong>Purpose</strong>
+Analyze motor performance under parameter uncertainties and variations.</p>
+<p><strong>Methodology</strong>
+1. Define parameter ranges (±10% typical)
+2. Generate random samples (e.g., 1000 simulations)
+3. Run simulation for each sample
+4. Collect statistics (mean, std dev, min, max)</p>
+<p><strong>Typical Analysis</strong>
+- Impact of manufacturing tolerances
+- Parameter sensitivity analysis
+- Performance distribution at different operating points</p>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.core.motor_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">MotorParameters</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.core.simulation_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimulationEngine</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Define parameter ranges</span>
+<span class="n">n_simulations</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">variations</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;Rs&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">n_simulations</span><span class="p">),</span>
+    <span class="s1">&#39;Ld&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mf">0.005</span><span class="p">,</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="n">n_simulations</span><span class="p">),</span>
+    <span class="s1">&#39;Lq&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mf">0.008</span><span class="p">,</span> <span class="mf">0.0008</span><span class="p">,</span> <span class="n">n_simulations</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_simulations</span><span class="p">):</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">MotorParameters</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="c1"># Update with variations</span>
+    <span class="n">engine</span> <span class="o">=</span> <span class="n">SimulationEngine</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">control_mode</span><span class="o">=</span><span class="s1">&#39;FOC&#39;</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="inductance-management">
+<h2>Inductance Management<a class="headerlink" href="#inductance-management" title="Link to this heading"></a></h2>
+<p><strong>Phase Inductance vs. d-q Inductances</strong></p>
+<p>The motor model uses phase inductance (L_phase) for the base calculation but also supports direct d-q axis inductance specification (Ld, Lq):</p>
+<ul class="simple">
+<li><p><strong>Ld</strong>: Direct-axis inductance (flux-weakening effect)</p></li>
+<li><p><strong>Lq</strong>: Quadrature-axis inductance (load-bearing effect)</p></li>
+<li><p><strong>L_phase</strong>: Single inductance value used in base equations</p></li>
+</ul>
+<p><strong>Selection</strong>
+- Use L_phase (Ld/Lq = L_phase) for isotropic motors
+- Specify Ld &lt; Lq for interior PM (IPM) motors with saliency
+- Ld ≈ Lq for surface PM (SPM) motors</p>
+<p>See <cite>INDUCTANCE_MANAGEMENT.md</cite> for detailed explanation.</p>
+</section>
+<section id="power-loss-analysis">
+<h2>Power Loss Analysis<a class="headerlink" href="#power-loss-analysis" title="Link to this heading"></a></h2>
+<p><strong>Loss Components</strong></p>
+<ol class="arabic">
+<li><p><strong>Copper Losses</strong> (I²R)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>P_copper = Rs * (ia² + ib² + ic²)
+</pre></div>
+</div>
+</li>
+<li><p><strong>Iron Losses</strong> (hysteresis + eddy current)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>P_iron ≈ k_h * f * B_peak² + k_e * f² * B_peak²
+</pre></div>
+</div>
+</li>
+<li><p><strong>Mechanical Losses</strong> (friction + windage)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>P_mech ≈ f_loss * ω
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Efficiency Calculation</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">η</span> <span class="o">=</span> <span class="n">P_out</span> <span class="o">/</span> <span class="p">(</span><span class="n">P_out</span> <span class="o">+</span> <span class="n">P_total_loss</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="o">%</span>
+</pre></div>
+</div>
+<p><strong>Loss Optimization</strong>
+- Copper: Minimize stator current magnitude
+- Iron: Reduce operating flux density
+- Mechanical: Optimize rotor design</p>
+</section>
+<section id="gui-accessibility-features">
+<h2>GUI Accessibility Features<a class="headerlink" href="#gui-accessibility-features" title="Link to this heading"></a></h2>
+<p><strong>Screen Reader Support</strong>
+- All widgets have proper accessible names and descriptions
+- Labels and help text automatically read
+- Numeric values prefixed with descriptive text (e.g., “Current value: 1.5 A”)</p>
+<p><strong>Keyboard Navigation</strong>
+- Tab order properly configured
+- Shortcuts for common operations
+- No mouse-only controls</p>
+<p><strong>Visual Accessibility</strong>
+- High contrast plots available
+- Adjustable font sizes
+- Color scheme supporting colorblind users</p>
+<p><strong>Implementation Details</strong>
+See <cite>src.ui.widgets.accessible_widgets</cite> for widget implementations.</p>
+</section>
+<section id="data-logger-features">
+<h2>Data Logger Features<a class="headerlink" href="#data-logger-features" title="Link to this heading"></a></h2>
+<p><strong>CSV Export Format</strong>
+- Header row with column names
+- Metadata saved in separate JSON file
+- Custom export paths supported
+- Timestamped default locations</p>
+<p><strong>Recorded Data</strong>
+- Time, speed, currents (3-phase)
+- Voltages (3-phase), EMF (3-phase)
+- Torque, load torque
+- Omega, theta (rotor angle)</p>
+<p><strong>Usage Example</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span> <span class="o">=</span> <span class="n">DataLogger</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">save_simulation_data</span><span class="p">(</span>
+    <span class="n">history_dict</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;test&#39;</span><span class="p">:</span> <span class="s1">&#39;FOC performance&#39;</span><span class="p">},</span>
+    <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;custom_path.csv&#39;</span><span class="p">,</span>
+    <span class="n">use_custom_path</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-tuning">
+<h2>Performance Tuning<a class="headerlink" href="#performance-tuning" title="Link to this heading"></a></h2>
+<p><strong>Simulation Parameters</strong>
+- <cite>dt</cite>: Time step (default 0.0001 s) - smaller = more accuracy but slower
+- <cite>update_freq</cite>: GUI update frequency (default 100 Hz)
+- <cite>max_iterations</cite>: Stop after N steps</p>
+<p><strong>Control Tuning</strong>
+- <strong>Kp (Proportional gain)</strong>: Affects response speed and overshoot
+- <strong>Ki (Integral gain)</strong>: Removes steady-state error
+- <strong>Bandwidth</strong>: Typically 100-500 Hz for current loop</p>
+<p><strong>Optimization Tips</strong>
+1. Use Numba JIT for 5-10x speedup
+2. Reduce plot update frequency for faster execution
+3. Implement early stopping conditions
+4. Use event-driven updates instead of polling</p>
+</section>
+<section id="contributing-control-algorithms">
+<h2>Contributing Control Algorithms<a class="headerlink" href="#contributing-control-algorithms" title="Link to this heading"></a></h2>
+<p>To add a new control algorithm:</p>
+<ol class="arabic simple">
+<li><p>Create new class in <cite>src/control/</cite> inheriting from <cite>BaseController</cite></p></li>
+<li><p>Implement <cite>__init__</cite>, <cite>update()</cite>, and <cite>get_control_law()</cite> methods</p></li>
+<li><p>Register in <cite>main_window.py</cite> UI dropdown</p></li>
+<li><p>Add tests in <cite>tests/</cite> directory</p></li>
+<li><p>Document in this guide</p></li>
+</ol>
+<p><strong>Template</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.control.base_controller</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseController</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyController</span><span class="p">(</span><span class="n">BaseController</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="c1"># Your initialization</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="c1"># Update internal state</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_control_law</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Return control voltages</span>
+        <span class="k">return</span> <span class="n">Ua</span><span class="p">,</span> <span class="n">Ub</span><span class="p">,</span> <span class="n">Uc</span>
+</pre></div>
+</div>
+</section>
+<section id="research-grade-fidelity-roadmap-phase-1">
+<h2>Research-Grade Fidelity Roadmap (Phase 1)<a class="headerlink" href="#research-grade-fidelity-roadmap-phase-1" title="Link to this heading"></a></h2>
+<p>Phase 1 establishes deterministic regression checks before deeper physics and control upgrades.</p>
+<p><strong>Objective</strong></p>
+<ul class="simple">
+<li><p>Freeze a reproducible KPI baseline over fixed scenarios</p></li>
+<li><p>Detect unintended behavior drift when changing motor/control models</p></li>
+<li><p>Keep changes measurable release-to-release</p></li>
+</ul>
+<p><strong>Implemented Baseline Framework</strong></p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><cite>src.utils.regression_baseline</cite>:</dt><dd><ul>
+<li><p>Defines fixed reference scenarios</p></li>
+<li><p>Runs deterministic V/f simulations</p></li>
+<li><p>Runs deterministic FOC simulations</p></li>
+<li><p>Computes KPI set per scenario</p></li>
+<li><p>Saves/loads baseline JSON</p></li>
+<li><p>Compares current KPIs against frozen baseline tolerances</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><cite>tests.test_regression_baseline</cite>:</dt><dd><ul>
+<li><p>Executes the reference suite and checks drift against baseline</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><cite>tests.test_regression_baseline_foc</cite>:</dt><dd><ul>
+<li><p>Executes the FOC reference suite and checks drift against baseline</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><cite>examples.generate_regression_baseline</cite>:</dt><dd><ul>
+<li><p>Utility script to freeze or refresh baseline data</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><cite>examples.generate_foc_regression_baseline</cite>:</dt><dd><ul>
+<li><p>Utility script to freeze or refresh FOC baseline data</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><cite>examples.report_regression_drift</cite>:</dt><dd><ul>
+<li><p>Utility script to print KPI drift tables (full and failed rows)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p><strong>Reference Scenarios</strong></p>
+<ol class="arabic simple">
+<li><p>no_load_spinup</p></li>
+<li><p>constant_load</p></li>
+<li><p>ramp_load</p></li>
+<li><p>supply_sag</p></li>
+</ol>
+<p><strong>FOC Reference Scenarios</strong></p>
+<ol class="arabic simple">
+<li><p>foc_constant_load_clarke</p></li>
+<li><p>foc_ramp_load_clarke</p></li>
+<li><p>foc_supply_sag_concordia</p></li>
+</ol>
+<p><strong>Current KPI Set</strong></p>
+<ul class="simple">
+<li><p>final_speed_rpm</p></li>
+<li><p>peak_speed_rpm</p></li>
+<li><p>peak_phase_current_a</p></li>
+<li><p>steady_state_speed_std_rpm</p></li>
+<li><p>torque_ripple_std_nm</p></li>
+<li><p>mean_supply_voltage_v</p></li>
+<li><p>mean_load_torque_nm</p></li>
+</ul>
+<p><strong>Drift Diagnostics</strong></p>
+<p>Baseline comparisons now include row-wise drift reporting with:</p>
+<ul class="simple">
+<li><p>absolute delta</p></li>
+<li><p>percentage delta</p></li>
+<li><p>tolerance percentage</p></li>
+<li><p>pass/fail/missing status</p></li>
+</ul>
+<p>When regression tests fail, the failure output includes a compact drift table
+to show exactly which KPI exceeded tolerance and by how much.</p>
+<p><strong>CI Regression Gate</strong></p>
+<p>GitHub Actions workflow:</p>
+<ul class="simple">
+<li><p><cite>.github/workflows/regression-gates.yml</cite></p></li>
+</ul>
+<p>Behavior:</p>
+<ul class="simple">
+<li><p>Runs V/f and FOC baseline regression tests on pushes and pull requests</p></li>
+<li><p>Fails the CI job when KPI drift exceeds configured tolerance</p></li>
+<li><dl class="simple">
+<dt>Always uploads an artifact bundle with:</dt><dd><ul>
+<li><p><cite>regression_drift_report.txt</cite></p></li>
+<li><p>current frozen baseline JSON files</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Branch protection setup and required status-check mapping are documented in:</p>
+<ul class="simple">
+<li><p><cite>docs/branch_protection.rst</cite></p></li>
+</ul>
+<p>PR merge checklist template:</p>
+<ul class="simple">
+<li><p><cite>.github/PULL_REQUEST_TEMPLATE.md</cite></p></li>
+</ul>
+<p>Contributor policy for baseline regeneration and required evidence:</p>
+<ul class="simple">
+<li><p><cite>CONTRIBUTING.md</cite></p></li>
+</ul>
+<p>Release note template with explicit baseline-change section:</p>
+<ul class="simple">
+<li><p><cite>RELEASE_NOTES_TEMPLATE.md</cite></p></li>
+</ul>
+<p><strong>How to Freeze Baseline</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">examples</span><span class="o">/</span><span class="n">generate_regression_baseline</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>This writes baseline data to:</p>
+<ul class="simple">
+<li><p><cite>tests/baselines/reference_baseline.json</cite></p></li>
+</ul>
+<p>To freeze FOC baseline:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">examples</span><span class="o">/</span><span class="n">generate_foc_regression_baseline</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>This writes baseline data to:</p>
+<ul class="simple">
+<li><p><cite>tests/baselines/foc_reference_baseline.json</cite></p></li>
+</ul>
+<p><strong>How to Run Regression Check</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="n">tests</span><span class="o">/</span><span class="n">test_regression_baseline</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">v</span>
+</pre></div>
+</div>
+<p>Run both V/f and FOC regression checks:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="n">tests</span><span class="o">/</span><span class="n">test_regression_baseline</span><span class="o">.</span><span class="n">py</span> <span class="n">tests</span><span class="o">/</span><span class="n">test_regression_baseline_foc</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">v</span>
+</pre></div>
+</div>
+<p>Generate a human-readable drift report:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">examples</span><span class="o">/</span><span class="n">report_regression_drift</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p><strong>Important Notes</strong></p>
+<ul class="simple">
+<li><p>Keep <cite>SIMULATION_PARAMS[‘dt’]</cite> fixed when comparing against the same baseline.</p></li>
+<li><p>Regenerate baseline only after intentional model/control updates.</p></li>
+<li><p>If baseline is regenerated, record the reason in commit history/release notes.</p></li>
+</ul>
+</section>
+<section id="foc-observer-and-inverter-tuning-guide">
+<h2>FOC Observer and Inverter Tuning Guide<a class="headerlink" href="#foc-observer-and-inverter-tuning-guide" title="Link to this heading"></a></h2>
+<p>Recent control updates add selectable angle observers and non-ideal inverter terms.
+Use the guidance below as practical starting points before fine tuning.</p>
+<section id="advanced-inverter-realism-blocks">
+<h3>Advanced inverter realism blocks<a class="headerlink" href="#advanced-inverter-realism-blocks" title="Link to this heading"></a></h3>
+<p>The inverter model now supports individually switchable realism blocks so the
+simulation can be tuned from ideal-average behavior to a higher-fidelity
+reduced-order bridge model.</p>
+<p>Available feature toggles:</p>
+<ul class="simple">
+<li><p>Device drop</p></li>
+<li><p>Dead-time distortion</p></li>
+<li><p>Conduction loss</p></li>
+<li><p>Switching loss</p></li>
+<li><p>Freewheel diode path loss</p></li>
+<li><p>Minimum pulse suppression</p></li>
+<li><p>DC-link ripple</p></li>
+<li><p>Thermal coupling</p></li>
+<li><p>Phase asymmetry</p></li>
+</ul>
+</section>
+<section id="observer-mode-selection">
+<h3>Observer mode selection<a class="headerlink" href="#observer-mode-selection" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><cite>Measured</cite>: Uses model rotor angle directly. Best for reference simulations and debugging.</p></li>
+<li><p><cite>PLL</cite>: Uses back-EMF angle tracking. Good first sensorless-like observer mode.</p></li>
+<li><p><cite>SMO</cite>: Sliding-mode-inspired variant with robust error sign action and filtered speed estimate.</p></li>
+</ul>
+</section>
+<section id="suggested-initial-observer-gains">
+<h3>Suggested initial observer gains<a class="headerlink" href="#suggested-initial-observer-gains" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>PLL Kp: <cite>50</cite> to <cite>150</cite></p></li>
+<li><p>PLL Ki: <cite>1000</cite> to <cite>5000</cite></p></li>
+<li><p>SMO Kslide: <cite>300</cite> to <cite>1000</cite></p></li>
+<li><p>SMO LPF Alpha: <cite>0.05</cite> to <cite>0.2</cite></p></li>
+<li><p>SMO Boundary: <cite>0.03</cite> to <cite>0.12</cite> rad</p></li>
+</ul>
+</section>
+<section id="suggested-inverter-non-ideality-starting-points">
+<h3>Suggested inverter non-ideality starting points<a class="headerlink" href="#suggested-inverter-non-ideality-starting-points" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Device Drop: <cite>0.2</cite> to <cite>1.0</cite> V</p></li>
+<li><p>Dead-Time Loss: <cite>0.005</cite> to <cite>0.03</cite> pu</p></li>
+<li><p>Conduction Resistance: <cite>0.005</cite> to <cite>0.05</cite> ohm</p></li>
+<li><p>Switching Frequency: <cite>8000</cite> to <cite>20000</cite> Hz</p></li>
+<li><p>Switching Loss Coeff: <cite>0.002</cite> to <cite>0.02</cite> V/A/kHz</p></li>
+<li><p>Diode Drop: <cite>0.2</cite> to <cite>1.0</cite> V</p></li>
+<li><p>Minimum Pulse Fraction: <cite>0.002</cite> to <cite>0.03</cite> pu</p></li>
+<li><p>DC-Link Capacitance: <cite>500e-6</cite> to <cite>5e-3</cite> F</p></li>
+<li><p>DC-Link Source Resistance: <cite>0.01</cite> to <cite>0.2</cite> ohm</p></li>
+<li><p>DC-Link ESR: <cite>0.001</cite> to <cite>0.05</cite> ohm</p></li>
+<li><p>Thermal Resistance: <cite>0.5</cite> to <cite>3.0</cite> K/W</p></li>
+<li><p>Thermal Capacitance: <cite>10</cite> to <cite>200</cite> J/K</p></li>
+<li><p>Phase Mismatch Scales: <cite>0.98</cite> to <cite>1.02</cite></p></li>
+</ul>
+</section>
+<section id="tuning-workflow-recommended">
+<h3>Tuning workflow (recommended)<a class="headerlink" href="#tuning-workflow-recommended" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Start with <cite>Measured</cite> observer and all inverter non-idealities at zero.</p></li>
+<li><p>Tune d/q current loops and cascaded speed loop first.</p></li>
+<li><p>Switch to <cite>PLL</cite>, tune Kp then Ki to remove steady-state phase error.</p></li>
+<li><p>Switch to <cite>SMO</cite> if robust disturbance rejection is needed, then tune <cite>Kslide</cite> and <cite>LPF Alpha</cite>.</p></li>
+<li><p>Introduce inverter non-idealities one at a time: device drop, dead-time, then conduction resistance.</p></li>
+<li><p>Add switching and diode losses after the base current-loop tuning is stable.</p></li>
+<li><p>Enable DC-link ripple only after voltage-loop behavior is understood, because it couples supply and modulation limits.</p></li>
+<li><p>Enable thermal coupling for long-duration sweeps, not for first-pass controller tuning.</p></li>
+<li><p>Use phase asymmetry only when studying mismatch sensitivity or fault-like drift.</p></li>
+<li><p>Re-freeze baseline only after expected drift is verified and documented.</p></li>
+</ul>
+</section>
+<section id="telemetry-exposed-by-the-inverter-model">
+<h3>Telemetry exposed by the inverter model<a class="headerlink" href="#telemetry-exposed-by-the-inverter-model" title="Link to this heading"></a></h3>
+<p>The simulation history and inverter state now include:</p>
+<ul class="simple">
+<li><p>Effective DC-link voltage</p></li>
+<li><p>DC-link ripple magnitude</p></li>
+<li><p>DC-link bus current</p></li>
+<li><p>Device, conduction, switching, dead-time, and diode loss components</p></li>
+<li><p>Total inverter loss power</p></li>
+<li><p>Junction temperature</p></li>
+<li><p>Common-mode voltage</p></li>
+<li><p>Minimum pulse event count</p></li>
+</ul>
+</section>
+<section id="sensorless-low-speed-maturity-enhancement">
+<h3>Sensorless low-speed maturity enhancement<a class="headerlink" href="#sensorless-low-speed-maturity-enhancement" title="Link to this heading"></a></h3>
+<p>The FOC observer path now uses confidence-and-speed weighted angle blending in
+sensorless modes (<cite>PLL</cite>/<cite>SMO</cite>) to improve low-speed robustness:</p>
+<ul class="simple">
+<li><p>At low speed or low confidence, electrical angle remains closer to measured angle.</p></li>
+<li><p>As speed and confidence increase, control transitions smoothly toward full observer angle.</p></li>
+<li><p>This reduces abrupt observer phase behavior during weak back-EMF conditions.</p></li>
+</ul>
+<p>Configuration entry point:</p>
+<ul class="simple">
+<li><p><cite>FOCController.set_sensorless_blend(enabled, min_speed_rpm, min_confidence)</cite></p></li>
+</ul>
+<p>Runtime diagnostics exposed in controller state:</p>
+<ul class="simple">
+<li><p><cite>sensorless_blend_weight</cite></p></li>
+<li><p><cite>theta_sensorless_raw</cite></p></li>
+</ul>
+<p><strong>Phase-2 Next Steps</strong></p>
+<ul class="simple">
+<li><p>Replace simplified torque paths with energy-consistent formulations</p></li>
+<li><p>Add adaptive handoff fallback tuning guidelines for low-speed recovery scenarios</p></li>
+<li><p>Add startup transition scenario diversity (load/supply/noise sweeps) for stress coverage</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="architecture.html" class="btn btn-neutral float-left" title="Architecture" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="branch_protection.html" class="btn btn-neutral float-right" title="Branch Protection Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

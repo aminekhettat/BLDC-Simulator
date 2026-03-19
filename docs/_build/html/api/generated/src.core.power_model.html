@@ -1,0 +1,442 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.core.power_model &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="src.core.simulation_engine" href="src.core.simulation_engine.html" />
+    <link rel="prev" title="src.core.motor_model" href="src.core.motor_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../core.html">Core Module</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="src.core.motor_model.html">src.core.motor_model</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">src.core.power_model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#power-supply-model">Power Supply Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.compute_power_metrics"><code class="docutils literal notranslate"><span class="pre">compute_power_metrics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.required_reactive_compensation"><code class="docutils literal notranslate"><span class="pre">required_reactive_compensation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.compute_efficiency_metrics"><code class="docutils literal notranslate"><span class="pre">compute_efficiency_metrics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.recommend_efficiency_adjustments"><code class="docutils literal notranslate"><span class="pre">recommend_efficiency_adjustments()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.PowerFactorController"><code class="docutils literal notranslate"><span class="pre">PowerFactorController</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.PowerFactorController.__init__"><code class="docutils literal notranslate"><span class="pre">PowerFactorController.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.PowerFactorController.reset"><code class="docutils literal notranslate"><span class="pre">PowerFactorController.reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.PowerFactorController.update"><code class="docutils literal notranslate"><span class="pre">PowerFactorController.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.SupplyProfile"><code class="docutils literal notranslate"><span class="pre">SupplyProfile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.SupplyProfile.get_voltage"><code class="docutils literal notranslate"><span class="pre">SupplyProfile.get_voltage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.SupplyProfile.reset"><code class="docutils literal notranslate"><span class="pre">SupplyProfile.reset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.ConstantSupply"><code class="docutils literal notranslate"><span class="pre">ConstantSupply</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.ConstantSupply.__init__"><code class="docutils literal notranslate"><span class="pre">ConstantSupply.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.ConstantSupply.get_voltage"><code class="docutils literal notranslate"><span class="pre">ConstantSupply.get_voltage()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.RampSupply"><code class="docutils literal notranslate"><span class="pre">RampSupply</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.RampSupply.__init__"><code class="docutils literal notranslate"><span class="pre">RampSupply.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.RampSupply.get_voltage"><code class="docutils literal notranslate"><span class="pre">RampSupply.get_voltage()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.VariableSupply"><code class="docutils literal notranslate"><span class="pre">VariableSupply</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.VariableSupply.__init__"><code class="docutils literal notranslate"><span class="pre">VariableSupply.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.core.power_model.VariableSupply.get_voltage"><code class="docutils literal notranslate"><span class="pre">VariableSupply.get_voltage()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.core.simulation_engine.html">src.core.simulation_engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.core.load_model.html">src.core.load_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#bldc-motor-model">BLDC Motor Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.motor_model.MotorParameters"><code class="docutils literal notranslate"><span class="pre">MotorParameters</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.motor_model.BLDCMotor"><code class="docutils literal notranslate"><span class="pre">BLDCMotor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#power-supply-model">Power Supply Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.compute_power_metrics"><code class="docutils literal notranslate"><span class="pre">compute_power_metrics()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.required_reactive_compensation"><code class="docutils literal notranslate"><span class="pre">required_reactive_compensation()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.compute_efficiency_metrics"><code class="docutils literal notranslate"><span class="pre">compute_efficiency_metrics()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.recommend_efficiency_adjustments"><code class="docutils literal notranslate"><span class="pre">recommend_efficiency_adjustments()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.PowerFactorController"><code class="docutils literal notranslate"><span class="pre">PowerFactorController</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.SupplyProfile"><code class="docutils literal notranslate"><span class="pre">SupplyProfile</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.ConstantSupply"><code class="docutils literal notranslate"><span class="pre">ConstantSupply</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.RampSupply"><code class="docutils literal notranslate"><span class="pre">RampSupply</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.power_model.VariableSupply"><code class="docutils literal notranslate"><span class="pre">VariableSupply</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#simulation-engine-module">Simulation Engine Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.simulation_engine.SimulationEngine"><code class="docutils literal notranslate"><span class="pre">SimulationEngine</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#load-model-module">Load Model Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.load_model.LoadProfile"><code class="docutils literal notranslate"><span class="pre">LoadProfile</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.load_model.ConstantLoad"><code class="docutils literal notranslate"><span class="pre">ConstantLoad</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.load_model.RampLoad"><code class="docutils literal notranslate"><span class="pre">RampLoad</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.load_model.VariableLoad"><code class="docutils literal notranslate"><span class="pre">VariableLoad</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core.html#src.core.load_model.CyclicLoad"><code class="docutils literal notranslate"><span class="pre">CyclicLoad</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../core.html">Core Module</a></li>
+      <li class="breadcrumb-item active">src.core.power_model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/api/generated/src.core.power_model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-src.core.power_model">
+<span id="src-core-power-model"></span><h1>src.core.power_model<a class="headerlink" href="#module-src.core.power_model" title="Link to this heading"></a></h1>
+<section id="power-supply-model">
+<h2>Power Supply Model<a class="headerlink" href="#power-supply-model" title="Link to this heading"></a></h2>
+<p>This module provides models of the DC power supply feeding the inverter.
+A time-dependent voltage profile can be defined to simulate battery sag,
+AC ripple rectification, or other variations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">author<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BLDC Control Team</p>
+</dd>
+<dt class="field-even">version<span class="colon">:</span></dt>
+<dd class="field-even"><p>1.0.0</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial implementation of power supply models</p>
+</div>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.core.power_model.compute_efficiency_metrics" title="src.core.power_model.compute_efficiency_metrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_efficiency_metrics</span></code></a>(input_power_w, ...)</p></td>
+<td><p>Compute simple drivetrain efficiency metrics from power flow values.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.core.power_model.compute_power_metrics" title="src.core.power_model.compute_power_metrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_power_metrics</span></code></a>(voltage, current[, ...])</p></td>
+<td><p>Compute basic power-quality metrics from voltage/current waveforms.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.core.power_model.recommend_efficiency_adjustments" title="src.core.power_model.recommend_efficiency_adjustments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recommend_efficiency_adjustments</span></code></a>(efficiency, ...)</p></td>
+<td><p>Return simple heuristic suggestions for improving simulated efficiency.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.core.power_model.required_reactive_compensation" title="src.core.power_model.required_reactive_compensation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">required_reactive_compensation</span></code></a>(...)</p></td>
+<td><p>Estimate reactive compensation needed to improve power factor.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.core.power_model.ConstantSupply" title="src.core.power_model.ConstantSupply"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConstantSupply</span></code></a>([voltage])</p></td>
+<td><p>Constant DC voltage supply.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.core.power_model.PowerFactorController" title="src.core.power_model.PowerFactorController"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PowerFactorController</span></code></a>([target_pf, kp, ki, ...])</p></td>
+<td><p>Simple closed-loop power factor correction command generator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.core.power_model.RampSupply" title="src.core.power_model.RampSupply"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RampSupply</span></code></a>(initial, final, duration)</p></td>
+<td><p>Linear ramp of supply voltage.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.core.power_model.SupplyProfile" title="src.core.power_model.SupplyProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupplyProfile</span></code></a>()</p></td>
+<td><p>Abstract base class for supply voltage profiles.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.core.power_model.VariableSupply" title="src.core.power_model.VariableSupply"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VariableSupply</span></code></a>([voltage_func, time_points, ...])</p></td>
+<td><p>Custom time-dependent supply using function or data points.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.core.power_model.compute_power_metrics">
+<span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">compute_power_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#compute_power_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.compute_power_metrics" title="Link to this definition"></a></dt>
+<dd><p>Compute basic power-quality metrics from voltage/current waveforms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+</dl>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>voltage<span class="classifier">np.ndarray</span></dt><dd><p>Instantaneous voltage samples.</p>
+</dd>
+<dt>current<span class="classifier">np.ndarray</span></dt><dd><p>Instantaneous current samples, aligned with <code class="docutils literal notranslate"><span class="pre">voltage</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h2>Returns<a class="headerlink" href="#returns" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>dict</dt><dd><p>Active/apparent/reactive power, RMS values, and power factor.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.core.power_model.required_reactive_compensation">
+<span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">required_reactive_compensation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active_power_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_pf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_pf</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#required_reactive_compensation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.required_reactive_compensation" title="Link to this definition"></a></dt>
+<dd><p>Estimate reactive compensation needed to improve power factor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+</dl>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading"></a></h2>
+<p>This helper assumes positive active power and lagging-load correction sizing.</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.core.power_model.compute_efficiency_metrics">
+<span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">compute_efficiency_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_power_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torque_nm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omega_rad_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#compute_efficiency_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.compute_efficiency_metrics" title="Link to this definition"></a></dt>
+<dd><p>Compute simple drivetrain efficiency metrics from power flow values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.core.power_model.recommend_efficiency_adjustments">
+<span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">recommend_efficiency_adjustments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">efficiency</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_efficiency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#recommend_efficiency_adjustments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.recommend_efficiency_adjustments" title="Link to this definition"></a></dt>
+<dd><p>Return simple heuristic suggestions for improving simulated efficiency.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.core.power_model.PowerFactorController">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">PowerFactorController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_pf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ki</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_compensation_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#PowerFactorController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.PowerFactorController" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Simple closed-loop power factor correction command generator.</p>
+<p>The controller estimates a reactive compensation command from current PF,
+active power, and a target PF. It is designed as a non-invasive telemetry
+hook for simulation workflows.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.PowerFactorController.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_pf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ki</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_compensation_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#PowerFactorController.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.PowerFactorController.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.PowerFactorController.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#PowerFactorController.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.PowerFactorController.reset" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.PowerFactorController.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_pf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active_power_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#PowerFactorController.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.PowerFactorController.update" title="Link to this definition"></a></dt>
+<dd><p>Update controller and return recommended compensation [VAR].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.core.power_model.SupplyProfile">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">SupplyProfile</span></span><a class="reference internal" href="../../_modules/src/core/power_model.html#SupplyProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.SupplyProfile" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Abstract base class for supply voltage profiles.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.SupplyProfile.get_voltage">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#SupplyProfile.get_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.SupplyProfile.get_voltage" title="Link to this definition"></a></dt>
+<dd><p>Return supply voltage at time t.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.SupplyProfile.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#SupplyProfile.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.SupplyProfile.reset" title="Link to this definition"></a></dt>
+<dd><p>Reset profile state if applicable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.core.power_model.ConstantSupply">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">ConstantSupply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#ConstantSupply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.ConstantSupply" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.core.power_model.SupplyProfile" title="src.core.power_model.SupplyProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">SupplyProfile</span></code></a></p>
+<p>Constant DC voltage supply.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.ConstantSupply.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#ConstantSupply.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.ConstantSupply.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.ConstantSupply.get_voltage">
+<span class="sig-name descname"><span class="pre">get_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#ConstantSupply.get_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.ConstantSupply.get_voltage" title="Link to this definition"></a></dt>
+<dd><p>Return supply voltage at time t.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.core.power_model.RampSupply">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">RampSupply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#RampSupply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.RampSupply" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.core.power_model.SupplyProfile" title="src.core.power_model.SupplyProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">SupplyProfile</span></code></a></p>
+<p>Linear ramp of supply voltage.</p>
+<p>Allows simulating startup charge or sag.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.RampSupply.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#RampSupply.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.RampSupply.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.RampSupply.get_voltage">
+<span class="sig-name descname"><span class="pre">get_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#RampSupply.get_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.RampSupply.get_voltage" title="Link to this definition"></a></dt>
+<dd><p>Return supply voltage at time t.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.core.power_model.VariableSupply">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">VariableSupply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#VariableSupply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.VariableSupply" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.core.power_model.SupplyProfile" title="src.core.power_model.SupplyProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">SupplyProfile</span></code></a></p>
+<p>Custom time-dependent supply using function or data points.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.VariableSupply.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#VariableSupply.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.VariableSupply.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.core.power_model.VariableSupply.get_voltage">
+<span class="sig-name descname"><span class="pre">get_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/core/power_model.html#VariableSupply.get_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.VariableSupply.get_voltage" title="Link to this definition"></a></dt>
+<dd><p>Return supply voltage at time t.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="src.core.motor_model.html" class="btn btn-neutral float-left" title="src.core.motor_model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="src.core.simulation_engine.html" class="btn btn-neutral float-right" title="src.core.simulation_engine" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

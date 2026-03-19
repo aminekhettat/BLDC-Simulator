@@ -1,0 +1,478 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.core.load_model &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.core.load_model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.core.load_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Load Model Module</span>
+<span class="sd">=================</span>
+
+<span class="sd">This module provides various load models for the motor simulation.</span>
+<span class="sd">The load models generate torque profiles that can be constant, ramping,</span>
+<span class="sd">or variable over time.</span>
+
+<span class="sd">Supported load types:</span>
+<span class="sd">- Constant load (fixed torque)</span>
+<span class="sd">- Ramp load (linear change in torque over time)</span>
+<span class="sd">- Variable load (custom time-dependent profile)</span>
+
+<span class="sd">:author: Amine Khettat</span>
+<span class="sd">:version: 1.0.0</span>
+
+<span class="sd">.. versionadded:: 1.0.0</span>
+<span class="sd">    Initial implementation of load models</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span>
+
+
+<div class="viewcode-block" id="LoadProfile">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.LoadProfile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LoadProfile</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract base class for load profiles.</span>
+
+<span class="sd">    All load models inherit from this class and implement the</span>
+<span class="sd">    :meth:`get_torque` method to provide time-dependent load torque.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LoadProfile.get_torque">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.LoadProfile.get_torque">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_torque</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get load torque at specified time.</span>
+
+<span class="sd">        :param time: Simulation time [seconds]</span>
+<span class="sd">        :type time: float</span>
+<span class="sd">        :return: Load torque [N*m]</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="LoadProfile.reset">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.LoadProfile.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset load profile to initial state.</span>
+
+<span class="sd">        Not all profiles need resetting, but this method provides</span>
+<span class="sd">        a consistent interface.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ConstantLoad">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.ConstantLoad">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConstantLoad</span><span class="p">(</span><span class="n">LoadProfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constant load model.</span>
+
+<span class="sd">    Applies a fixed torque throughout simulation.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; load = ConstantLoad(torque=2.5)</span>
+<span class="sd">        &gt;&gt;&gt; load.get_torque(0.0)</span>
+<span class="sd">        2.5</span>
+<span class="sd">        &gt;&gt;&gt; load.get_torque(10.0)</span>
+<span class="sd">        2.5</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ConstantLoad.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.ConstantLoad.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">torque</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize constant load.</span>
+
+<span class="sd">        :param torque: Constant load torque [N*m], defaults to 0.0</span>
+<span class="sd">        :type torque: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">torque</span> <span class="o">=</span> <span class="n">torque</span></div>
+
+
+<div class="viewcode-block" id="ConstantLoad.get_torque">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.ConstantLoad.get_torque">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_torque</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get constant load torque.</span>
+
+<span class="sd">        :param time: Simulation time [seconds] (not used)</span>
+<span class="sd">        :type time: float</span>
+<span class="sd">        :return: Load torque [N*m]</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">torque</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RampLoad">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.RampLoad">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RampLoad</span><span class="p">(</span><span class="n">LoadProfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ramping load model.</span>
+
+<span class="sd">    The load torque ramps linearly from initial value to final value</span>
+<span class="sd">    over a specified duration.</span>
+
+<span class="sd">    **Load Profile:**</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \\tau(t) = \\tau_0 + \\frac{(\\tau_f - \\tau_0)}{t_ramp} * t \\quad (0 \\leq t \\leq t_{ramp})</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \\tau(t) = \\tau_f \\quad (t &gt; t_{ramp})</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; load = RampLoad(initial=0.0, final=5.0, duration=2.0)</span>
+<span class="sd">        &gt;&gt;&gt; load.get_torque(1.0)  # At t=1s</span>
+<span class="sd">        2.5</span>
+<span class="sd">        &gt;&gt;&gt; load.get_torque(3.0)  # After ramp</span>
+<span class="sd">        5.0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RampLoad.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.RampLoad.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">final</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize ramp load.</span>
+
+<span class="sd">        :param initial: Initial load torque [N*m], defaults to 0.0</span>
+<span class="sd">        :type initial: float</span>
+<span class="sd">        :param final: Final load torque [N*m], defaults to 1.0</span>
+<span class="sd">        :type final: float</span>
+<span class="sd">        :param duration: Ramp duration [seconds], defaults to 1.0</span>
+<span class="sd">        :type duration: float</span>
+
+<span class="sd">        :raises ValueError: If duration &lt;= 0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ramp duration must be positive&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial</span> <span class="o">=</span> <span class="n">initial</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final</span> <span class="o">=</span> <span class="n">final</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">duration</span></div>
+
+
+<div class="viewcode-block" id="RampLoad.get_torque">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.RampLoad.get_torque">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_torque</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get ramping load torque.</span>
+
+<span class="sd">        :param time: Simulation time [seconds]</span>
+<span class="sd">        :type time: float</span>
+<span class="sd">        :return: Load torque [N*m]</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">time</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial</span>
+        <span class="k">elif</span> <span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">final</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Linear interpolation</span>
+            <span class="n">slope</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">final</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial</span> <span class="o">+</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">time</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VariableLoad">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.VariableLoad">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VariableLoad</span><span class="p">(</span><span class="n">LoadProfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Variable load model with custom time-dependent profile.</span>
+
+<span class="sd">    Allows definition of arbitrary load torque profiles using:</span>
+<span class="sd">    - Time-torque paired data points (interpolated)</span>
+<span class="sd">    - Custom callback function</span>
+
+<span class="sd">    Example (with function):</span>
+<span class="sd">        &gt;&gt;&gt; def load_func(t):</span>
+<span class="sd">        ...     return 2.0 * np.sin(2*np.pi*t)</span>
+<span class="sd">        &gt;&gt;&gt; load = VariableLoad(torque_func=load_func)</span>
+<span class="sd">        &gt;&gt;&gt; load.get_torque(0.25)</span>
+<span class="sd">        2.0</span>
+
+<span class="sd">    Example (with time points):</span>
+<span class="sd">        &gt;&gt;&gt; times = [0.0, 1.0, 2.0]</span>
+<span class="sd">        &gt;&gt;&gt; torques = [0.0, 5.0, 2.0]</span>
+<span class="sd">        &gt;&gt;&gt; load = VariableLoad(time_points=times, torque_points=torques)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VariableLoad.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.VariableLoad.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">torque_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_points</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">torque_points</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize variable load with either function or data points.</span>
+
+<span class="sd">        :param torque_func: Custom torque function: f(time) -&gt; torque, optional</span>
+<span class="sd">        :type torque_func: callable, optional</span>
+<span class="sd">        :param time_points: List of time points [seconds], optional</span>
+<span class="sd">        :type time_points: list, optional</span>
+<span class="sd">        :param torque_points: List of torque values [N*m], optional</span>
+<span class="sd">        :type torque_points: list, optional</span>
+
+<span class="sd">        :raises ValueError: If both torque_func and time_points are None</span>
+<span class="sd">        :raises ValueError: If time_points and torque_points lengths don&#39;t match</span>
+<span class="sd">        :raises ValueError: If time_points not sorted in ascending order</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">torque_func</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">time_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must provide either torque_func or time_points&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">torque_func</span> <span class="o">=</span> <span class="n">torque_func</span>
+
+        <span class="k">if</span> <span class="n">time_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">torque_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must provide torque_points with time_points&quot;</span><span class="p">)</span>
+
+            <span class="n">time_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">time_points</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="n">torque_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">torque_points</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_array</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">torque_array</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;time_points and torque_points must have same length&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_array</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">time_array</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;time_points must be in ascending order&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_points</span> <span class="o">=</span> <span class="n">time_array</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">torque_points</span> <span class="o">=</span> <span class="n">torque_array</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_points</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">torque_points</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="VariableLoad.get_torque">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.VariableLoad.get_torque">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_torque</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get variable load torque.</span>
+
+<span class="sd">        Uses linear interpolation if data points are defined,</span>
+<span class="sd">        otherwise calls the torque function.</span>
+
+<span class="sd">        :param time: Simulation time [seconds]</span>
+<span class="sd">        :type time: float</span>
+<span class="sd">        :return: Load torque [N*m]</span>
+<span class="sd">        :rtype: float</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            For time values beyond the defined range with data points,</span>
+<span class="sd">            the value is clamped to the last defined point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">torque_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">torque_func</span><span class="p">(</span><span class="n">time</span><span class="p">))</span>
+
+        <span class="c1"># Use data points with linear interpolation</span>
+        <span class="k">if</span> <span class="n">time</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_points</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">torque_points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">torque_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Find interval and interpolate</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_points</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+            <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_points</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_points</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">tau0</span><span class="p">,</span> <span class="n">tau1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">torque_points</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">torque_points</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+            <span class="c1"># Linear interpolation</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">tau0</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">tau1</span> <span class="o">-</span> <span class="n">tau0</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CyclicLoad">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.CyclicLoad">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CyclicLoad</span><span class="p">(</span><span class="n">LoadProfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cyclic load model with sinusoidal profile.</span>
+
+<span class="sd">    Generates periodic load torque: τ(t) = τ_offset + τ_amplitude * sin(2π*f*t + φ)</span>
+
+<span class="sd">    **Load Profile:**</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \\tau(t) = \\tau_{offset} + \\tau_{amplitude} \\cdot \\sin(2\\pi f t + \\varphi)</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; load = CyclicLoad(offset=1.0, amplitude=2.0, frequency=1.0)</span>
+<span class="sd">        &gt;&gt;&gt; load.get_torque(0.0)</span>
+<span class="sd">        1.0</span>
+<span class="sd">        &gt;&gt;&gt; load.get_torque(0.25)  # At peak</span>
+<span class="sd">        3.0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CyclicLoad.__init__">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.CyclicLoad.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">amplitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">phase</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize cyclic load.</span>
+
+<span class="sd">        :param offset: Offset torque (mean value) [N*m], defaults to 0.0</span>
+<span class="sd">        :type offset: float</span>
+<span class="sd">        :param amplitude: Amplitude of oscillation [N*m], defaults to 1.0</span>
+<span class="sd">        :type amplitude: float</span>
+<span class="sd">        :param frequency: Oscillation frequency [Hz], defaults to 1.0</span>
+<span class="sd">        :type frequency: float</span>
+<span class="sd">        :param phase: Initial phase [radians], defaults to 0.0</span>
+<span class="sd">        :type phase: float</span>
+
+<span class="sd">        :raises ValueError: If frequency &lt; 0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">frequency</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Frequency must be non-negative&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">=</span> <span class="n">amplitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">frequency</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase</span> <span class="o">=</span> <span class="n">phase</span></div>
+
+
+<div class="viewcode-block" id="CyclicLoad.get_torque">
+<a class="viewcode-back" href="../../../api/generated/src.core.load_model.html#src.core.load_model.CyclicLoad.get_torque">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_torque</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get cyclic load torque.</span>
+
+<span class="sd">        :param time: Simulation time [seconds]</span>
+<span class="sd">        :type time: float</span>
+<span class="sd">        :return: Load torque [N*m]</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">*</span> <span class="n">time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

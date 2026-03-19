@@ -1,0 +1,668 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.ui.widgets.accessible_widgets &mdash; BLDC Motor Control 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            BLDC Motor Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../features.html">Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/motor_model.html">Motor Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/control.html">Control Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/visualization.html">Visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/core.html">Core Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/ui.html">User Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/utils.html">Utilities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../advanced.html">Advanced Topics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../branch_protection.html">Branch Protection Setup</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">BLDC Motor Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.ui.widgets.accessible_widgets</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.ui.widgets.accessible_widgets</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Accessible Widgets Module</span>
+<span class="sd">==========================</span>
+
+<span class="sd">Provides accessible PyQt6 widgets with proper ARIA labels and keyboard navigation.</span>
+
+<span class="sd">All widgets support:</span>
+<span class="sd">- Screen reader accessibility</span>
+<span class="sd">- Tab key navigation</span>
+<span class="sd">- Clear keyboard shortcuts</span>
+<span class="sd">- Descriptive labels and help text</span>
+
+<span class="sd">:author: BLDC Control Team</span>
+<span class="sd">:version: 1.0.0</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">PyQt6.QtWidgets</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QWidget</span><span class="p">,</span>
+    <span class="n">QHBoxLayout</span><span class="p">,</span>
+    <span class="n">QLabel</span><span class="p">,</span>
+    <span class="n">QSpinBox</span><span class="p">,</span>
+    <span class="n">QDoubleSpinBox</span><span class="p">,</span>
+    <span class="n">QPushButton</span><span class="p">,</span>
+    <span class="n">QComboBox</span><span class="p">,</span>
+    <span class="n">QGroupBox</span><span class="p">,</span>
+    <span class="n">QTabWidget</span><span class="p">,</span>
+    <span class="n">QTableWidget</span><span class="p">,</span>
+    <span class="n">QListWidget</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PyQt6.QtCore</span><span class="w"> </span><span class="kn">import</span> <span class="n">Qt</span><span class="p">,</span> <span class="n">pyqtSignal</span>
+
+
+<div class="viewcode-block" id="AccessibleDoubleSpinBox">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleDoubleSpinBox">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AccessibleDoubleSpinBox</span><span class="p">(</span><span class="n">QDoubleSpinBox</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Accessible double precision spinner with screen reader support.</span>
+
+<span class="sd">    Features:</span>
+<span class="sd">    - Auto-generated ARIA labels</span>
+<span class="sd">    - Clear status text for screen readers</span>
+<span class="sd">    - Keyboard-friendly increment/decrement</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AccessibleDoubleSpinBox.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleDoubleSpinBox.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">min_val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">max_val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.0</span><span class="p">,</span>
+        <span class="n">initial</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize accessible spinner.</span>
+
+<span class="sd">        :param label: Descriptive label for screen readers</span>
+<span class="sd">        :param min_val: Minimum value</span>
+<span class="sd">        :param max_val: Maximum value</span>
+<span class="sd">        :param initial: Initial value</span>
+<span class="sd">        :param step: Step size for increment/decrement</span>
+<span class="sd">        :param decimals: Decimal places</span>
+<span class="sd">        :param suffix: Unit suffix (e.g., &quot; V&quot;, &quot; A&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_text</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unit_suffix</span> <span class="o">=</span> <span class="n">suffix</span>
+
+        <span class="c1"># Configure value range and formatting</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMinimum</span><span class="p">(</span><span class="n">min_val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMaximum</span><span class="p">(</span><span class="n">max_val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSingleStep</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setDecimals</span><span class="p">(</span><span class="n">decimals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">suffix</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setSuffix</span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span>
+
+        <span class="c1"># Accessibility</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">help_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">, range </span><span class="si">{</span><span class="n">min_val</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">max_val</span><span class="si">}{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">help_text</span><span class="p">)</span>
+
+        <span class="c1"># Keyboard</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_value_changed</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_value_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update status text for screen readers.&quot;&quot;&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">label_text</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">()</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">unit_suffix</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">status</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="AccessibleSpinBox">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleSpinBox">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AccessibleSpinBox</span><span class="p">(</span><span class="n">QSpinBox</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Accessible integer spinner for screen readers.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AccessibleSpinBox.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleSpinBox.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">min_val</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">max_val</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize accessible integer spinner.</span>
+
+<span class="sd">        :param label: Descriptive label</span>
+<span class="sd">        :param min_val: Minimum value</span>
+<span class="sd">        :param max_val: Maximum value</span>
+<span class="sd">        :param initial: Initial value</span>
+<span class="sd">        :param step: Step size</span>
+<span class="sd">        :param suffix: Unit suffix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_text</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unit_suffix</span> <span class="o">=</span> <span class="n">suffix</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMinimum</span><span class="p">(</span><span class="n">min_val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMaximum</span><span class="p">(</span><span class="n">max_val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">initial</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSingleStep</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">suffix</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setSuffix</span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">help_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">, range </span><span class="si">{</span><span class="n">min_val</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">max_val</span><span class="si">}{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">help_text</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">valueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_value_changed</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_value_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update status text for screen readers.&quot;&quot;&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">label_text</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">()</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">unit_suffix</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">status</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="AccessibleComboBox">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleComboBox">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AccessibleComboBox</span><span class="p">(</span><span class="n">QComboBox</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Accessible combo box with screen reader support.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AccessibleComboBox.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleComboBox.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">items</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize accessible combo box.</span>
+
+<span class="sd">        :param label: Field label</span>
+<span class="sd">        :param items: List of items to add</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_text</span> <span class="o">=</span> <span class="n">label</span>
+
+        <span class="k">if</span> <span class="n">items</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="n">items</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Select </span><span class="si">{</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_selection_changed</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_selection_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update status for screen readers.&quot;&quot;&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">label_text</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">status</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="AccessibleButton">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleButton">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AccessibleButton</span><span class="p">(</span><span class="n">QPushButton</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Accessible button with clear labeling.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AccessibleButton.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleButton.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tooltip</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize accessible button.</span>
+
+<span class="sd">        :param text: Button text</span>
+<span class="sd">        :param tooltip: Tooltip text (shown to screen readers)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tooltip</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">tooltip</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">tooltip</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AccessibleButton.keyPressEvent">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleButton.keyPressEvent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">keyPressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle keyboard activation.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Return</span><span class="p">,</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Space</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">keyPressEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AccessibleGroupBox">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleGroupBox">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AccessibleGroupBox</span><span class="p">(</span><span class="n">QGroupBox</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Accessible group box for organizing related controls.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AccessibleGroupBox.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleGroupBox.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize accessible group box.</span>
+
+<span class="sd">        :param title: Group title</span>
+<span class="sd">        :param description: Description for screen readers</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">description</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+
+        <span class="c1"># Keyboard navigation support</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFocusPolicy</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">FocusPolicy</span><span class="o">.</span><span class="n">StrongFocus</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AccessibleTabWidget">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleTabWidget">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AccessibleTabWidget</span><span class="p">(</span><span class="n">QTabWidget</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Accessible tab widget with keyboard navigation.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AccessibleTabWidget.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleTabWidget.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize accessible tab widget.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># Provide accessible names and descriptions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="s2">&quot;Tab navigation&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span>
+            <span class="s2">&quot;Use Ctrl+Tab to switch tabs, or use arrow keys in focused tab bar&quot;</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LabeledSpinBox">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledSpinBox">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LabeledSpinBox</span><span class="p">(</span><span class="n">QWidget</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience widget combining a label and spinner.</span>
+
+<span class="sd">    Simplifies accessibility by grouping related elements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">valueChanged</span> <span class="o">=</span> <span class="n">pyqtSignal</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LabeledSpinBox.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledSpinBox.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">min_val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">max_val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.0</span><span class="p">,</span>
+        <span class="n">initial</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize labeled spinner.</span>
+
+<span class="sd">        :param label: Field label</span>
+<span class="sd">        :param min_val: Minimum value</span>
+<span class="sd">        :param max_val: Maximum value</span>
+<span class="sd">        :param initial: Initial value</span>
+<span class="sd">        :param step: Step size</span>
+<span class="sd">        :param decimals: Decimal places</span>
+<span class="sd">        :param suffix: Unit suffix</span>
+<span class="sd">        :param description: Accessibility description</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># Layout</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Label</span>
+        <span class="n">label_widget</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">label_widget</span><span class="o">.</span><span class="n">setMinimumWidth</span><span class="p">(</span><span class="mi">150</span><span class="p">)</span>
+        <span class="n">label_widget</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">label_widget</span><span class="p">)</span>
+
+        <span class="c1"># Spinner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spinner</span> <span class="o">=</span> <span class="n">AccessibleDoubleSpinBox</span><span class="p">(</span>
+            <span class="n">label</span><span class="p">,</span> <span class="n">min_val</span><span class="p">,</span> <span class="n">max_val</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">decimals</span><span class="p">,</span> <span class="n">suffix</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">description</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spinner</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spinner</span><span class="o">.</span><span class="n">valueChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valueChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spinner</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LabeledSpinBox.value">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledSpinBox.value">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current value.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spinner</span><span class="o">.</span><span class="n">value</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="LabeledSpinBox.setValue">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledSpinBox.setValue">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setValue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set value.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spinner</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">val</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LabeledComboBox">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledComboBox">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LabeledComboBox</span><span class="p">(</span><span class="n">QWidget</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience widget combining label and combo box.&quot;&quot;&quot;</span>
+
+    <span class="n">currentTextChanged</span> <span class="o">=</span> <span class="n">pyqtSignal</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LabeledComboBox.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledComboBox.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">items</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize labeled combo box.</span>
+
+<span class="sd">        :param label: Field label</span>
+<span class="sd">        :param items: List of items</span>
+<span class="sd">        :param description: Accessibility description</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># Layout</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Label</span>
+        <span class="n">label_widget</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">label_widget</span><span class="o">.</span><span class="n">setMinimumWidth</span><span class="p">(</span><span class="mi">150</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">label_widget</span><span class="p">)</span>
+
+        <span class="c1"># Combo box</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combo</span> <span class="o">=</span> <span class="n">AccessibleComboBox</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">items</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">description</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combo</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combo</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">emit</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combo</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LabeledComboBox.currentText">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledComboBox.currentText">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">currentText</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get selected text.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="LabeledComboBox.setCurrentText">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledComboBox.setCurrentText">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setCurrentText</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set selected text.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combo</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AccessibleTableWidget">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleTableWidget">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AccessibleTableWidget</span><span class="p">(</span><span class="n">QTableWidget</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Accessible table widget with screen reader support and keyboard navigation.</span>
+
+<span class="sd">    Features:</span>
+<span class="sd">    - ARIA labels for screen readers</span>
+<span class="sd">    - Arrow key navigation (Up, Down, Left, Right)</span>
+<span class="sd">    - Space/Enter for selection</span>
+<span class="sd">    - Tab key moves to next table</span>
+<span class="sd">    - Announces current cell to screen readers</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AccessibleTableWidget.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleTableWidget.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize accessible table widget.</span>
+
+<span class="sd">        :param label: Accessible name for the table</span>
+<span class="sd">        :param description: Description for screen readers</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="n">label</span> <span class="k">if</span> <span class="n">label</span> <span class="k">else</span> <span class="s2">&quot;Table&quot;</span><span class="p">)</span>
+        <span class="n">help_text</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">description</span>
+            <span class="k">if</span> <span class="n">description</span>
+            <span class="k">else</span> <span class="s2">&quot;Use arrow keys to navigate, Space or Enter to select, Tab to move to next widget&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">help_text</span><span class="p">)</span>
+
+        <span class="c1"># Enable focus</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFocusPolicy</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">FocusPolicy</span><span class="o">.</span><span class="n">StrongFocus</span><span class="p">)</span>
+
+        <span class="c1"># Store current cell for accessibility feedback</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cellClicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_cell_clicked</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">itemSelectionChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_selection_changed</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_cell_clicked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Announce cell click to accessibility tools.&quot;&quot;&quot;</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">item</span><span class="p">:</span>
+            <span class="n">cell_text</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+            <span class="n">row_header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verticalHeaderItem</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="n">col_header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizontalHeaderItem</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+            <span class="n">info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Row </span><span class="si">{</span><span class="n">row</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">row_header</span><span class="p">:</span>
+                <span class="n">info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;: </span><span class="si">{</span><span class="n">row_header</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;, Column </span><span class="si">{</span><span class="n">col</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">col_header</span><span class="p">:</span>
+                <span class="n">info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;: </span><span class="si">{</span><span class="n">col_header</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;, Value: </span><span class="si">{</span><span class="n">cell_text</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_selection_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Announce selection changes.&quot;&quot;&quot;</span>
+        <span class="n">selected_items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selectedItems</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">selected_items</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_items</span><span class="p">)</span>
+            <span class="n">plural</span> <span class="o">=</span> <span class="s2">&quot;item&quot;</span> <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;items&quot;</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">plural</span><span class="si">}</span><span class="s2"> selected&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AccessibleTableWidget.keyPressEvent">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleTableWidget.keyPressEvent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">keyPressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle keyboard navigation.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Up</span><span class="p">,</span>
+            <span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Down</span><span class="p">,</span>
+            <span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Left</span><span class="p">,</span>
+            <span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Right</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="c1"># Allow arrow key navigation</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">keyPressEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Return</span><span class="p">,</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Space</span><span class="p">]:</span>
+            <span class="c1"># Select item with Space or Enter</span>
+            <span class="n">current_item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">currentItem</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">current_item</span><span class="p">:</span>
+                <span class="n">current_item</span><span class="o">.</span><span class="n">setSelected</span><span class="p">(</span><span class="ow">not</span> <span class="n">current_item</span><span class="o">.</span><span class="n">isSelected</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">keyPressEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AccessibleListWidget">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleListWidget">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AccessibleListWidget</span><span class="p">(</span><span class="n">QListWidget</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Accessible list widget with screen reader support and keyboard navigation.</span>
+
+<span class="sd">    Features:</span>
+<span class="sd">    - ARIA labels for screen readers</span>
+<span class="sd">    - Arrow key navigation</span>
+<span class="sd">    - Space/Enter for selection</span>
+<span class="sd">    - Announces list position to screen readers</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AccessibleListWidget.__init__">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleListWidget.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize accessible list widget.</span>
+
+<span class="sd">        :param label: Accessible name for the list</span>
+<span class="sd">        :param description: Description for screen readers</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleName</span><span class="p">(</span><span class="n">label</span> <span class="k">if</span> <span class="n">label</span> <span class="k">else</span> <span class="s2">&quot;List&quot;</span><span class="p">)</span>
+        <span class="n">help_text</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">description</span>
+            <span class="k">if</span> <span class="n">description</span>
+            <span class="k">else</span> <span class="s2">&quot;Use arrow keys to navigate, Space or Enter to select&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccessibleDescription</span><span class="p">(</span><span class="n">help_text</span><span class="p">)</span>
+
+        <span class="c1"># Enable focus</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setFocusPolicy</span><span class="p">(</span><span class="n">Qt</span><span class="o">.</span><span class="n">FocusPolicy</span><span class="o">.</span><span class="n">StrongFocus</span><span class="p">)</span>
+
+        <span class="c1"># Track current item for accessibility</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">itemSelectionChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_selection_changed</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_selection_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Announce selection to accessibility tools.&quot;&quot;&quot;</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">currentItem</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">current</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">row</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Item </span><span class="si">{</span><span class="n">row</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">current</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AccessibleListWidget.keyPressEvent">
+<a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.AccessibleListWidget.keyPressEvent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">keyPressEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle keyboard navigation.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Up</span><span class="p">,</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Down</span><span class="p">]:</span>
+            <span class="c1"># Allow arrow key navigation</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">keyPressEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Return</span><span class="p">,</span> <span class="n">Qt</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">Key_Space</span><span class="p">]:</span>
+            <span class="c1"># Toggle selection with Space or Enter</span>
+            <span class="n">current_item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">currentItem</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">current_item</span><span class="p">:</span>
+                <span class="n">current_item</span><span class="o">.</span><span class="n">setSelected</span><span class="p">(</span><span class="ow">not</span> <span class="n">current_item</span><span class="o">.</span><span class="n">isSelected</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">keyPressEvent</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Amine Khettat.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
