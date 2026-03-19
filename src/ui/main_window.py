@@ -667,10 +667,13 @@ class BLDCMotorControlGUI(QMainWindow):
         self.status_bar_time_remaining = QLabel("Remaining: -- s")
         self.status_bar_cpu_load = QLabel("CPU: -- %")
         self.status_bar_task = QLabel("Task: None")
+        self.status_bar_backend = QLabel("Backend: --")
 
         self.statusBar().addWidget(self.status_bar_state)
         self.statusBar().addWidget(QLabel("|"))  # Separator
         self.statusBar().addWidget(self.status_bar_task)
+        self.statusBar().addWidget(QLabel("|"))  # Separator
+        self.statusBar().addWidget(self.status_bar_backend)
         self.statusBar().addWidget(QLabel("|"))  # Separator
         self.statusBar().addWidget(self.status_bar_time_remaining)
         self.statusBar().addWidget(QLabel("|"))  # Separator
@@ -4848,6 +4851,20 @@ class BLDCMotorControlGUI(QMainWindow):
                 self.status_bar_cpu_load.setText(f"CPU: {cpu_load:.1f}%")
             else:
                 self.status_bar_cpu_load.setText("CPU: -- %")
+
+            # Update compute backend display
+            backend_info = snapshot.get("compute_backend", {})
+            if isinstance(backend_info, dict):
+                selected = backend_info.get("selected", "--").upper()
+                gpu_available = backend_info.get("gpu_available", False)
+                if gpu_available and selected == "GPU":
+                    self.status_bar_backend.setText(f"Backend: {selected}")
+                elif gpu_available:
+                    self.status_bar_backend.setText(f"Backend: {selected} (GPU avail)")
+                else:
+                    self.status_bar_backend.setText(f"Backend: {selected}")
+            else:
+                self.status_bar_backend.setText("Backend: --")
 
         except Exception as e:
             # Silently fail to avoid disrupting GUI updates
