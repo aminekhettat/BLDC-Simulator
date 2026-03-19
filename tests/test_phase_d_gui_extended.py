@@ -15,6 +15,7 @@ Atomic features tested in this module:
 - ResetSimulation
 - AutoTuneAxis
 """
+
 import json
 import sys
 import tempfile
@@ -291,6 +292,79 @@ class TestCurrentFftWindow:
         assert gui.current_fft_window is not None
         gui._on_current_fft_window_closed()
         assert gui.current_fft_window is None
+
+    def test_fft_display_settings_are_applied_to_window(self, gui):
+        gui.current_fft_window = None
+        gui.current_sense_fft_show_grid.setChecked(False)
+        gui.current_sense_fft_mag_x_scale.setCurrentIndex(1)  # log
+        gui.current_sense_fft_mag_y_scale.setCurrentIndex(0)  # linear
+        gui.current_sense_fft_phase_x_scale.setCurrentIndex(0)  # linear
+        gui.current_sense_fft_phase_y_scale.setCurrentIndex(1)  # log
+        gui.current_sense_fft_amplitude_mode.setCurrentText("dB")
+        gui.current_sense_fft_phase_unit.setCurrentText("rad")
+        gui._open_current_fft_window()
+
+        w = gui.current_fft_window
+        assert w is not None
+        assert w.grid_checkbox.isChecked() is False
+        assert w.mag_x_scale_combo.currentText() == "log"
+        assert w.mag_y_scale_combo.currentText() == "linear"
+        assert w.phase_x_scale_combo.currentText() == "linear"
+        assert w.phase_y_scale_combo.currentText() == "log"
+        assert w.amplitude_mode_combo.currentText() == "dB"
+        assert w.phase_unit_combo.currentText() == "rad"
+        w.close()
+        gui.current_fft_window = None
+
+    def test_fft_save_actions_call_window_methods(self, gui, monkeypatch):
+        gui.current_fft_window = None
+        gui._open_current_fft_window()
+        called = {"csv": False, "img": False}
+
+        monkeypatch.setattr(
+            gui.current_fft_window,
+            "_save_fft_csv",
+            lambda: called.__setitem__("csv", True),
+        )
+        monkeypatch.setattr(
+            gui.current_fft_window,
+            "_save_fft_image",
+            lambda: called.__setitem__("img", True),
+        )
+
+        gui._save_current_fft_csv()
+        gui._save_current_fft_image()
+
+        assert called["csv"] is True
+        assert called["img"] is True
+        gui.current_fft_window.close()
+        gui.current_fft_window = None
+
+    def test_bridge_visualization_draws_switches_and_shunts(self, gui):
+        gui.current_sense_topology.setCurrentText("double")
+        gui._update_bridge_visualization(
+            {
+                "voltages_a": 4.0,
+                "voltages_b": -2.0,
+                "voltages_c": -2.0,
+                "current_measurement": {"enabled": True, "topology": "double"},
+            }
+        )
+        assert len(gui.bridge_ax.patches) >= 6
+
+    def test_bridge_visualization_single_uses_shared_shunt_to_ground(self, gui):
+        gui.current_sense_topology.setCurrentText("single")
+        gui._update_bridge_visualization(
+            {
+                "voltages_a": 3.0,
+                "voltages_b": -1.5,
+                "voltages_c": -1.5,
+                "current_measurement": {"enabled": True, "topology": "single"},
+            }
+        )
+        text_labels = [txt.get_text().lower() for txt in gui.bridge_ax.texts]
+        assert text_labels.count("shunt") == 1
+        assert any("single-shunt" in txt for txt in text_labels)
 
 
 # ===========================================================================
@@ -801,9 +875,3 @@ class TestAutoTuneAxis:
         assert "d" in called
         # restore
         gui.ctrl_mode.setCurrentText("V/f")
-
-
-
-
-
-

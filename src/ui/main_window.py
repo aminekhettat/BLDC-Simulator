@@ -16,6 +16,7 @@ Provides comprehensive GUI for:
 """
 
 import sys
+import csv
 import numpy as np
 from typing import Optional
 import time
@@ -325,6 +326,16 @@ class SimulationThread(QThread):
             if self.engine.time >= (next_control_time - 1e-15):
                 calc_start = time.perf_counter()
 
+                if isinstance(self.controller, FOCController) and hasattr(
+                    self.engine, "get_controller_phase_currents"
+                ):
+                    try:
+                        self.controller.set_external_phase_currents(
+                            self.engine.get_controller_phase_currents()
+                        )
+                    except Exception:
+                        pass
+
                 # Get control output (could be polar or cartesian)
                 ctrl_out = self.controller.update(control_period_s)
                 voltages = None
@@ -382,11 +393,24 @@ class CurrentSpectrumWindow(QMainWindow):
     def __init__(self, window_size_samples: int = 512, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Current Harmonic FFT")
-        self.setMinimumSize(820, 520)
+        self.setMinimumSize(920, 700)
 
         self._window_size_samples = int(max(64, window_size_samples))
         self._time_samples: deque[float] = deque(maxlen=self._window_size_samples)
         self._ia_samples: deque[float] = deque(maxlen=self._window_size_samples)
+        self._last_freq = np.array([], dtype=np.float64)
+        self._last_mag = np.array([], dtype=np.float64)
+        self._last_phase_deg = np.array([], dtype=np.float64)
+        self._last_mag_display = np.array([], dtype=np.float64)
+        self._last_phase_display = np.array([], dtype=np.float64)
+
+        self._grid_enabled = True
+        self._mag_x_scale = "linear"
+        self._mag_y_scale = "linear"
+        self._phase_x_scale = "linear"
+        self._phase_y_scale = "linear"
+        self._amplitude_mode = "linear"
+        self._phase_unit = "deg"
 
         central = QWidget()
         layout = QVBoxLayout()
@@ -397,16 +421,91 @@ class CurrentSpectrumWindow(QMainWindow):
         self.summary_label.setWordWrap(True)
         layout.addWidget(self.summary_label)
 
+        controls_row = QHBoxLayout()
+        self.grid_checkbox = QCheckBox("Show Grid")
+        self.grid_checkbox.setChecked(True)
+        self.grid_checkbox.stateChanged.connect(self._on_display_options_changed)
+        controls_row.addWidget(self.grid_checkbox)
+
+        controls_row.addWidget(QLabel("Mag X"))
+        self.mag_x_scale_combo = QComboBox()
+        self.mag_x_scale_combo.addItems(["linear", "log"])
+        self.mag_x_scale_combo.currentTextChanged.connect(
+            self._on_display_options_changed
+        )
+        controls_row.addWidget(self.mag_x_scale_combo)
+
+        controls_row.addWidget(QLabel("Mag Y"))
+        self.mag_y_scale_combo = QComboBox()
+        self.mag_y_scale_combo.addItems(["linear", "log"])
+        self.mag_y_scale_combo.currentTextChanged.connect(
+            self._on_display_options_changed
+        )
+        controls_row.addWidget(self.mag_y_scale_combo)
+
+        controls_row.addWidget(QLabel("Phase X"))
+        self.phase_x_scale_combo = QComboBox()
+        self.phase_x_scale_combo.addItems(["linear", "log"])
+        self.phase_x_scale_combo.currentTextChanged.connect(
+            self._on_display_options_changed
+        )
+        controls_row.addWidget(self.phase_x_scale_combo)
+
+        controls_row.addWidget(QLabel("Phase Y"))
+        self.phase_y_scale_combo = QComboBox()
+        self.phase_y_scale_combo.addItems(["linear", "log"])
+        self.phase_y_scale_combo.currentTextChanged.connect(
+            self._on_display_options_changed
+        )
+        controls_row.addWidget(self.phase_y_scale_combo)
+
+        controls_row.addWidget(QLabel("Amplitude"))
+        self.amplitude_mode_combo = QComboBox()
+        self.amplitude_mode_combo.addItems(["linear", "dB"])
+        self.amplitude_mode_combo.currentTextChanged.connect(
+            self._on_display_options_changed
+        )
+        controls_row.addWidget(self.amplitude_mode_combo)
+
+        controls_row.addWidget(QLabel("Phase Unit"))
+        self.phase_unit_combo = QComboBox()
+        self.phase_unit_combo.addItems(["deg", "rad"])
+        self.phase_unit_combo.currentTextChanged.connect(
+            self._on_display_options_changed
+        )
+        controls_row.addWidget(self.phase_unit_combo)
+
+        btn_save_csv = AccessibleButton(
+            "Save FFT CSV",
+            "Save FFT frequency, magnitude, and phase as a CSV file.",
+        )
+        btn_save_csv.clicked.connect(self._save_fft_csv)
+        controls_row.addWidget(btn_save_csv)
+
+        btn_save_image = AccessibleButton(
+            "Save FFT Graph Image",
+            "Save FFT magnitude and phase graphs as an image file.",
+        )
+        btn_save_image.clicked.connect(self._save_fft_image)
+        controls_row.addWidget(btn_save_image)
+
+        layout.addLayout(controls_row)
+
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
-        self.figure = Figure(figsize=(7, 4), dpi=90)
+        self.figure = Figure(figsize=(8, 6), dpi=90)
         self.canvas = FigureCanvas(self.figure)
-        self.ax = self.figure.add_subplot(111)
-        self.ax.set_title("Phase-A Current Spectrum (Controller-Facing)")
-        self.ax.set_xlabel("Frequency (Hz)")
-        self.ax.set_ylabel("Magnitude (A)")
-        self.ax.grid(True, alpha=0.3)
+        self.ax_mag = self.figure.add_subplot(211)
+        self.ax_phase = self.figure.add_subplot(212)
+        self.ax_mag.set_title("Phase-A Current FFT Magnitude (Controller-Facing)")
+        self.ax_mag.set_xlabel("Frequency (Hz)")
+        self.ax_mag.set_ylabel("Magnitude (A)")
+        self.ax_phase.set_title("Phase-A Current FFT Phase")
+        self.ax_phase.set_xlabel("Frequency (Hz)")
+        self.ax_phase.set_ylabel("Phase (deg)")
+        self.ax_mag.grid(True, alpha=0.3)
+        self.ax_phase.grid(True, alpha=0.3)
         layout.addWidget(self.canvas, 1)
 
         central.setLayout(layout)
@@ -437,6 +536,69 @@ class CurrentSpectrumWindow(QMainWindow):
         self._time_samples.append(time_s)
         self._ia_samples.append(ia)
 
+    def apply_display_settings(
+        self,
+        grid_enabled: bool,
+        mag_x_scale: str,
+        mag_y_scale: str,
+        phase_x_scale: str,
+        phase_y_scale: str,
+        amplitude_mode: str,
+        phase_unit: str,
+    ) -> None:
+        """Apply FFT display configuration from parent GUI controls."""
+        grid_value = bool(grid_enabled)
+        mag_x_value = str(mag_x_scale).lower()
+        mag_y_value = str(mag_y_scale).lower()
+        phase_x_value = str(phase_x_scale).lower()
+        phase_y_value = str(phase_y_scale).lower()
+        amp_value = str(amplitude_mode).lower()
+        phase_unit_value = str(phase_unit).lower()
+
+        controls = [
+            self.grid_checkbox,
+            self.mag_x_scale_combo,
+            self.mag_y_scale_combo,
+            self.phase_x_scale_combo,
+            self.phase_y_scale_combo,
+            self.amplitude_mode_combo,
+            self.phase_unit_combo,
+        ]
+        for ctrl in controls:
+            ctrl.blockSignals(True)
+        try:
+            self.grid_checkbox.setChecked(grid_value)
+            self.mag_x_scale_combo.setCurrentText(mag_x_value)
+            self.mag_y_scale_combo.setCurrentText(mag_y_value)
+            self.phase_x_scale_combo.setCurrentText(phase_x_value)
+            self.phase_y_scale_combo.setCurrentText(phase_y_value)
+            self.amplitude_mode_combo.setCurrentText(
+                "dB" if amp_value == "db" else "linear"
+            )
+            self.phase_unit_combo.setCurrentText(
+                "rad" if phase_unit_value == "rad" else "deg"
+            )
+        finally:
+            for ctrl in controls:
+                ctrl.blockSignals(False)
+
+        self._grid_enabled = grid_value
+        self._mag_x_scale = mag_x_value
+        self._mag_y_scale = mag_y_value
+        self._phase_x_scale = phase_x_value
+        self._phase_y_scale = phase_y_value
+        self._amplitude_mode = "db" if amp_value == "db" else "linear"
+        self._phase_unit = "rad" if phase_unit_value == "rad" else "deg"
+
+    def _on_display_options_changed(self, *_args) -> None:
+        self._grid_enabled = self.grid_checkbox.isChecked()
+        self._mag_x_scale = self.mag_x_scale_combo.currentText().lower()
+        self._mag_y_scale = self.mag_y_scale_combo.currentText().lower()
+        self._phase_x_scale = self.phase_x_scale_combo.currentText().lower()
+        self._phase_y_scale = self.phase_y_scale_combo.currentText().lower()
+        self._amplitude_mode = self.amplitude_mode_combo.currentText().lower()
+        self._phase_unit = self.phase_unit_combo.currentText().lower()
+
     def _refresh_plot(self) -> None:
         """Compute and draw FFT from buffered samples in this window thread context."""
         sample_count = len(self._ia_samples)
@@ -454,6 +616,7 @@ class CurrentSpectrumWindow(QMainWindow):
         spec = np.fft.rfft(centered)
         freq = np.fft.rfftfreq(centered.size, d=dt)
         mag = np.abs(spec) * (2.0 / max(centered.size, 1))
+        phase_deg = np.degrees(np.angle(spec))
 
         # Ignore DC when selecting dominant component.
         if mag.size > 1:
@@ -466,18 +629,116 @@ class CurrentSpectrumWindow(QMainWindow):
             dominant_freq = 0.0
             thd = 0.0
 
-        self.ax.clear()
-        self.ax.plot(freq, mag, color="#1E88E5", linewidth=1.5)
-        self.ax.set_title("Phase-A Current Spectrum (Controller-Facing)")
-        self.ax.set_xlabel("Frequency (Hz)")
-        self.ax.set_ylabel("Magnitude (A)")
-        self.ax.grid(True, alpha=0.3)
+        self._last_freq = freq
+        self._last_mag = mag
+        self._last_phase_deg = phase_deg
+
+        if self._amplitude_mode == "db":
+            mag_display = 20.0 * np.log10(np.maximum(mag, 1e-12))
+            mag_label = "Magnitude (dB)"
+        else:
+            mag_display = mag
+            mag_label = "Magnitude (A)"
+
+        if self._phase_unit == "rad":
+            phase_display = np.radians(phase_deg)
+            phase_label = "Phase (rad)"
+        else:
+            phase_display = phase_deg
+            phase_label = "Phase (deg)"
+
+        self._last_mag_display = mag_display
+        self._last_phase_display = phase_display
+
+        self.ax_mag.clear()
+        self.ax_phase.clear()
+
+        freq_mag_plot = np.where(freq <= 0.0, 1e-9, freq)
+        mag_plot = np.asarray(mag_display, dtype=np.float64)
+        if self._mag_y_scale == "log":
+            mag_plot = np.where(mag_plot <= 0.0, 1e-12, mag_plot)
+
+        phase_plot = np.asarray(phase_display, dtype=np.float64)
+        if self._phase_y_scale == "log":
+            phase_plot = np.where(np.abs(phase_plot) <= 1e-9, 1e-9, np.abs(phase_plot))
+
+        self.ax_mag.plot(freq_mag_plot, mag_plot, color="#1E88E5", linewidth=1.5)
+        self.ax_phase.plot(freq_mag_plot, phase_plot, color="#D32F2F", linewidth=1.3)
+
+        self.ax_mag.set_title("Phase-A Current FFT Magnitude (Controller-Facing)")
+        self.ax_mag.set_xlabel("Frequency (Hz)")
+        self.ax_mag.set_ylabel(mag_label)
+        self.ax_phase.set_title("Phase-A Current FFT Phase")
+        self.ax_phase.set_xlabel("Frequency (Hz)")
+        self.ax_phase.set_ylabel(phase_label)
+
+        self.ax_mag.set_xscale(self._mag_x_scale)
+        self.ax_mag.set_yscale(self._mag_y_scale)
+        self.ax_phase.set_xscale(self._phase_x_scale)
+        self.ax_phase.set_yscale(self._phase_y_scale)
+
+        self.ax_mag.grid(self._grid_enabled, alpha=0.3)
+        self.ax_phase.grid(self._grid_enabled, alpha=0.3)
         self.figure.tight_layout()
         self.canvas.draw_idle()
 
         self.summary_label.setText(
             f"FFT window: {sample_count} samples, dominant frequency: {dominant_freq:.1f} Hz, THD: {thd:.2f}%"
         )
+
+    def _save_fft_csv(self) -> None:
+        """Save latest FFT spectrum arrays to CSV."""
+        if self._last_freq.size == 0:
+            QMessageBox.information(self, "No FFT Data", "Run the simulation first.")
+            return
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save FFT Data",
+            str(Path("data") / "logs" / "current_fft_data.csv"),
+            "CSV Files (*.csv)",
+        )
+        if not path:
+            return
+
+        file_path = Path(path)
+        if file_path.suffix.lower() != ".csv":
+            file_path = file_path.with_suffix(".csv")
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with file_path.open("w", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh)
+            mag_col = "magnitude_db" if self._amplitude_mode == "db" else "magnitude_a"
+            phase_col = "phase_rad" if self._phase_unit == "rad" else "phase_deg"
+            writer.writerow(["frequency_hz", mag_col, phase_col])
+            for f_hz, mag_value, phase_value in zip(
+                self._last_freq, self._last_mag_display, self._last_phase_display
+            ):
+                writer.writerow([float(f_hz), float(mag_value), float(phase_value)])
+
+        QMessageBox.information(self, "FFT Data Saved", f"Saved: {file_path.name}")
+
+    def _save_fft_image(self) -> None:
+        """Save latest FFT graphs as an image."""
+        if self._last_freq.size == 0:
+            QMessageBox.information(self, "No FFT Data", "Run the simulation first.")
+            return
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save FFT Graph",
+            str(Path("data") / "plots" / "current_fft.png"),
+            "PNG Files (*.png);;JPEG Files (*.jpg)",
+        )
+        if not path:
+            return
+
+        file_path = Path(path)
+        if file_path.suffix.lower() not in {".png", ".jpg", ".jpeg"}:
+            file_path = file_path.with_suffix(".png")
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        self.figure.savefig(file_path, dpi=160)
+        QMessageBox.information(self, "FFT Graph Saved", f"Saved: {file_path.name}")
 
     def closeEvent(self, event) -> None:
         self._refresh_timer.stop()
@@ -1069,6 +1330,7 @@ class BLDCMotorControlGUI(QMainWindow):
             "foc_controller": {
                 "transform": self.foc_transform.currentText(),
                 "output_mode": self.foc_output_mode.currentText(),
+                "current_feedback_source": self.foc_current_feedback_source.currentText(),
                 "speed_loop_mode": self.foc_speed_loop_mode.currentText(),
                 "id_ref_a": float(self.foc_id_ref.value()),
                 "iq_ref_a": float(self.foc_iq_ref.value()),
@@ -1167,6 +1429,23 @@ class BLDCMotorControlGUI(QMainWindow):
                 "mock_seed": int(self.hardware_seed.value())
                 if hasattr(self, "hardware_seed")
                 else 0,
+            },
+            "current_measurement": {
+                "enabled": bool(self.current_sense_enable.isChecked()),
+                "topology": self.current_sense_topology.currentText(),
+                "shunt_resistance_ohm": float(self.current_sense_r_shunt.value()),
+                "nominal_gain": float(self.current_sense_nominal_gain.value()),
+                "nominal_offset_v": float(self.current_sense_nominal_offset.value()),
+                "fft_window_samples": int(
+                    self.current_sense_fft_window_samples.value()
+                ),
+                "fft_show_grid": bool(self.current_sense_fft_show_grid.isChecked()),
+                "fft_mag_x_scale": self.current_sense_fft_mag_x_scale.currentText(),
+                "fft_mag_y_scale": self.current_sense_fft_mag_y_scale.currentText(),
+                "fft_phase_x_scale": self.current_sense_fft_phase_x_scale.currentText(),
+                "fft_phase_y_scale": self.current_sense_fft_phase_y_scale.currentText(),
+                "fft_amplitude_mode": self.current_sense_fft_amplitude_mode.currentText(),
+                "fft_phase_unit": self.current_sense_fft_phase_unit.currentText(),
             },
         }
 
@@ -1774,6 +2053,13 @@ class BLDCMotorControlGUI(QMainWindow):
             description="Polar returns (mag,angle), Cartesian returns (v_alpha,v_beta).",
         )
         self.foc_group_layout.addWidget(self.foc_output_mode)
+
+        self.foc_current_feedback_source = LabeledComboBox(
+            "Current Feedback Source",
+            items=["Motor True Currents", "Reconstructed (Shunt)"],
+            description="Select whether FOC current loops use true model currents or reconstructed shunt measurements.",
+        )
+        self.foc_group_layout.addWidget(self.foc_current_feedback_source)
 
         self.foc_id_ref = LabeledSpinBox(
             "D-axis Current Ref",
@@ -2593,6 +2879,9 @@ class BLDCMotorControlGUI(QMainWindow):
             items=["single", "double", "triple"],
             description="Single, double, or triple-shunt current measurement topology.",
         )
+        self.current_sense_topology.currentTextChanged.connect(
+            lambda _text: self._update_bridge_visualization({})
+        )
         current_sense_layout.addWidget(self.current_sense_topology)
 
         self.current_sense_r_shunt = LabeledSpinBox(
@@ -2739,6 +3028,68 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         current_sense_layout.addWidget(self.current_sense_fft_window_samples)
 
+        self.current_sense_fft_show_grid = QCheckBox("Show FFT Grids")
+        self.current_sense_fft_show_grid.setChecked(True)
+        current_sense_layout.addWidget(self.current_sense_fft_show_grid)
+
+        fft_scale_row_1 = QHBoxLayout()
+        fft_scale_row_1.addWidget(QLabel("Magnitude X Scale"))
+        self.current_sense_fft_mag_x_scale = QComboBox()
+        self.current_sense_fft_mag_x_scale.addItems(["linear", "log"])
+        fft_scale_row_1.addWidget(self.current_sense_fft_mag_x_scale)
+        fft_scale_row_1.addWidget(QLabel("Magnitude Y Scale"))
+        self.current_sense_fft_mag_y_scale = QComboBox()
+        self.current_sense_fft_mag_y_scale.addItems(["linear", "log"])
+        fft_scale_row_1.addWidget(self.current_sense_fft_mag_y_scale)
+        current_sense_layout.addLayout(fft_scale_row_1)
+
+        fft_scale_row_2 = QHBoxLayout()
+        fft_scale_row_2.addWidget(QLabel("Phase X Scale"))
+        self.current_sense_fft_phase_x_scale = QComboBox()
+        self.current_sense_fft_phase_x_scale.addItems(["linear", "log"])
+        fft_scale_row_2.addWidget(self.current_sense_fft_phase_x_scale)
+        fft_scale_row_2.addWidget(QLabel("Phase Y Scale"))
+        self.current_sense_fft_phase_y_scale = QComboBox()
+        self.current_sense_fft_phase_y_scale.addItems(["linear", "log"])
+        fft_scale_row_2.addWidget(self.current_sense_fft_phase_y_scale)
+        current_sense_layout.addLayout(fft_scale_row_2)
+
+        fft_units_row = QHBoxLayout()
+        fft_units_row.addWidget(QLabel("Amplitude Unit"))
+        self.current_sense_fft_amplitude_mode = QComboBox()
+        self.current_sense_fft_amplitude_mode.addItems(["linear", "dB"])
+        fft_units_row.addWidget(self.current_sense_fft_amplitude_mode)
+        fft_units_row.addWidget(QLabel("Phase Unit"))
+        self.current_sense_fft_phase_unit = QComboBox()
+        self.current_sense_fft_phase_unit.addItems(["deg", "rad"])
+        fft_units_row.addWidget(self.current_sense_fft_phase_unit)
+        current_sense_layout.addLayout(fft_units_row)
+
+        for combo in (
+            self.current_sense_fft_mag_x_scale,
+            self.current_sense_fft_mag_y_scale,
+            self.current_sense_fft_phase_x_scale,
+            self.current_sense_fft_phase_y_scale,
+            self.current_sense_fft_amplitude_mode,
+            self.current_sense_fft_phase_unit,
+        ):
+            combo.currentTextChanged.connect(self._apply_fft_display_settings)
+        self.current_sense_fft_show_grid.stateChanged.connect(
+            self._apply_fft_display_settings
+        )
+
+        bridge_title = QLabel("Live Inverter Bridge / Shunt Topology")
+        current_sense_layout.addWidget(bridge_title)
+
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+        self.bridge_figure = Figure(figsize=(6.4, 2.8), dpi=90)
+        self.bridge_canvas = FigureCanvas(self.bridge_figure)
+        self.bridge_ax = self.bridge_figure.add_subplot(111)
+        self.bridge_ax.set_axis_off()
+        current_sense_layout.addWidget(self.bridge_canvas, 1)
+
         self.current_sense_status_label = QLabel(
             "Current sensing disabled. Enable to expose measured-vs-true current telemetry."
         )
@@ -2752,7 +3103,22 @@ class BLDCMotorControlGUI(QMainWindow):
         btn_fft_window.clicked.connect(self._open_current_fft_window)
         current_sense_layout.addWidget(btn_fft_window)
 
+        btn_fft_csv = AccessibleButton(
+            "Save FFT Data CSV",
+            "Save FFT frequency, magnitude, and phase data to CSV.",
+        )
+        btn_fft_csv.clicked.connect(self._save_current_fft_csv)
+        current_sense_layout.addWidget(btn_fft_csv)
+
+        btn_fft_image = AccessibleButton(
+            "Save FFT Graph Image",
+            "Save FFT magnitude and phase graphs to an image file.",
+        )
+        btn_fft_image.clicked.connect(self._save_current_fft_image)
+        current_sense_layout.addWidget(btn_fft_image)
+
         self.current_sense_group.setLayout(current_sense_layout)
+        self._update_bridge_visualization({})
         layout.addWidget(self.current_sense_group)
 
         self.mcu_budget_group = AccessibleGroupBox(
@@ -3817,6 +4183,10 @@ class BLDCMotorControlGUI(QMainWindow):
                 output_cartesian=out_cart,
                 enable_speed_loop=speed_loop_enabled,
             )
+            self.controller.set_current_feedback_mode(
+                self.foc_current_feedback_source.currentText()
+                == "Reconstructed (Shunt)"
+            )
             # set references
             self.controller.set_current_references(
                 id_ref=self.foc_id_ref.value(),
@@ -4661,11 +5031,177 @@ class BLDCMotorControlGUI(QMainWindow):
             self._update_monitoring(snapshot)
             self._update_status_bar(snapshot)
             self._update_current_sense_status(snapshot)
+            self._update_bridge_visualization(snapshot)
             if self.current_fft_window is not None:
                 self.current_fft_window.set_window_size(
                     int(self.current_sense_fft_window_samples.value())
                 )
+                self._apply_fft_display_settings()
                 self.current_fft_window.push_snapshot(snapshot)
+
+    def _apply_fft_display_settings(self, *_args) -> None:
+        """Apply FFT graph display preferences to the detached FFT window."""
+        if self.current_fft_window is None:
+            return
+        self.current_fft_window.apply_display_settings(
+            grid_enabled=self.current_sense_fft_show_grid.isChecked(),
+            mag_x_scale=self.current_sense_fft_mag_x_scale.currentText(),
+            mag_y_scale=self.current_sense_fft_mag_y_scale.currentText(),
+            phase_x_scale=self.current_sense_fft_phase_x_scale.currentText(),
+            phase_y_scale=self.current_sense_fft_phase_y_scale.currentText(),
+            amplitude_mode=self.current_sense_fft_amplitude_mode.currentText(),
+            phase_unit=self.current_sense_fft_phase_unit.currentText(),
+        )
+
+    def _save_current_fft_csv(self) -> None:
+        """Save FFT data from the detached FFT window."""
+        if self.current_fft_window is None:
+            self._open_current_fft_window()
+        if self.current_fft_window is not None:
+            self.current_fft_window._save_fft_csv()
+
+    def _save_current_fft_image(self) -> None:
+        """Save FFT image from the detached FFT window."""
+        if self.current_fft_window is None:
+            self._open_current_fft_window()
+        if self.current_fft_window is not None:
+            self.current_fft_window._save_fft_image()
+
+    def _update_bridge_visualization(self, snapshot: dict) -> None:
+        """Draw a live inverter bridge view and highlight selected shunt topology."""
+        if not hasattr(self, "bridge_ax"):
+            return
+        from matplotlib.patches import Rectangle, Circle
+
+        topology = self.current_sense_topology.currentText()
+        meas = (
+            snapshot.get("current_measurement", {})
+            if isinstance(snapshot, dict)
+            else {}
+        )
+        if isinstance(meas, dict) and meas.get("enabled", False):
+            topology = str(meas.get("topology", topology))
+
+        va = float(snapshot.get("voltages_a", 0.0))
+        vb = float(snapshot.get("voltages_b", 0.0))
+        vc = float(snapshot.get("voltages_c", 0.0))
+        upper_on = [va >= 0.0, vb >= 0.0, vc >= 0.0]
+
+        ax = self.bridge_ax
+        ax.clear()
+        ax.set_xlim(0.0, 3.0)
+        ax.set_ylim(0.0, 1.0)
+        ax.set_axis_off()
+
+        labels = ["A", "B", "C"]
+        shunt_map = {
+            "single": [True, False, False],
+            "double": [True, True, False],
+            "triple": [True, True, True],
+        }.get(topology, [True, True, True])
+
+        # Draw a shared low-side source bus used by all three legs.
+        low_side_bus_y = 0.10
+        ax.plot(
+            [0.2, 2.8], [low_side_bus_y, low_side_bus_y], color="#455A64", linewidth=2.0
+        )
+
+        for idx in range(3):
+            x = idx + 0.2
+            color_hi = "#2E7D32" if upper_on[idx] else "#CFD8DC"
+            color_lo = "#CFD8DC" if upper_on[idx] else "#2E7D32"
+            ax.add_patch(Rectangle((x, 0.58), 0.6, 0.28, color=color_hi, ec="#263238"))
+            ax.add_patch(Rectangle((x, 0.14), 0.6, 0.28, color=color_lo, ec="#263238"))
+            ax.text(
+                x + 0.3, 0.90, f"{labels[idx]}U", ha="center", va="center", fontsize=8
+            )
+            ax.text(
+                x + 0.3, 0.49, f"{labels[idx]}L", ha="center", va="center", fontsize=8
+            )
+
+            # Connect each low-side switch source to the shared return bus.
+            ax.plot(
+                [x + 0.3, x + 0.3],
+                [0.14, low_side_bus_y],
+                color="#455A64",
+                linewidth=1.4,
+            )
+
+            if topology != "single" and shunt_map[idx]:
+                ax.add_patch(
+                    Circle((x + 0.3, 0.05), 0.05, color="#F57C00", ec="#E65100")
+                )
+                ax.text(x + 0.3, 0.01, "shunt", ha="center", va="top", fontsize=7)
+
+        if topology == "single":
+            # Single-shunt hardware: one common shunt in the low-side return path to GND.
+            shunt_x0 = 1.45
+            shunt_w = 0.10
+            shunt_y0 = 0.02
+            shunt_h = 0.06
+            ax.plot(
+                [1.5, 1.5],
+                [low_side_bus_y, shunt_y0 + shunt_h],
+                color="#455A64",
+                linewidth=1.6,
+            )
+            ax.add_patch(
+                Rectangle(
+                    (shunt_x0, shunt_y0),
+                    shunt_w,
+                    shunt_h,
+                    color="#F57C00",
+                    ec="#E65100",
+                )
+            )
+            ax.text(1.5, shunt_y0 - 0.005, "shunt", ha="center", va="top", fontsize=8)
+
+            # Ground connection and symbol.
+            gnd_y = 0.0
+            ax.plot(
+                [1.5, 1.5], [shunt_y0, gnd_y + 0.015], color="#455A64", linewidth=1.6
+            )
+            ax.plot(
+                [1.42, 1.58],
+                [gnd_y + 0.015, gnd_y + 0.015],
+                color="#263238",
+                linewidth=1.4,
+            )
+            ax.plot(
+                [1.44, 1.56],
+                [gnd_y + 0.008, gnd_y + 0.008],
+                color="#263238",
+                linewidth=1.2,
+            )
+            ax.plot(
+                [1.46, 1.54],
+                [gnd_y + 0.002, gnd_y + 0.002],
+                color="#263238",
+                linewidth=1.0,
+            )
+
+        ax.text(
+            0.02,
+            0.98,
+            f"Topology: {topology} | Switch state inferred from phase voltage sign",
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9,
+        )
+        if topology == "single":
+            ax.text(
+                0.02,
+                0.90,
+                "Single-shunt: shared low-side source bus -> one shunt -> ground",
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=8,
+                color="#37474F",
+            )
+        self.bridge_figure.tight_layout()
+        self.bridge_canvas.draw_idle()
 
     def _build_current_sense_model(self) -> Optional[InverterCurrentSense]:
         """Create topology-aware current sense model from GUI settings."""
@@ -4809,6 +5345,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 parent=self,
             )
             self.current_fft_window.closed.connect(self._on_current_fft_window_closed)
+        self._apply_fft_display_settings()
         self.current_fft_window.show()
         self.current_fft_window.raise_()
         self.current_fft_window.activateWindow()

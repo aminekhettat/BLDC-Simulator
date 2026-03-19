@@ -224,6 +224,10 @@ class FOCController(BaseController):
         self.sensorless_blend_weight = 0.0
         self.theta_sensorless_raw = 0.0
 
+        # Current-feedback source selection.
+        self.use_external_current_feedback = False
+        self._external_phase_currents = np.zeros(3, dtype=np.float64)
+
     @staticmethod
     def _normalize_observer_mode(mode: str) -> str:
         normalized = str(mode).strip().upper()
@@ -999,6 +1003,17 @@ class FOCController(BaseController):
         self.id_ref = id_ref
         self.iq_ref = iq_ref
 
+    def set_current_feedback_mode(self, use_external_feedback: bool) -> None:
+        """Select whether update() uses externally provided phase currents."""
+        self.use_external_current_feedback = bool(use_external_feedback)
+
+    def set_external_phase_currents(self, currents_abc: np.ndarray) -> None:
+        """Set external phase-current feedback (typically reconstructed shunt currents)."""
+        currents = np.asarray(currents_abc, dtype=np.float64)
+        if currents.shape != (3,):
+            raise ValueError("currents_abc must have shape (3,)")
+        self._external_phase_currents = currents.copy()
+
     def set_speed_reference(self, speed_rpm: float) -> None:
         """Set speed reference (rpm). qi reference will be derived from it."""
         self.speed_ref = speed_rpm
@@ -1097,8 +1112,11 @@ class FOCController(BaseController):
         else:
             self.theta = self._estimate_theta_electrical(dt)
 
-        # read phase currents and transform
-        ia, ib, ic = self.motor.currents
+        # Read phase currents from selected feedback source.
+        if self.use_external_current_feedback:
+            ia, ib, ic = self._external_phase_currents
+        else:
+            ia, ib, ic = self.motor.currents
         if self.use_concordia:
             v_alpha, v_beta = concordia_transform(ia, ib, ic)
         else:
@@ -1223,6 +1241,8 @@ class FOCController(BaseController):
         self.theta_sensorless_raw = 0.0
         self.id_ref_command = 0.0
         self.iq_ref_command = 0.0
+        self.use_external_current_feedback = False
+        self._external_phase_currents = np.zeros(3, dtype=np.float64)
         self.field_weakening_headroom_v = self.vdq_limit
         self.field_weakening_voltage_error_v = 0.0
         self.field_weakening_id_injection_a = 0.0
@@ -1244,6 +1264,7 @@ class FOCController(BaseController):
             "speed_ref": self.speed_ref,
             "speed_error": self.speed_error,
             "speed_loop_enabled": self.enable_speed_loop,
+            "use_external_current_feedback": self.use_external_current_feedback,
             "decouple_d_enabled": self.enable_decouple_d,
             "decouple_q_enabled": self.enable_decouple_q,
             "angle_observer_mode": self.angle_observer_mode,

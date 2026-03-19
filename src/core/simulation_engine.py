@@ -118,6 +118,7 @@ class SimulationEngine:
         }
         self._compute_backend_state = resolve_compute_backend(compute_backend)
         self._measured_phase_currents = np.zeros(3, dtype=np.float64)
+        self._last_effective_voltages = np.zeros(3, dtype=np.float64)
         self._current_sense_state: Dict[str, Any] = {
             "enabled": self.current_sense is not None,
             "topology": self.current_sense.topology if self.current_sense else "none",
@@ -374,6 +375,7 @@ class SimulationEngine:
                 self._hardware_state["last_io_error"] = str(exc)
 
         # Execute motor dynamics step
+        self._last_effective_voltages = np.asarray(effective_voltages, dtype=np.float64)
         self.motor.step(effective_voltages, load_torque)
 
         if self.current_sense is not None:
@@ -765,6 +767,7 @@ class SimulationEngine:
 
         self.time = 0.0
         self.step_count = 0
+        self._last_effective_voltages = np.zeros(3, dtype=np.float64)
 
     def get_history(self) -> Dict[str, np.ndarray]:
         """
@@ -887,6 +890,9 @@ class SimulationEngine:
             state["currents_b"] = float(self._measured_phase_currents[1])
             state["currents_c"] = float(self._measured_phase_currents[2])
             state["current_measurement"] = dict(self._current_sense_state)
+        state["voltages_a"] = float(self._last_effective_voltages[0])
+        state["voltages_b"] = float(self._last_effective_voltages[1])
+        state["voltages_c"] = float(self._last_effective_voltages[2])
         return state
 
     def get_controller_phase_currents(self) -> np.ndarray:

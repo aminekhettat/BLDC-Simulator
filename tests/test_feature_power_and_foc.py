@@ -56,6 +56,7 @@ Atomic features tested in this module:
 - gui monitoring updates hardware status blocks
 - gui monitoring updates advanced foc status blocks
 """
+
 import numpy as np
 import pytest
 import sys
@@ -366,6 +367,28 @@ def test_foc_set_current_pi_gains_updates_states():
     assert ctrl.pi_q["kp"] == pytest.approx(3.2)
     assert ctrl.pi_q["ki"] == pytest.approx(0.7)
     assert ctrl.pi_q["kaw"] == pytest.approx(0.8)
+
+
+def test_foc_external_current_feedback_mode_changes_control_response():
+    motor = BLDCMotor(MotorParameters())
+    motor.state[0:3] = np.array([0.0, 0.0, 0.0])
+    ctrl = FOCController(motor=motor)
+    ctrl.set_current_references(id_ref=0.0, iq_ref=0.0)
+
+    ctrl.set_current_feedback_mode(False)
+    ctrl.update(0.001)
+    state_true = ctrl.get_state()
+
+    ctrl.set_external_phase_currents(np.array([2.5, -1.0, -1.5]))
+    ctrl.set_current_feedback_mode(True)
+    ctrl.update(0.001)
+    state_external = ctrl.get_state()
+
+    assert state_external["use_external_current_feedback"] is True
+    assert (
+        abs(state_external["v_d_cmd"] - state_true["v_d_cmd"]) > 1e-9
+        or abs(state_external["v_q_cmd"] - state_true["v_q_cmd"]) > 1e-9
+    )
 
 
 def test_foc_decoupling_feedforward_changes_dq_voltage_commands():
@@ -947,6 +970,7 @@ def test_gui_foc_cascaded_speed_loop_wiring():
     gui._on_control_mode_changed("FOC")
 
     gui.foc_speed_loop_mode.setCurrentText("Cascaded PI")
+    gui.foc_current_feedback_source.setCurrentText("Reconstructed (Shunt)")
     gui.foc_iq_limit.setValue(3.5)
     gui.foc_speed_kp.setValue(0.03)
     gui.foc_speed_ki.setValue(2.0)
@@ -960,6 +984,7 @@ def test_gui_foc_cascaded_speed_loop_wiring():
 
     assert isinstance(gui.controller, FOCController)
     assert gui.controller.enable_speed_loop is True
+    assert gui.controller.use_external_current_feedback is True
     assert gui.controller.iq_limit_a == pytest.approx(3.5)
     assert gui.controller.pi_speed["kp"] == pytest.approx(0.03)
     assert gui.controller.pi_speed["ki"] == pytest.approx(2.0)
@@ -1405,9 +1430,3 @@ def test_gui_monitoring_updates_advanced_foc_status_blocks():
     assert gui.status_blocks[
         "startup_handoff_stability_ratio"
     ].current_value == pytest.approx(ctrl_state["startup_handoff_stability_ratio"])
-
-
-
-
-
-
