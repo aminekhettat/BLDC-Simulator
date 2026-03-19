@@ -258,6 +258,7 @@ class TestStatusBarWidgets:
         assert hasattr(gui, "status_bar_task")
         assert hasattr(gui, "status_bar_time_remaining")
         assert hasattr(gui, "status_bar_cpu_load")
+        assert hasattr(gui, "status_bar_backend")
 
     def test_update_status_bar_running_finite_duration(self, gui, monkeypatch):
         monkeypatch.setattr("src.ui.main_window.speak", lambda *a: None)
@@ -315,6 +316,36 @@ class TestStatusBarWidgets:
         gui._update_status_bar({"time": 0.0, "cpu_load_pct": 0.0})
         assert "Simulation" in gui.status_bar_task.text()
         gui._mark_task_finished("simulation")
+
+    def test_update_status_bar_backend_cpu_default(self, gui):
+        gui._update_status_bar(
+            {
+                "time": 0.0,
+                "cpu_load_pct": 0.0,
+                "compute_backend": {"selected": "cpu", "gpu_available": False},
+            }
+        )
+        assert gui.status_bar_backend.text() == "Backend: CPU"
+
+    def test_update_status_bar_backend_gpu_available_not_selected(self, gui):
+        gui._update_status_bar(
+            {
+                "time": 0.0,
+                "cpu_load_pct": 0.0,
+                "compute_backend": {"selected": "cpu", "gpu_available": True},
+            }
+        )
+        assert gui.status_bar_backend.text() == "Backend: CPU (GPU avail)"
+
+    def test_update_status_bar_backend_gpu_selected(self, gui):
+        gui._update_status_bar(
+            {
+                "time": 0.0,
+                "cpu_load_pct": 0.0,
+                "compute_backend": {"selected": "gpu", "gpu_available": True},
+            }
+        )
+        assert gui.status_bar_backend.text() == "Backend: GPU"
 
 
 # ===========================================================================
