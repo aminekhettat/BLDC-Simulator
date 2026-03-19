@@ -15,6 +15,7 @@ Provides comprehensive GUI for:
 :version: 1.0.0
 """
 
+import sys
 import numpy as np
 from typing import Optional
 import time
@@ -22,6 +23,7 @@ import logging
 import json
 from threading import Lock
 from pathlib import Path
+from collections import deque
 
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -36,8 +38,10 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem,
     QScrollArea,
     QFrame,
+    QComboBox,
+    QTextEdit,
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QProcess
 
 # QAccessible was removed from PyQt6.QtCore in some builds of PyQt6.
 # We still want the code to run even if accessibility support is not available.
@@ -64,6 +68,7 @@ from PyQt6.QtGui import (
     QColor,
     QPen,
     QTextDocument,
+    QCloseEvent,
 )
 from PyQt6.QtCore import QUrl
 from PyQt6.QtPrintSupport import QPrinter
@@ -86,7 +91,7 @@ from src.core import (
 )
 from src.control import SVMGenerator, VFController, BaseController, FOCController
 from src.control.transforms import inverse_clarke
-from src.hardware import MockDAQHardware
+from src.hardware import MockDAQHardware, InverterCurrentSense, ShuntAmplifierChannel
 from src.utils.config import (
     DEFAULT_MOTOR_PARAMS,
     FOC_FIELD_WEAKENING_PARAMS,
@@ -309,7 +314,11 @@ class SimulationThread(QThread):
                 except AttributeError:
                     pass
                 try:
-                    self.svm.set_phase_currents(self.engine.motor.currents)
+                    if hasattr(self.engine, "get_controller_phase_currents"):
+                        phase_currents = self.engine.get_controller_phase_currents()
+                    else:
+                        phase_currents = self.engine.motor.currents
+                    self.svm.set_phase_currents(phase_currents)
                 except AttributeError:
                     pass
 
@@ -365,6 +374,117 @@ class SimulationThread(QThread):
         self.finished_signal.emit()
 
 
+class CurrentSpectrumWindow(QMainWindow):
+    """Dedicated FFT window for controller-facing current harmonics."""
+
+    closed = pyqtSignal()
+
+    def __init__(self, window_size_samples: int = 512, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Current Harmonic FFT")
+        self.setMinimumSize(820, 520)
+
+        self._window_size_samples = int(max(64, window_size_samples))
+        self._time_samples: deque[float] = deque(maxlen=self._window_size_samples)
+        self._ia_samples: deque[float] = deque(maxlen=self._window_size_samples)
+
+        central = QWidget()
+        layout = QVBoxLayout()
+
+        self.summary_label = QLabel(
+            "Awaiting simulation samples. FFT summary will report dominant frequency and THD."
+        )
+        self.summary_label.setWordWrap(True)
+        layout.addWidget(self.summary_label)
+
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+        self.figure = Figure(figsize=(7, 4), dpi=90)
+        self.canvas = FigureCanvas(self.figure)
+        self.ax = self.figure.add_subplot(111)
+        self.ax.set_title("Phase-A Current Spectrum (Controller-Facing)")
+        self.ax.set_xlabel("Frequency (Hz)")
+        self.ax.set_ylabel("Magnitude (A)")
+        self.ax.grid(True, alpha=0.3)
+        layout.addWidget(self.canvas, 1)
+
+        central.setLayout(layout)
+        self.setCentralWidget(central)
+
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.timeout.connect(self._refresh_plot)
+        self._refresh_timer.start(250)
+
+    def set_window_size(self, samples: int) -> None:
+        """Update FFT window length and preserve newest samples when possible."""
+        samples = int(max(64, samples))
+        if samples == self._window_size_samples:
+            return
+        self._window_size_samples = samples
+        self._time_samples = deque(list(self._time_samples)[-samples:], maxlen=samples)
+        self._ia_samples = deque(list(self._ia_samples)[-samples:], maxlen=samples)
+
+    def push_snapshot(self, snapshot: dict) -> None:
+        """Consume latest simulation snapshot without blocking control loop."""
+        if not isinstance(snapshot, dict):
+            return
+        try:
+            time_s = float(snapshot.get("time", 0.0))
+            ia = float(snapshot.get("currents_a", 0.0))
+        except (TypeError, ValueError):
+            return
+        self._time_samples.append(time_s)
+        self._ia_samples.append(ia)
+
+    def _refresh_plot(self) -> None:
+        """Compute and draw FFT from buffered samples in this window thread context."""
+        sample_count = len(self._ia_samples)
+        if sample_count < 16:
+            return
+
+        time_arr = np.asarray(self._time_samples, dtype=np.float64)
+        current_arr = np.asarray(self._ia_samples, dtype=np.float64)
+
+        dt = float(np.median(np.diff(time_arr))) if sample_count > 2 else 0.0
+        if dt <= 0.0:
+            return
+
+        centered = current_arr - np.mean(current_arr)
+        spec = np.fft.rfft(centered)
+        freq = np.fft.rfftfreq(centered.size, d=dt)
+        mag = np.abs(spec) * (2.0 / max(centered.size, 1))
+
+        # Ignore DC when selecting dominant component.
+        if mag.size > 1:
+            dominant_idx = int(np.argmax(mag[1:]) + 1)
+            fundamental_mag = float(max(mag[dominant_idx], 1e-12))
+            harmonic_energy = float(np.sqrt(np.sum(np.square(mag[dominant_idx + 1 :]))))
+            thd = (harmonic_energy / fundamental_mag) * 100.0
+            dominant_freq = float(freq[dominant_idx])
+        else:
+            dominant_freq = 0.0
+            thd = 0.0
+
+        self.ax.clear()
+        self.ax.plot(freq, mag, color="#1E88E5", linewidth=1.5)
+        self.ax.set_title("Phase-A Current Spectrum (Controller-Facing)")
+        self.ax.set_xlabel("Frequency (Hz)")
+        self.ax.set_ylabel("Magnitude (A)")
+        self.ax.grid(True, alpha=0.3)
+        self.figure.tight_layout()
+        self.canvas.draw_idle()
+
+        self.summary_label.setText(
+            f"FFT window: {sample_count} samples, dominant frequency: {dominant_freq:.1f} Hz, THD: {thd:.2f}%"
+        )
+
+    def closeEvent(self, event) -> None:
+        self._refresh_timer.stop()
+        self.closed.emit()
+        super().closeEvent(event)
+
+
 class BLDCMotorControlGUI(QMainWindow):
     """
     Main BLDC Motor Control GUI
@@ -406,12 +526,23 @@ class BLDCMotorControlGUI(QMainWindow):
         self.sim_thread: Optional[SimulationThread] = None
         self.logger = DataLogger()
 
+        # Calibration process state
+        self.calib_process: Optional[QProcess] = None
+        self.calib_output_path: Optional[Path] = None
+
         # UI state
         self.is_running = False
 
         # Speed curve history for live plotting
         self.speed_history_time = []
         self.speed_history_rpm = []
+
+        # Optional FFT analysis window for measured currents.
+        self.current_fft_window: Optional[CurrentSpectrumWindow] = None
+
+        # Process lifecycle tracking (prevent simultaneous simulation/calibration)
+        self._task_lock = Lock()  # Protects concurrent access to task state
+        self._running_task_name: Optional[str] = None  # "simulation" or "calibration"
 
         # Create UI
         self._create_ui()
@@ -450,6 +581,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self._create_control_tab()
         self._create_monitoring_tab()
         self._create_plotting_tab()
+        self._create_calibration_tab()
 
         left_layout.addWidget(self.tabs, 1)
 
@@ -527,11 +659,23 @@ class BLDCMotorControlGUI(QMainWindow):
 
         central_widget.setLayout(main_layout)
 
-        # Add status bar with simulation parameters
+        # Add status bar with simulation parameters and telemetry
         self.status_bar_dt = QLabel("dt: -- s")
         self.status_bar_tau_e = QLabel("τ_e: -- s")
         self.status_bar_tau_m = QLabel("τ_m: -- s")
+        self.status_bar_state = QLabel("State: Ready")
+        self.status_bar_time_remaining = QLabel("Remaining: -- s")
+        self.status_bar_cpu_load = QLabel("CPU: -- %")
+        self.status_bar_task = QLabel("Task: None")
 
+        self.statusBar().addWidget(self.status_bar_state)
+        self.statusBar().addWidget(QLabel("|"))  # Separator
+        self.statusBar().addWidget(self.status_bar_task)
+        self.statusBar().addWidget(QLabel("|"))  # Separator
+        self.statusBar().addWidget(self.status_bar_time_remaining)
+        self.statusBar().addWidget(QLabel("|"))  # Separator
+        self.statusBar().addWidget(self.status_bar_cpu_load)
+        self.statusBar().addWidget(QLabel("|"))  # Separator
         self.statusBar().addWidget(self.status_bar_dt)
         self.statusBar().addWidget(QLabel("|"))  # Separator
         self.statusBar().addWidget(self.status_bar_tau_e)
@@ -2431,6 +2575,183 @@ class BLDCMotorControlGUI(QMainWindow):
         self.inverter_group.setLayout(inverter_layout)
         layout.addWidget(self.inverter_group)
 
+        self.current_sense_group = AccessibleGroupBox(
+            "Current Measurement and FFT",
+            "Topology-aware shunt sensing controls and separate current harmonic FFT window.",
+        )
+        current_sense_layout = QVBoxLayout()
+
+        self.current_sense_enable = QCheckBox("Enable Current Sensing Model")
+        self.current_sense_enable.setChecked(False)
+        current_sense_layout.addWidget(self.current_sense_enable)
+
+        self.current_sense_topology = LabeledComboBox(
+            "Sensing Topology",
+            items=["single", "double", "triple"],
+            description="Single, double, or triple-shunt current measurement topology.",
+        )
+        current_sense_layout.addWidget(self.current_sense_topology)
+
+        self.current_sense_r_shunt = LabeledSpinBox(
+            "Shunt Resistance",
+            min_val=0.00005,
+            max_val=0.05,
+            initial=0.001,
+            step=0.0001,
+            decimals=5,
+            suffix=" Ohm",
+            description="Per-shunt resistance used in current sensing.",
+        )
+        current_sense_layout.addWidget(self.current_sense_r_shunt)
+
+        self.current_sense_nominal_gain = LabeledSpinBox(
+            "Nominal Gain",
+            min_val=1.0,
+            max_val=500.0,
+            initial=20.0,
+            step=0.5,
+            decimals=2,
+            suffix=" V/V",
+            description="Gain used by controller reconstruction path.",
+        )
+        current_sense_layout.addWidget(self.current_sense_nominal_gain)
+
+        self.current_sense_nominal_offset = LabeledSpinBox(
+            "Nominal Offset",
+            min_val=0.0,
+            max_val=5.0,
+            initial=1.65,
+            step=0.01,
+            decimals=3,
+            suffix=" V",
+            description="Nominal offset used by controller reconstruction path.",
+        )
+        current_sense_layout.addWidget(self.current_sense_nominal_offset)
+
+        self.current_sense_cutoff_hz = LabeledSpinBox(
+            "Sensing Cutoff",
+            min_val=100.0,
+            max_val=200000.0,
+            initial=20000.0,
+            step=100.0,
+            decimals=1,
+            suffix=" Hz",
+            description="First-order analog anti-aliasing cutoff frequency.",
+        )
+        current_sense_layout.addWidget(self.current_sense_cutoff_hz)
+
+        self.current_sense_vcc = LabeledSpinBox(
+            "ADC Vcc",
+            min_val=1.0,
+            max_val=5.0,
+            initial=3.3,
+            step=0.01,
+            decimals=2,
+            suffix=" V",
+            description="ADC full-scale clamp voltage for sensing channels.",
+        )
+        current_sense_layout.addWidget(self.current_sense_vcc)
+
+        self.current_sense_actual_gain_a = LabeledSpinBox(
+            "Actual Gain A",
+            min_val=1.0,
+            max_val=500.0,
+            initial=20.0,
+            step=0.5,
+            decimals=2,
+            suffix=" V/V",
+            description="Runtime actual gain for shunt channel A.",
+        )
+        current_sense_layout.addWidget(self.current_sense_actual_gain_a)
+
+        self.current_sense_actual_gain_b = LabeledSpinBox(
+            "Actual Gain B",
+            min_val=1.0,
+            max_val=500.0,
+            initial=20.0,
+            step=0.5,
+            decimals=2,
+            suffix=" V/V",
+            description="Runtime actual gain for shunt channel B.",
+        )
+        current_sense_layout.addWidget(self.current_sense_actual_gain_b)
+
+        self.current_sense_actual_gain_c = LabeledSpinBox(
+            "Actual Gain C",
+            min_val=1.0,
+            max_val=500.0,
+            initial=20.0,
+            step=0.5,
+            decimals=2,
+            suffix=" V/V",
+            description="Runtime actual gain for shunt channel C.",
+        )
+        current_sense_layout.addWidget(self.current_sense_actual_gain_c)
+
+        self.current_sense_actual_offset_a = LabeledSpinBox(
+            "Actual Offset A",
+            min_val=0.0,
+            max_val=5.0,
+            initial=1.65,
+            step=0.01,
+            decimals=3,
+            suffix=" V",
+            description="Runtime actual offset for shunt channel A.",
+        )
+        current_sense_layout.addWidget(self.current_sense_actual_offset_a)
+
+        self.current_sense_actual_offset_b = LabeledSpinBox(
+            "Actual Offset B",
+            min_val=0.0,
+            max_val=5.0,
+            initial=1.65,
+            step=0.01,
+            decimals=3,
+            suffix=" V",
+            description="Runtime actual offset for shunt channel B.",
+        )
+        current_sense_layout.addWidget(self.current_sense_actual_offset_b)
+
+        self.current_sense_actual_offset_c = LabeledSpinBox(
+            "Actual Offset C",
+            min_val=0.0,
+            max_val=5.0,
+            initial=1.65,
+            step=0.01,
+            decimals=3,
+            suffix=" V",
+            description="Runtime actual offset for shunt channel C.",
+        )
+        current_sense_layout.addWidget(self.current_sense_actual_offset_c)
+
+        self.current_sense_fft_window_samples = LabeledSpinBox(
+            "FFT Window Samples",
+            min_val=64,
+            max_val=16384,
+            initial=512,
+            step=64,
+            decimals=0,
+            suffix=" samples",
+            description="Sample window length used by the asynchronous FFT window.",
+        )
+        current_sense_layout.addWidget(self.current_sense_fft_window_samples)
+
+        self.current_sense_status_label = QLabel(
+            "Current sensing disabled. Enable to expose measured-vs-true current telemetry."
+        )
+        self.current_sense_status_label.setWordWrap(True)
+        current_sense_layout.addWidget(self.current_sense_status_label)
+
+        btn_fft_window = AccessibleButton(
+            "Open Current FFT Window",
+            "Open separate real-time FFT analysis window for controller-facing currents.",
+        )
+        btn_fft_window.clicked.connect(self._open_current_fft_window)
+        current_sense_layout.addWidget(btn_fft_window)
+
+        self.current_sense_group.setLayout(current_sense_layout)
+        layout.addWidget(self.current_sense_group)
+
         self.mcu_budget_group = AccessibleGroupBox(
             "MCU Budget Estimator",
             "Estimate target MCU control-loop load from measured calculation duration.",
@@ -2928,6 +3249,385 @@ class BLDCMotorControlGUI(QMainWindow):
         widget.setLayout(layout)
         self.tabs.addTab(widget, "Plotting")
 
+    # ------------------------------------------------------------------
+    # Calibration tab
+    # ------------------------------------------------------------------
+
+    def _create_calibration_tab(self):
+        """Create the FW loaded-point calibration tab."""
+        widget = QScrollArea()
+        inner = QWidget()
+        layout = QVBoxLayout()
+
+        # ── Motor Profile & Session selection ────────────────────────
+        profile_group = AccessibleGroupBox(
+            "Motor Profile & Session",
+            "Select the motor profile and auto-tuning session for calibration",
+        )
+        pg_layout = QVBoxLayout()
+
+        profiles = sorted(
+            p for p in MOTOR_PROFILES_DIR.glob("*.json") if not p.name.startswith("_")
+        )
+        profile_names = [p.name for p in profiles] or ["(no profiles found)"]
+
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("Motor profile:"))
+        self.calib_profile_combo = QComboBox()
+        self.calib_profile_combo.addItems(profile_names)
+        self.calib_profile_combo.setAccessibleName("Motor profile for calibration")
+        self.calib_profile_combo.setAccessibleDescription(
+            "Select motor profile JSON for field-weakening loaded-point calibration"
+        )
+        self.calib_profile_combo.currentTextChanged.connect(
+            self._on_calib_profile_changed
+        )
+        row1.addWidget(self.calib_profile_combo, 1)
+        pg_layout.addLayout(row1)
+
+        self.calib_session_label = QLabel("Session: (auto-detected)")
+        self.calib_session_label.setAccessibleName("Tuning session file")
+        pg_layout.addWidget(self.calib_session_label)
+
+        self.calib_output_label = QLabel("Output: (auto)")
+        self.calib_output_label.setAccessibleName("Calibration output file path")
+        pg_layout.addWidget(self.calib_output_label)
+
+        profile_group.setLayout(pg_layout)
+        layout.addWidget(profile_group)
+
+        # ── Control buttons ──────────────────────────────────────────
+        btn_row = QHBoxLayout()
+
+        self.btn_start_calib = AccessibleButton(
+            "Start Calibration",
+            "Begin three-stage field-weakening loaded-point calibration",
+        )
+        self.btn_start_calib.clicked.connect(self._start_calibration)
+        btn_row.addWidget(self.btn_start_calib)
+
+        self.btn_stop_calib = AccessibleButton(
+            "Stop Calibration",
+            "Terminate the running calibration process",
+        )
+        self.btn_stop_calib.setEnabled(False)
+        self.btn_stop_calib.clicked.connect(self._stop_calibration)
+        btn_row.addWidget(self.btn_stop_calib)
+
+        btn_row.addStretch()
+        layout.addLayout(btn_row)
+
+        # ── Progress log ─────────────────────────────────────────────
+        prog_group = AccessibleGroupBox(
+            "Calibration Progress",
+            "Live output from the calibration process",
+        )
+        prog_layout = QVBoxLayout()
+        self.calib_log = QTextEdit()
+        self.calib_log.setReadOnly(True)
+        self.calib_log.setMinimumHeight(220)
+        mono_font = QFont("Courier New", 9)
+        self.calib_log.setFont(mono_font)
+        self.calib_log.setAccessibleName("Calibration progress log")
+        self.calib_log.setAccessibleDescription(
+            "Live text output from calibration; key milestones are announced via audio"
+        )
+        prog_layout.addWidget(self.calib_log)
+        prog_group.setLayout(prog_layout)
+        layout.addWidget(prog_group)
+
+        # ── Results panel ────────────────────────────────────────────
+        result_group = AccessibleGroupBox(
+            "Calibration Results",
+            "Key performance metrics from the last completed calibration run",
+        )
+        res_layout = QVBoxLayout()
+        self.calib_result_status = QLabel("Status: Not run")
+        self.calib_result_speed = QLabel("Achieved Speed: --")
+        self.calib_result_load = QLabel("Load Torque: --")
+        self.calib_result_efficiency = QLabel("Efficiency: --")
+        self.calib_result_fw = QLabel("FW Injection: --")
+        for lbl in (
+            self.calib_result_status,
+            self.calib_result_speed,
+            self.calib_result_load,
+            self.calib_result_efficiency,
+            self.calib_result_fw,
+        ):
+            lbl.setAccessibleName(lbl.text())
+            res_layout.addWidget(lbl)
+        res_layout.addStretch()
+        result_group.setLayout(res_layout)
+        layout.addWidget(result_group)
+
+        inner.setLayout(layout)
+        widget.setWidget(inner)
+        widget.setWidgetResizable(True)
+        self.tabs.addTab(widget, "Calibration")
+
+        # Prime session/output labels for the initial selection
+        if profile_names[0] != "(no profiles found)":
+            self._on_calib_profile_changed(profile_names[0])
+
+    def _on_calib_profile_changed(self, profile_name: str) -> None:
+        """Update session and output path labels when profile selection changes."""
+        stem = Path(profile_name).stem
+        session_dir = MOTOR_PROFILES_DIR.parent / "tuning_sessions" / "until_converged"
+        session_path = session_dir / f"{stem}_until_converged.json"
+        out_path = (
+            MOTOR_PROFILES_DIR.parent
+            / "logs"
+            / f"calibration_{stem}_fw_loaded_point.json"
+        )
+        exists_tag = "" if session_path.exists() else " ⚠ not found"
+        self.calib_session_label.setText(f"Session: {session_path.name}{exists_tag}")
+        self.calib_output_label.setText(f"Output: {out_path.name}")
+
+    def _start_calibration(self) -> None:
+        """Launch the FW loaded-point calibration as a managed child process."""
+        # Check if another task is running
+        if not self._can_start_task("calibration"):
+            return
+
+        if (
+            self.calib_process is not None
+            and self.calib_process.state() != QProcess.ProcessState.NotRunning
+        ):
+            speak("Calibration is already running.")
+            return
+
+        profile_name = self.calib_profile_combo.currentText()
+        if not profile_name or profile_name == "(no profiles found)":
+            QMessageBox.warning(
+                self, "No Profile", "Please select a valid motor profile first."
+            )
+            return
+
+        profile_path = MOTOR_PROFILES_DIR / profile_name
+        stem = profile_path.stem
+        session_dir = MOTOR_PROFILES_DIR.parent / "tuning_sessions" / "until_converged"
+        session_path = session_dir / f"{stem}_until_converged.json"
+        out_path = (
+            MOTOR_PROFILES_DIR.parent
+            / "logs"
+            / f"calibration_{stem}_fw_loaded_point.json"
+        )
+
+        if not profile_path.exists():
+            QMessageBox.critical(
+                self, "Missing Profile", f"Profile not found:\n{profile_path}"
+            )
+            return
+
+        if not session_path.exists():
+            QMessageBox.critical(
+                self,
+                "Missing Session",
+                f"No tuning session found for {profile_name}.\n"
+                f"Expected:\n{session_path}\n\n"
+                "Run the auto-tuning convergence script first.",
+            )
+            return
+
+        self.calib_output_path = out_path
+
+        # Locate the calibration script relative to this file
+        script_path = (
+            Path(__file__).resolve().parents[2]
+            / "examples"
+            / "calibrate_fw_loaded_point.py"
+        )
+
+        self.calib_log.clear()
+        self.calib_log.append(f"[Starting calibration for {profile_name}]\n")
+        self.calib_result_status.setText("Status: Running\u2026")
+        self.btn_start_calib.setEnabled(False)
+        self.btn_stop_calib.setEnabled(True)
+
+        self.calib_process = QProcess(self)
+        self.calib_process.setProcessChannelMode(
+            QProcess.ProcessChannelMode.MergedChannels
+        )
+        self.calib_process.readyReadStandardOutput.connect(self._on_calib_output)
+        self.calib_process.finished.connect(self._on_calib_finished)
+        self.calib_process.start(
+            sys.executable,
+            [
+                str(script_path),
+                "--profile",
+                str(profile_path),
+                "--session",
+                str(session_path),
+                "--output",
+                str(out_path),
+            ],
+        )
+        self._mark_task_running("calibration")
+
+        # Update status bar
+        self.status_bar_state.setText("State: Running")
+        self.status_bar_task.setText("Task: Calibration")
+        self.status_bar_time_remaining.setText("Remaining: -- s")
+
+        speak(f"Calibration started for {stem.replace('_', ' ')}.")
+
+    def _stop_calibration(self) -> None:
+        """Terminate the running calibration process gracefully with timeout."""
+        if (
+            self.calib_process is not None
+            and self.calib_process.state() != QProcess.ProcessState.NotRunning
+        ):
+            # Attempt graceful termination first
+            self.calib_process.terminate()
+            # Give it up to 2 seconds to finish gracefully
+            if not self.calib_process.waitForFinished(2000):
+                # If it didn't finish, force kill
+                self.calib_process.kill()
+                self.calib_process.waitForFinished(1000)
+            self.calib_log.append("\n[Calibration stopped by user]")
+            self.calib_result_status.setText("Status: Stopped")
+
+        # Update status bar
+        self.status_bar_state.setText("State: Stopped")
+        self.status_bar_task.setText("Task: None")
+        self.status_bar_time_remaining.setText("Remaining: -- s")
+
+        self.btn_start_calib.setEnabled(True)
+        self.btn_stop_calib.setEnabled(False)
+        self._mark_task_finished("calibration")
+        speak("Calibration stopped.")
+
+    def _on_calib_output(self) -> None:
+        """Append captured stdout from calibration process to the progress log."""
+        raw = bytes(self.calib_process.readAllStandardOutput())
+        text = raw.decode("utf-8", errors="replace")
+        for line in text.splitlines():
+            self.calib_log.append(line)
+        # Auto-scroll to bottom
+        sb = self.calib_log.verticalScrollBar()
+        sb.setValue(sb.maximum())
+        # Speak key milestones for blind users
+        if "STEP1_START" in text:
+            speak("Step 1: Rated speed field weakening convergence started.")
+        elif "STEP2_START" in text:
+            speak("Step 2: Torque ramp search started.")
+        elif "STEP3_START" in text:
+            speak("Step 3: Final working point tuning started.")
+        if "TORQUE_OK" in text:
+            for line in text.splitlines():
+                if line.startswith("TORQUE_OK"):
+                    parts = line.split()
+                    nm = parts[1] if len(parts) > 1 else "?"
+                    speak(f"Torque {nm} Newton metres achievable.")
+        if "TORQUE_FAIL" in text:
+            for line in text.splitlines():
+                if line.startswith("TORQUE_FAIL"):
+                    parts = line.split()
+                    nm = parts[1] if len(parts) > 1 else "?"
+                    speak(f"Torque {nm} Newton metres not achievable.")
+        if "REPORT_SAVED" in text:
+            speak("Calibration report saved to disk.")
+
+    def _on_calib_finished(self, exit_code: int, exit_status) -> None:
+        """Handle calibration process completion and display results."""
+        self.btn_start_calib.setEnabled(True)
+        self.btn_stop_calib.setEnabled(False)
+
+        # Update status bar
+        self.status_bar_state.setText("State: Stopped")
+        self.status_bar_task.setText("Task: None")
+        self.status_bar_time_remaining.setText("Remaining: -- s")
+
+        if (
+            exit_code == 0
+            and self.calib_output_path is not None
+            and self.calib_output_path.exists()
+        ):
+            try:
+                report = json.loads(self.calib_output_path.read_text(encoding="utf-8"))
+                step3 = report.get("step3_final_working_point_tuning", {})
+                hifi = step3.get("result_high_fidelity", {})
+                metrics = hifi.get("metrics", {})
+                speed = float(metrics.get("mean_speed_rpm_last_1s", 0.0))
+                eff = float(metrics.get("efficiency_pct_last_1s", 0.0))
+                fw_inj = float(metrics.get("fw_injection_dc_a_last_1s", 0.0))
+                target_torque = float(step3.get("target_load_nm", 0.0))
+                success = bool(step3.get("success", False))
+
+                status_str = "PASS" if success else "FAIL"
+                self.calib_result_status.setText(f"Status: {status_str}")
+                self.calib_result_speed.setText(f"Achieved Speed: {speed:.1f} RPM")
+                self.calib_result_load.setText(f"Load Torque: {target_torque:.2f} Nm")
+                self.calib_result_efficiency.setText(f"Efficiency: {eff:.1f}%")
+                self.calib_result_fw.setText(f"FW Injection: {fw_inj:.1f} A")
+
+                msg = (
+                    f"Calibration complete. "
+                    f"Speed {speed:.0f} RPM. "
+                    f"Efficiency {eff:.0f} percent. "
+                    f"Field weakening injection {abs(fw_inj):.1f} Amperes. "
+                    f"Result: {status_str}."
+                )
+                speak(msg)
+                self.statusBar().showMessage(
+                    f"Calibration {status_str}: {speed:.0f} RPM, {eff:.0f}% eff, FW={fw_inj:.1f} A",
+                    10000,
+                )
+            except Exception as exc:
+                self.calib_result_status.setText(
+                    f"Status: Error reading results \u2014 {exc}"
+                )
+                speak("Calibration finished but results could not be read.")
+        else:
+            self.calib_result_status.setText(f"Status: Failed (exit {exit_code})")
+            speak("Calibration process failed.")
+
+        self.calib_process = None
+        self._mark_task_finished("calibration")
+
+    def closeEvent(self, event) -> None:
+        """
+        Override closeEvent to ensure all background processes are properly terminated.
+        This prevents orphaned processes when the GUI is closed.
+        """
+        try:
+            # Stop running simulation thread
+            if hasattr(self, "is_running") and self.is_running:
+                if hasattr(self, "sim_thread") and self.sim_thread is not None:
+                    self.sim_thread.stop_simulation()
+                    self.sim_thread.wait(timeout=5000)  # Wait up to 5 seconds
+                self.is_running = False
+
+            # Terminate calibration process
+            if hasattr(self, "calib_process") and self.calib_process is not None:
+                if self.calib_process.state() != QProcess.ProcessState.NotRunning:
+                    self.calib_process.terminate()
+                    # Give it a moment to terminate gracefully
+                    if not self.calib_process.waitForFinished(2000):
+                        # If it didn't finish, force kill
+                        self.calib_process.kill()
+                        self.calib_process.waitForFinished(1000)
+                self.calib_process = None
+
+            # Cancel any pending timers
+            if hasattr(self, "update_timer"):
+                self.update_timer.stop()
+            if hasattr(self, "plot_timer"):
+                self.plot_timer.stop()
+            if (
+                hasattr(self, "current_fft_window")
+                and self.current_fft_window is not None
+            ):
+                self.current_fft_window.close()
+                self.current_fft_window = None
+
+        except Exception as exc:
+            # Log the error but don't block the window from closing
+            print(f"Error during cleanup in closeEvent: {exc}")
+
+        # Call parent closeEvent to complete the window closure
+        event.accept()
+
     def _initialize_defaults(self):
         """Initialize simulation with default values."""
         self.ctrl_mode.setCurrentText("V/f")
@@ -3014,6 +3714,8 @@ class BLDCMotorControlGUI(QMainWindow):
                 seed=int(self.hardware_seed.value()),
             )
 
+        current_sense = self._build_current_sense_model()
+
         # Create simulation engine
         self.engine = SimulationEngine(
             self.motor,
@@ -3021,6 +3723,7 @@ class BLDCMotorControlGUI(QMainWindow):
             dt=pwm_period_s,
             supply_profile=supply,
             hardware_interface=hardware_interface,
+            current_sense=current_sense,
         )
         self.engine.set_pwm_frequency(requested_pwm_hz)
         self.engine.configure_hardware_interface(
@@ -3172,6 +3875,112 @@ class BLDCMotorControlGUI(QMainWindow):
                 fallback_hold_s=self.foc_startup_fallback_hold.value(),
             )
 
+    def _is_any_task_running(self) -> bool:
+        """Check if any long-running task (simulation or calibration) is currently active."""
+        with self._task_lock:
+            return self._running_task_name is not None
+
+    def _get_running_task_name(self) -> Optional[str]:
+        """Return the name of the currently running task, or None."""
+        with self._task_lock:
+            return self._running_task_name
+
+    def _mark_task_running(self, task_name: str) -> None:
+        """Mark a task as running (e.g., 'simulation' or 'calibration')."""
+        with self._task_lock:
+            self._running_task_name = task_name
+
+    def _mark_task_finished(self, task_name: str) -> None:
+        """Mark a task as finished. Only clears if the given task is currently running."""
+        with self._task_lock:
+            if self._running_task_name == task_name:
+                self._running_task_name = None
+
+    def _terminate_process_gracefully(
+        self,
+        process,
+        process_type: str = "subprocess",
+        timeout_graceful_ms: int = 2000,
+        timeout_kill_ms: int = 1000,
+    ) -> bool:
+        """
+        Terminate a process (QThread or QProcess) gracefully with timeout protection.
+
+        Args:
+            process: QThread or QProcess to terminate
+            process_type: String describing the process for logging ("thread" or "process")
+            timeout_graceful_ms: Time (ms) to wait for graceful termination
+            timeout_kill_ms: Time (ms) to wait for forceful kill
+
+        Returns:
+            True if terminated successfully, False if forceful kill was required
+        """
+        if process is None:
+            return True
+
+        # Check if it's a QThread or QProcess
+        if hasattr(process, "stop_simulation"):  # SimulationThread
+            process.stop_simulation()
+            if process.wait(timeout=timeout_graceful_ms):
+                return True
+            else:
+                print(
+                    f"Warning: {process_type} did not finish gracefully within {timeout_graceful_ms}ms"
+                )
+                return False
+
+        elif hasattr(process, "state"):  # QProcess
+            if process.state() == QProcess.ProcessState.NotRunning:
+                return True
+
+            # Try graceful termination first
+            process.terminate()
+            if process.waitForFinished(timeout_graceful_ms):
+                return True
+
+            # If that fails, force kill
+            print(f"Warning: {process_type} did not terminate gracefully, forcing kill")
+            process.kill()
+            return not process.waitForFinished(timeout_kill_ms)
+
+        return True
+
+    def _can_start_task(self, new_task_name: str) -> bool:
+        """
+        Check if a new task can start. If another task is running, show confirmation dialog.
+        Returns True if OK to proceed, False if user cancels or task conflicts.
+        """
+        running = self._get_running_task_name()
+        if running is None:
+            return True
+
+        # Prevent same task from running twice
+        if running == new_task_name:
+            speak(f"{new_task_name.capitalize()} is already running.")
+            return False
+
+        # Different task is running; ask user to confirm
+        reply = QMessageBox.warning(
+            self,
+            "Another Process Running",
+            f"{running.capitalize()} is currently running.\n\n"
+            f"Stop it and start {new_task_name}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            # Stop the running task
+            if running == "simulation" and self.is_running:
+                self._stop_simulation()
+            elif running == "calibration" and self.calib_process is not None:
+                self._stop_calibration()
+            return True
+
+        # User canceled
+        speak(f"Cancelled; {running} is still running.")
+        return False
+
     def _start_simulation(self):
         """Start simulation."""
         if self.is_running:
@@ -3181,8 +3990,18 @@ class BLDCMotorControlGUI(QMainWindow):
         self._apply_to_simulation()
 
         self.is_running = True
+        self._mark_task_running("simulation")
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
+
+        # Update status bar
+        duration = self.sim_duration.value()
+        msg = f"Simulation started. Duration: {'∞ (infinite)' if duration == 0 else f'{duration}s'}"
+        self.status_bar_state.setText("State: Running")
+        self.status_bar_task.setText("Task: Simulation")
+        self.status_bar_time_remaining.setText(
+            f"Remaining: {duration:.1f}s" if duration > 0 else "Elapsed: 0.0s"
+        )
 
         # Reset speed curve data
         self.speed_history_time = []
@@ -3190,7 +4009,6 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Create and start simulation thread
         self.sim_thread = SimulationThread()
-        duration = self.sim_duration.value()
         self.sim_thread.set_simulation(
             self.engine,
             self.svm,
@@ -3202,7 +4020,6 @@ class BLDCMotorControlGUI(QMainWindow):
         self.sim_thread.start_simulation()
         self.update_timer.start(int(self.sim_thread.update_interval * 1000.0))
 
-        msg = f"Simulation started. Duration: {'∞ (infinite)' if duration == 0 else f'{duration}s'}"
         speak(msg)
 
     def _stop_simulation(self):
@@ -3212,9 +4029,20 @@ class BLDCMotorControlGUI(QMainWindow):
         speak("Simulation stopped.")
 
         self.is_running = False
+        self._mark_task_finished("simulation")
+
+        # Update status bar
+        self.status_bar_state.setText("State: Stopped")
+        self.status_bar_task.setText("Task: None")
+        self.status_bar_time_remaining.setText("Remaining: -- s")
+        self.status_bar_cpu_load.setText("CPU: -- %")
+
         if self.sim_thread:
             self.sim_thread.stop_simulation()
-            self.sim_thread.wait()
+            # Wait with timeout to prevent indefinite hang
+            if not self.sim_thread.wait(timeout=5000):
+                # Timeout occurred - log and continue cleanup
+                print("Warning: Simulation thread did not finish within 5s timeout")
         self.update_timer.stop()
 
         self.btn_start.setEnabled(True)
@@ -3817,13 +4645,171 @@ class BLDCMotorControlGUI(QMainWindow):
         """Poll latest simulation snapshot without coupling GUI to control timing."""
         if self.sim_thread is None:
             return
+        self._update_runtime_current_sense_actuals()
         snapshot = self.sim_thread.get_latest_state()
         if snapshot:
             self._update_monitoring(snapshot)
+            self._update_status_bar(snapshot)
+            self._update_current_sense_status(snapshot)
+            if self.current_fft_window is not None:
+                self.current_fft_window.set_window_size(
+                    int(self.current_sense_fft_window_samples.value())
+                )
+                self.current_fft_window.push_snapshot(snapshot)
+
+    def _build_current_sense_model(self) -> Optional[InverterCurrentSense]:
+        """Create topology-aware current sense model from GUI settings."""
+        if not hasattr(self, "current_sense_enable"):
+            return None
+        if not self.current_sense_enable.isChecked():
+            return None
+
+        topology = self.current_sense_topology.currentText()
+        expected_channels = {"single": 1, "double": 2, "triple": 3}.get(topology, 3)
+        actual_gains = [
+            self.current_sense_actual_gain_a.value(),
+            self.current_sense_actual_gain_b.value(),
+            self.current_sense_actual_gain_c.value(),
+        ]
+        actual_offsets = [
+            self.current_sense_actual_offset_a.value(),
+            self.current_sense_actual_offset_b.value(),
+            self.current_sense_actual_offset_c.value(),
+        ]
+
+        channels = []
+        for idx in range(expected_channels):
+            channels.append(
+                ShuntAmplifierChannel(
+                    r_shunt_ohm=self.current_sense_r_shunt.value(),
+                    nominal_gain=self.current_sense_nominal_gain.value(),
+                    nominal_offset_v=self.current_sense_nominal_offset.value(),
+                    actual_gain=actual_gains[idx],
+                    actual_offset_v=actual_offsets[idx],
+                    cutoff_frequency_hz=self.current_sense_cutoff_hz.value(),
+                    vcc=self.current_sense_vcc.value(),
+                )
+            )
+
+        return InverterCurrentSense(topology=topology, channels=channels)
+
+    def _update_runtime_current_sense_actuals(self) -> None:
+        """Push runtime gain/offset edits into the active sense model during simulation."""
+        if self.engine is None or getattr(self.engine, "current_sense", None) is None:
+            return
+        sense = self.engine.current_sense
+        actual_gains = [
+            self.current_sense_actual_gain_a.value(),
+            self.current_sense_actual_gain_b.value(),
+            self.current_sense_actual_gain_c.value(),
+        ]
+        actual_offsets = [
+            self.current_sense_actual_offset_a.value(),
+            self.current_sense_actual_offset_b.value(),
+            self.current_sense_actual_offset_c.value(),
+        ]
+        for idx in range(sense.n_shunts):
+            sense.set_actual_channel(
+                idx, gain=actual_gains[idx], offset_v=actual_offsets[idx]
+            )
+
+    def _update_current_sense_status(self, snapshot: dict) -> None:
+        """Update current sensing status text for non-visual monitoring."""
+        meas = (
+            snapshot.get("current_measurement", {})
+            if isinstance(snapshot, dict)
+            else {}
+        )
+        if not isinstance(meas, dict) or not meas.get("enabled", False):
+            self.current_sense_status_label.setText(
+                "Current sensing disabled. Enable to expose measured-vs-true current telemetry."
+            )
+            return
+
+        topology = meas.get("topology", "unknown")
+        sat = meas.get("adc_saturated", [])
+        saturated_count = (
+            int(sum(1 for item in sat if bool(item))) if isinstance(sat, list) else 0
+        )
+        drop = meas.get("phase_voltage_drop_v", [0.0, 0.0, 0.0])
+        drop_arr = (
+            np.asarray(drop, dtype=np.float64)
+            if isinstance(drop, list)
+            else np.zeros(3)
+        )
+        drop_rms = (
+            float(np.sqrt(np.mean(np.square(drop_arr)))) if drop_arr.size else 0.0
+        )
+        self.current_sense_status_label.setText(
+            f"Current sensing active. Topology: {topology}, ADC saturation channels: {saturated_count}, phase-drop RMS: {drop_rms:.4f} V"
+        )
+
+    def _open_current_fft_window(self) -> None:
+        """Open or focus the asynchronous current FFT analysis window."""
+        if self.current_fft_window is None:
+            self.current_fft_window = CurrentSpectrumWindow(
+                window_size_samples=int(self.current_sense_fft_window_samples.value()),
+                parent=self,
+            )
+            self.current_fft_window.closed.connect(self._on_current_fft_window_closed)
+        self.current_fft_window.show()
+        self.current_fft_window.raise_()
+        self.current_fft_window.activateWindow()
+
+    def _on_current_fft_window_closed(self) -> None:
+        """Track FFT window closure to avoid stale references."""
+        self.current_fft_window = None
+
+    def _update_status_bar(self, snapshot: dict) -> None:
+        """Update status bar with current simulation telemetry."""
+        try:
+            # Update simulation state
+            state_text = "State: Running" if self.is_running else "State: Stopped"
+            self.status_bar_state.setText(state_text)
+
+            # Update task name
+            task_name = self._get_running_task_name() or "None"
+            self.status_bar_task.setText(f"Task: {task_name.capitalize()}")
+
+            # Update remaining time estimate
+            if self.is_running and self.sim_thread:
+                current_time = snapshot.get("time", 0.0)
+                duration = self.sim_duration.value()  # Get max duration from UI
+                if duration > 0:
+                    remaining = max(0.0, duration - current_time)
+                    self.status_bar_time_remaining.setText(
+                        f"Remaining: {remaining:.1f}s"
+                    )
+                else:
+                    # Infinite duration
+                    self.status_bar_time_remaining.setText(
+                        f"Elapsed: {current_time:.1f}s"
+                    )
+            else:
+                self.status_bar_time_remaining.setText("Remaining: -- s")
+
+            # Update CPU load estimate
+            cpu_load = snapshot.get("cpu_load_pct", 0.0)
+            if cpu_load > 0:
+                self.status_bar_cpu_load.setText(f"CPU: {cpu_load:.1f}%")
+            else:
+                self.status_bar_cpu_load.setText("CPU: -- %")
+
+        except Exception as e:
+            # Silently fail to avoid disrupting GUI updates
+            pass
 
     def _on_simulation_finished(self):
         """Handle simulation thread completion."""
         self.is_running = False
+        self._mark_task_finished("simulation")
+
+        # Update status bar
+        self.status_bar_state.setText("State: Stopped")
+        self.status_bar_task.setText("Task: None")
+        self.status_bar_time_remaining.setText("Remaining: -- s")
+        self.status_bar_cpu_load.setText("CPU: -- %")
+
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
         self.update_timer.stop()

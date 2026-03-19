@@ -19,7 +19,7 @@ from typing import Optional, Dict, Any
 from collections import deque
 from .motor_model import BLDCMotor
 from .load_model import LoadProfile
-from src.hardware import HardwareInterface
+from src.hardware import HardwareInterface, InverterCurrentSense
 from src.utils.compute_backend import resolve_compute_backend, as_dict
 from .power_model import (
     SupplyProfile,
@@ -69,6 +69,7 @@ class SimulationEngine:
         pfc_controller: Optional[PowerFactorController] = None,
         pfc_window_samples: int = 128,
         hardware_interface: Optional[HardwareInterface] = None,
+        current_sense: Optional[InverterCurrentSense] = None,
         compute_backend: str = "auto",
     ):
         """
@@ -104,6 +105,7 @@ class SimulationEngine:
         self.pfc_window_samples = max(int(pfc_window_samples), 8)
         self._pfc_enabled = pfc_controller is not None
         self.hardware_interface = hardware_interface
+        self.current_sense = current_sense
         self._hardware_enabled = hardware_interface is not None
         self._hardware_state: Dict[str, Any] = {
             "enabled": self._hardware_enabled,
@@ -115,6 +117,14 @@ class SimulationEngine:
             "last_feedback": {},
         }
         self._compute_backend_state = resolve_compute_backend(compute_backend)
+        self._measured_phase_currents = np.zeros(3, dtype=np.float64)
+        self._current_sense_state: Dict[str, Any] = {
+            "enabled": self.current_sense is not None,
+            "topology": self.current_sense.topology if self.current_sense else "none",
+            "phase_voltage_drop_v": [0.0, 0.0, 0.0],
+            "amplifier_outputs_v": [],
+            "adc_saturated": [],
+        }
 
         if self.hardware_interface is not None:
             try:
@@ -318,6 +328,14 @@ class SimulationEngine:
 
         effective_voltages = np.asarray(voltages, dtype=np.float64)
 
+        if self.current_sense is not None:
+            effective_voltages, phase_drop = (
+                self.current_sense.apply_shunt_voltage_drop(
+                    effective_voltages, self.motor.currents
+                )
+            )
+            self._current_sense_state["phase_voltage_drop_v"] = phase_drop.tolist()
+
         if (
             self._hardware_enabled
             and self.hardware_interface is not None
@@ -353,6 +371,28 @@ class SimulationEngine:
         # Execute motor dynamics step
         self.motor.step(effective_voltages, load_torque)
 
+        if self.current_sense is not None:
+            sensed = self.current_sense.measure(self.motor.currents, self.dt)
+            self._measured_phase_currents = np.asarray(
+                sensed["currents_abc_measured"], dtype=np.float64
+            )
+            self._current_sense_state.update(
+                {
+                    "enabled": True,
+                    "topology": sensed["topology"],
+                    "amplifier_outputs_v": np.asarray(
+                        sensed["amplifier_outputs_v"], dtype=np.float64
+                    ).tolist(),
+                    "adc_saturated": np.asarray(
+                        sensed["adc_saturated"], dtype=bool
+                    ).tolist(),
+                }
+            )
+        else:
+            self._measured_phase_currents = np.asarray(
+                self.motor.currents, dtype=np.float64
+            )
+
         # Log data if requested
         if log_data:
             self._log_data(effective_voltages, load_torque, supply_v)
@@ -384,9 +424,9 @@ class SimulationEngine:
 
         # Append to history
         self._history_times.append(self.time)
-        self._history_currents_a.append(state["currents_a"])
-        self._history_currents_b.append(state["currents_b"])
-        self._history_currents_c.append(state["currents_c"])
+        self._history_currents_a.append(float(self._measured_phase_currents[0]))
+        self._history_currents_b.append(float(self._measured_phase_currents[1]))
+        self._history_currents_c.append(float(self._measured_phase_currents[2]))
         self._history_omega.append(state["omega"])
         self._history_theta.append(state["theta"])
         self._history_speed.append(state["speed_rpm"])
@@ -813,7 +853,22 @@ class SimulationEngine:
         :return: Current motor state variables
         :rtype: dict
         """
-        return self.motor.get_state_dict()
+        state = self.motor.get_state_dict()
+        if self.current_sense is not None:
+            state["currents_a_true"] = state["currents_a"]
+            state["currents_b_true"] = state["currents_b"]
+            state["currents_c_true"] = state["currents_c"]
+            state["currents_a"] = float(self._measured_phase_currents[0])
+            state["currents_b"] = float(self._measured_phase_currents[1])
+            state["currents_c"] = float(self._measured_phase_currents[2])
+            state["current_measurement"] = dict(self._current_sense_state)
+        return state
+
+    def get_controller_phase_currents(self) -> np.ndarray:
+        """Return phase currents as seen by the control algorithm."""
+        if self.current_sense is not None:
+            return np.asarray(self._measured_phase_currents, dtype=np.float64)
+        return np.asarray(self.motor.currents, dtype=np.float64)
 
     def get_simulation_info(self) -> Dict[str, Any]:
         """
@@ -839,4 +894,5 @@ class SimulationEngine:
             "control_timing": self.get_control_timing_state(),
             "compute_backend": self.get_compute_backend_state(),
             "hardware": self.get_hardware_state(),
+            "current_measurement": dict(self._current_sense_state),
         }

@@ -21,6 +21,7 @@ from src.core.power_model import (
     required_reactive_compensation,
 )
 from src.core.simulation_engine import SimulationEngine
+from src.hardware import InverterCurrentSense, ShuntAmplifierChannel
 
 # ensure QApplication instance for GUI tests
 app = QApplication.instance() or QApplication(sys.argv)
@@ -196,6 +197,51 @@ def test_engine_compute_backend_info_auto_fallback():
     assert backend["selected"] in {"cpu", "gpu"}
     assert isinstance(backend["gpu_available"], bool)
     assert isinstance(backend["reason"], str)
+
+
+def test_engine_uses_sensor_measured_currents_for_controller_path():
+    motor = BLDCMotor(MotorParameters())
+    load = ConstantLoad(0.0)
+    channels = [
+        ShuntAmplifierChannel(
+            r_shunt_ohm=0.001,
+            nominal_gain=10.0,
+            nominal_offset_v=0.0,
+            actual_gain=20.0,
+            actual_offset_v=0.0,
+            cutoff_frequency_hz=1e9,
+            vcc=5.0,
+        )
+        for _ in range(3)
+    ]
+    sense = InverterCurrentSense(topology="triple", channels=channels)
+    engine = SimulationEngine(motor, load, dt=1.0 / 20000.0, current_sense=sense)
+
+    # Run a few steps to build non-zero motor currents.
+    for _ in range(20):
+        engine.step(np.array([4.0, -2.0, -2.0]), log_data=True)
+
+    true_currents = engine.motor.currents
+    ctrl_currents = engine.get_controller_phase_currents()
+
+    assert ctrl_currents.shape == (3,)
+    # With actual_gain != nominal_gain, reconstructed currents should diverge.
+    assert not np.allclose(ctrl_currents, true_currents)
+
+
+def test_engine_reports_current_measurement_metadata():
+    motor = BLDCMotor(MotorParameters())
+    load = ConstantLoad(0.0)
+    sense = InverterCurrentSense(topology="double")
+    engine = SimulationEngine(motor, load, dt=1.0 / 20000.0, current_sense=sense)
+    engine.step(np.array([3.0, -1.5, -1.5]), log_data=True)
+
+    info = engine.get_simulation_info()
+    assert "current_measurement" in info
+    cm = info["current_measurement"]
+    assert cm["enabled"] is True
+    assert cm["topology"] == "double"
+    assert len(cm["phase_voltage_drop_v"]) == 3
 
 
 def test_foc_controller_polar_output():

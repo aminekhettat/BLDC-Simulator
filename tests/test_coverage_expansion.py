@@ -10,15 +10,19 @@ Targets missing code paths in:
 import numpy as np
 import pytest
 import sys
-from unittest.mock import patch, MagicMock
 
 from src.core.power_model import (
+    SupplyProfile,
+    RampSupply,
+    VariableSupply,
     compute_power_metrics,
     required_reactive_compensation,
     compute_efficiency_metrics,
     recommend_efficiency_adjustments,
     PowerFactorController,
 )
+from src.core.load_model import LoadProfile, RampLoad
+from src.utils import motor_profiles
 
 
 class TestComputePowerMetricsEdgeCases:
@@ -86,6 +90,35 @@ class TestComputePowerMetricsEdgeCases:
         metrics = compute_power_metrics(v, i, backend="cpu")
         assert abs(metrics["power_factor"]) < 0.05
         assert metrics["reactive_power_var"] > 0.0
+
+    def test_power_metrics_gpu_success_path_with_stubbed_cupy(self, monkeypatch):
+        """Execute the GPU success path by stubbing a CuPy-compatible module."""
+
+        class FakeCupy:
+            float64 = np.float64
+
+            @staticmethod
+            def asarray(a, dtype=None):
+                return np.asarray(a, dtype=dtype)
+
+            @staticmethod
+            def mean(a):
+                return np.mean(a)
+
+            @staticmethod
+            def sqrt(a):
+                return np.sqrt(a)
+
+        monkeypatch.setitem(sys.modules, "cupy", FakeCupy)
+
+        t = np.linspace(0.0, 2.0 * np.pi, 1000, endpoint=False)
+        v = 120.0 * np.sin(t)
+        i = 5.0 * np.sin(t)
+        metrics = compute_power_metrics(v, i, backend="gpu")
+
+        assert metrics["voltage_rms_v"] > 0.0
+        assert metrics["current_rms_a"] > 0.0
+        assert metrics["active_power_w"] > 0.0
 
 
 class TestRequiredReactiveCompensationErrors:
@@ -394,6 +427,14 @@ class TestPowerFactorControllerEdgeCases:
         mid_error = errors[25]
         assert end_error < mid_error or abs(end_error - mid_error) < 0.1
 
+    def test_controller_uses_max_baseline_when_pf_is_zero(self):
+        """Cover the pf_now <= 0 branch for baseline compensation."""
+        pfc = PowerFactorController(
+            target_pf=0.95, kp=0.0, ki=0.0, max_compensation_var=123.0
+        )
+        command = pfc.update(current_pf=0.0, active_power_w=1000.0, dt=0.01)
+        assert command == pytest.approx(123.0)
+
 
 class TestSrcInitAttributeError:
     """Test __getattr__ path in src/__init__.py for missing attributes."""
@@ -466,3 +507,68 @@ class TestAbstractBaseControllerCoverage:
         # Should not raise
         controller = ConcreteController()
         assert controller is not None
+
+
+class TestSupplyProfilesAndAbstractPassLines:
+    """Cover supply-profile abstract/base branches and variable/ramp paths."""
+
+    def test_supply_profile_abstract_method_bodies_are_executable(self):
+        dummy = object()
+        assert SupplyProfile.get_voltage(dummy, 0.0) is None
+        assert SupplyProfile.reset(dummy) is None
+
+    def test_ramp_supply_validation_and_interpolation(self):
+        with pytest.raises(ValueError, match="Duration must be positive"):
+            RampSupply(initial=12.0, final=24.0, duration=0.0)
+
+        ramp = RampSupply(initial=12.0, final=24.0, duration=4.0)
+        assert ramp.get_voltage(-1.0) == pytest.approx(12.0)
+        assert ramp.get_voltage(2.0) == pytest.approx(18.0)
+        assert ramp.get_voltage(5.0) == pytest.approx(24.0)
+
+    def test_variable_supply_validates_and_interpolates(self):
+        with pytest.raises(
+            ValueError, match="Provide either voltage_func or time_points"
+        ):
+            VariableSupply()
+
+        with pytest.raises(ValueError, match="voltage_points required"):
+            VariableSupply(time_points=[0.0, 1.0], voltage_points=None)
+
+        with pytest.raises(ValueError, match="same length"):
+            VariableSupply(time_points=[0.0, 1.0], voltage_points=[12.0])
+
+        with pytest.raises(ValueError, match="sorted ascending"):
+            VariableSupply(time_points=[1.0, 0.5], voltage_points=[12.0, 10.0])
+
+        v_func = VariableSupply(voltage_func=lambda t: 24.0 + t)
+        assert v_func.get_voltage(1.5) == pytest.approx(25.5)
+
+        v_points = VariableSupply(
+            time_points=[0.0, 1.0, 2.0],
+            voltage_points=[12.0, 18.0, 24.0],
+        )
+        assert v_points.get_voltage(-1.0) == pytest.approx(12.0)
+        assert v_points.get_voltage(0.5) == pytest.approx(15.0)
+        assert v_points.get_voltage(3.0) == pytest.approx(24.0)
+
+
+class TestLoadAndMotorProfilesRemainingBranches:
+    """Cover remaining uncovered lines in load_model and motor_profiles."""
+
+    def test_load_profile_abstract_get_torque_body_executes(self):
+        assert LoadProfile.get_torque(object(), 0.0) is None
+
+    def test_ramp_load_validation_and_branches(self):
+        with pytest.raises(ValueError, match="Ramp duration must be positive"):
+            RampLoad(initial=0.0, final=1.0, duration=0.0)
+
+        load = RampLoad(initial=1.0, final=5.0, duration=2.0)
+        assert load.get_torque(-0.5) == pytest.approx(1.0)
+        assert load.get_torque(2.5) == pytest.approx(5.0)
+        assert load.get_torque(1.0) == pytest.approx(3.0)
+
+    def test_motor_profiles_missing_required_branch(self, monkeypatch):
+        monkeypatch.setattr(motor_profiles, "DEFAULT_MOTOR_PARAMS", {})
+        with pytest.raises(ValueError, match="Missing motor parameters"):
+            motor_profiles._normalize_motor_params({})

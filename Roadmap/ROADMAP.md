@@ -176,14 +176,52 @@ Field weakening injection negative eighteen point five Amperes. System stable."
 
 **Objective**: Bring loaded calibration into the accessible GUI, harden process lifecycle management, expose real-time execution status, and increase hardware-model fidelity for current sensing.
 
-- [ ] Integrate the loaded calibration workflow directly into the GUI so the user can trigger calibration without leaving the application
-- [ ] Prevent launching a new long-running process while an older calibration or simulation process is still alive
-- [ ] Ensure every process launched by the application is explicitly tracked and closed once it finishes or is cancelled
-- [ ] Add a bottom status bar in the GUI for simulation and process telemetry, including estimated remaining simulation time and active process state
+- [x] **Phase A: COMPLETE - Process Lifecycle Hardening**
+  - [x] Prevent launching a new long-running process while an older calibration or simulation process is still alive
+    - [x] Task state tracking with mutex for thread-safe synchronization
+    - [x] `_can_start_task()` dialog for conflict resolution
+    - [x] Automatic stop of conflicting task before starting new one
+  - [x] Ensure every process launched by the application is explicitly tracked and closed once it finishes or is cancelled
+    - [x] `closeEvent()` override for guaranteed cleanup on application exit (graceful termination with 2s timeout for processes, forceful kill as fallback)
+    - [x] Timeout-based wait() protection for simulation thread (5s timeout in \_stop_simulation)
+    - [x] Graceful termination with timeout for calibration process (2s graceful → 1s kill)
+    - [x] `_terminate_process_gracefully()` utility method for consistent process cleanup patterns
+    - [x] Exception handling in closeEvent to prevent window close from being blocked
+  - [x] Updated roadmap with implementation details
+- [x] **Phase C: COMPLETE - Calibration GUI Integration**
+  - [x] Integrate the loaded calibration workflow directly into the GUI so the user can trigger calibration without leaving the application
+    - [x] Created dedicated calibration tab with motor profile selection
+    - [x] Auto-detection of tuning sessions for selected motor profiles
+    - [x] Start/Stop calibration buttons with graceful process management
+    - [x] Live progress output display with real-time log streaming
+    - [x] Results panel showing achieved speed, efficiency, load, and FW injection metrics
+    - [x] Audio feedback for key calibration milestones (NVDA/JAWS compatible)
+    - [x] Torque achievement tracking with narrated announcements
+    - [x] Status bar updates: State (Running/Stopped), Task (Calibration), remaining time
+    - [x] Process lifecycle integration with Phase A cleanup mechanisms
+    - [x] Exit code parsing and result JSON parsing for comprehensive reporting
+- [x] **Phase B: COMPLETE - GUI Status Bar for Real-Time Telemetry**
+  - [x] Add a bottom status bar in the GUI for simulation and process telemetry
+    - [x] Created status bar widgets: State, Task, Remaining Time, CPU Load, DT, Tau_e, Tau_m
+    - [x] Implemented \_update_status_bar() method for real-time telemetry updates
+    - [x] Connected status bar to simulation polling (\_poll_simulation_state)
+    - [x] Status bar updates on simulation start/stop (State, Task, Remaining Time)
+    - [x] Status bar updates on calibration start/stop (State, Task, Time)
+    - [x] CPU load estimate displayed (from simulation snapshot)
+    - [x] Estimated remaining simulation time calculation
+    - [x] Active process state displayed (simulation/calibration/none)
 - [ ] Report estimated CPU load from the ratio between the computation time consumed during each PWM period and the PWM period budget, matching embedded-controller timing analysis
 - [ ] Align simulation scheduling with a real microcontroller execution model for sampling, control computation, and command application timing
-- [ ] Add phase-current measurement modeling based on shunt resistors plus differential amplifier behavior with configurable gain, offset, and backward integrator capacitance-derived cutoff frequency
-- [ ] Evaluate how current-measurement gain or offset errors affect controller behavior and phase-current harmonics
+- [ ] **Phase D: ONGOING** -- Topology-aware inverter current measurement and runtime deviation analysis
+  - [x] Baseline current-sensor model implemented and tested (`src/hardware/current_sensor.py`)
+  - [x] Added topology-aware sensing backend (`src/hardware/inverter_current_sense.py`) for single/double/triple shunts
+  - [x] Added per-shunt amplifier modeling with nominal vs actual gain/offset, LP filter cutoff, and ADC clamp to MCU Vcc
+  - [x] Integrated controller-facing measured currents into simulation engine and simulation thread path
+  - [x] Added shunt-induced inverter phase-voltage drop modeling in simulation engine path
+  - [x] Add GUI controls for topology, per-shunt parameters, and runtime actual gain/offset tuning
+  - [x] Add dedicated real-time FFT analysis window for current harmonics under sensor deviation
+  - [x] Add asynchronous synchronization layer between main window and FFT window
+  - [ ] Validate single-shunt reconstruction strategy with strict PWM sampling windows
 
 **Dependencies**: Existing GUI accessibility foundation, process supervision hooks, and control-loop timing instrumentation
 

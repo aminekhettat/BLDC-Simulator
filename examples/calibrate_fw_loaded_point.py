@@ -489,8 +489,12 @@ def tune_point_until_success(
     return best_cand, best_eval, rounds
 
 
-def main() -> None:
-    profile = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
+def main(
+    profile_path: Path = PROFILE_PATH,
+    session_path: Path = SESSION_PATH,
+    out_path: Path = OUT_PATH,
+) -> None:
+    profile = json.loads(profile_path.read_text(encoding="utf-8"))
     params = to_motor_params(profile)
 
     rated = profile.get("rated_info", {})
@@ -503,7 +507,7 @@ def main() -> None:
     )
     plausible_upper = 0.70 * min(rated_torque, params.torque_constant * rated_current)
 
-    session = json.loads(SESSION_PATH.read_text(encoding="utf-8"))
+    session = json.loads(session_path.read_text(encoding="utf-8"))
     best = session["best_candidate"]
 
     max_no_fw_rpm = estimate_max_no_fw_speed_rpm(params, utilization_margin=0.95)
@@ -654,10 +658,10 @@ def main() -> None:
 
     report = {
         "schema": "bldc.fw_loaded_point_calibration.v1",
-        "motor_profile": profile.get("profile_name", PROFILE_PATH.name),
+        "motor_profile": profile.get("profile_name", profile_path.name),
         "inputs": {
-            "profile_file": str(PROFILE_PATH).replace("\\", "/"),
-            "baseline_session_file": str(SESSION_PATH).replace("\\", "/"),
+            "profile_file": str(profile_path).replace("\\", "/"),
+            "baseline_session_file": str(session_path).replace("\\", "/"),
             "field_weakening_enabled": True,
             "target_speed_rpm": float(rated_speed_rpm),
             "target_speed_strategy": "rated_speed",
@@ -717,11 +721,33 @@ def main() -> None:
         },
     }
 
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUT_PATH.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
-    print("REPORT_SAVED", str(OUT_PATH))
+    print("REPORT_SAVED", str(out_path))
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Field-weakening loaded-point calibration")
+    ap.add_argument(
+        "--profile",
+        type=Path,
+        default=PROFILE_PATH,
+        help="Path to motor profile JSON",
+    )
+    ap.add_argument(
+        "--session",
+        type=Path,
+        default=SESSION_PATH,
+        help="Path to baseline tuning session JSON",
+    )
+    ap.add_argument(
+        "--output",
+        type=Path,
+        default=OUT_PATH,
+        help="Path to write calibration result JSON",
+    )
+    _args = ap.parse_args()
+    main(profile_path=_args.profile, session_path=_args.session, out_path=_args.output)
