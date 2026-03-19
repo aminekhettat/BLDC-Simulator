@@ -12,7 +12,7 @@ Provides comprehensive GUI for:
 - Data export
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 import sys
@@ -765,7 +765,7 @@ class BLDCMotorControlGUI(QMainWindow):
         super().__init__()
 
         APP_NAME = "BLIND SYSTEMS BLDC Simulator"
-        APP_VERSION = "2.1.0"
+        APP_VERSION = "0.8.0"
 
         self.setWindowTitle(
             f"{APP_NAME} - BLDC Motor Control Simulator (v{APP_VERSION})"
@@ -1182,7 +1182,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         html = (
             "<h1>BLIND SYSTEMS BLDC Simulator - User Manual</h1>"
-            "<p><b>Version:</b> 2.1.0</p>"
+            "<p><b>Version:</b> 0.8.0</p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<h2>1. Getting Started</h2>"
             "<p>Configure motor, load and controller parameters, then start simulation.</p>"
@@ -1487,7 +1487,7 @@ class BLDCMotorControlGUI(QMainWindow):
     def _show_about(self):
         """Show about dialog."""
         about_text = (
-            "<h2>BLIND SYSTEMS BLDC Simulator v2.1.0</h2>"
+            "<h2>BLIND SYSTEMS BLDC Simulator v0.8.0</h2>"
             "<p><b>Advanced BLDC Motor Control Simulator</b></p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<p><b>Copyright:</b> 2026 BLIND SYSTEMS</p>"

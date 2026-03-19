@@ -4,7 +4,7 @@ Utilities Package Module
 This package contains utility modules for configuration and data logging.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 from .config import (

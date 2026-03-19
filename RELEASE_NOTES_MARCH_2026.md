@@ -1,10 +1,17 @@
 # Release Notes - March 2026
 
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
+
 ## Summary
 
 This release introduces **unbounded auto-tuning convergence** for FOC PI controller parameter optimization. The auto-tuning framework now delivers guaranteed convergence to target motor speeds by adaptively expanding the parameter search space rather than relying on finite candidate pools. All three production motor profiles (Innotec, Motenergy ME1718, ME1719) have been successfully auto-tuned to 1500 RPM with full convergence validation.
 
 This snapshot also documents a new **loaded no-field-weakening calibration workflow** for the Motenergy ME1718 operating point. That workflow now reaches a realistic speed-feasible torque near `9.99 Nm` at the practical no-FW speed cap, while clearly reporting that orthogonality and conditioned-efficiency acceptance are still not satisfied in the final high-fidelity verification.
+
+It also captures the latest **current measurement realism** work: topology-aware triple/double/single-shunt sensing, controller-selectable measured-current feedback for FOC, and a current spectrum analyzer with stacked FFT magnitude/phase plots and export tools.
 
 **Major Achievement**: Achieved 1500 RPM convergence on all three motors using unbounded iterative refinement, overcoming prior limitations of bounded high-budget searches (5000 trials) that could not produce convergence.
 
@@ -121,6 +128,29 @@ effective_overcurrent_limit_a = (
   - overall success: false
 
 This is an intentional documentation update of current status, not a claim of full loaded-point convergence.
+
+### 5. **Current Measurement Realism and FFT Analysis** 📈
+
+**Files Modified**:
+
+- `src/hardware/inverter_current_sense.py`
+- `src/core/simulation_engine.py`
+- `src/control/foc_controller.py`
+- `src/ui/main_window.py`
+- `tests/test_feature_power_and_foc.py`
+- `tests/test_phase_d_gui_extended.py`
+
+**What's New**:
+
+- FOC can be switched between true motor currents and reconstructed measured currents for its feedback path.
+- Triple-, double-, and single-shunt topologies are represented explicitly, including sector-aware single-shunt reconstruction.
+- The GUI includes a live inverter bridge view that updates with the active topology and uses a physically correct shared low-side return path for single-shunt mode.
+- The current spectrum tool now shows stacked FFT magnitude and phase plots with independent axis scaling, optional dB amplitude, selectable phase units, and CSV/image export.
+
+**Validation Notes**:
+
+- Regression coverage includes controller feedback-path wiring, FFT export/settings behavior, and single-shunt bridge visualization.
+- The simulation engine stores both true and measured current histories so fidelity checks and UI analysis can compare them directly.
 
 ---
 

@@ -4,7 +4,7 @@ UI Package Module
 This package contains all GUI components for the BLDC motor control application.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 __all__ = ["BLDCMotorControlGUI"]

@@ -88,6 +88,21 @@ This section summarizes measured-vs-true current fidelity for topology-aware
 shunt reconstruction and documents the anti-saturation gain adaptation used
 before benchmarking.
 
+FOC feedback path integration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The FOC loop can now consume either the true motor phase currents or the reconstructed shunt currents.
+- This makes it possible to compare ideal control performance against controller behavior that is limited by measurement topology.
+- The simulation engine preserves both histories so plots and regression tests can compare controller-facing currents against the underlying physics state.
+
+Spectrum analysis workflow
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The current spectrum window renders stacked magnitude and phase plots for the selected phase current.
+- Magnitude can be displayed in linear units or dB; phase can be shown in degrees or radians.
+- Each FFT subplot supports independent linear/log axis scaling and grid toggles.
+- Export actions preserve the active units in both CSV headers and saved figures.
+
 Validation scope
 ^^^^^^^^^^^^^^^^
 

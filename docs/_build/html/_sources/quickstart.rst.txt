@@ -32,6 +32,19 @@ This will launch the BLDC Motor Control GUI with:
 - Parameter monitoring and adjustment
 - Data logging and export
 
+Current Measurement and FFT Workflow
+-----------------------------------
+
+The GUI now includes a measurement-oriented workflow for validating inverter current sensing and harmonic content:
+
+1. Select the inverter current-sense topology (triple, double, or single shunt) in the GUI.
+2. Choose whether FOC should use true phase currents or reconstructed measured currents as its feedback source.
+3. Open the current spectrum window to inspect stacked FFT magnitude and phase plots.
+4. Toggle amplitude units (linear or dB), phase units (degrees or radians), and per-axis linear/log scaling.
+5. Export either FFT data as CSV or the current spectrum figure as an image.
+
+The live bridge drawing reflects the active shunt topology. In single-shunt mode it uses the physically correct shared low-side return path.
+
 Running Examples
 ----------------
 
@@ -58,7 +71,7 @@ Execute the test suite::
 
 Or run accessibility tests::
 
-    python test_accessibility_fixes.py
+    python tests/test_feature_accessibility_integration.py
 
 Core Concepts
 -------------

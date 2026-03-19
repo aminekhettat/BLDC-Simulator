@@ -11,7 +11,7 @@ Includes:
 - visualization: Plotting and data export
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 from importlib import import_module

@@ -4,7 +4,7 @@ Provides text-to-speech output to assist visually impaired users. The module
 wraps `pyttsx3` if installed, otherwise falls back to printing to console.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 from typing import Optional

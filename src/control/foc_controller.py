@@ -7,9 +7,9 @@ auto-tuning functionality. Supports choosing Clarke or Concordia
 transforms and running in either polar or Cartesian output modes.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 
-.. versionadded:: 1.0.0
+.. versionadded:: 0.8.0
     Initial FOC implementation with PI regulators and auto-tune stub
 """
 

@@ -1,12 +1,17 @@
-# 🚀 BLIND SYSTEMS BLDC Simulator v2.0.0 - New Features Update
+# 🚀 BLIND SYSTEMS BLDC Simulator v0.8.0 - New Features Update
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
 
-Welcome to **BLIND SYSTEMS BLDC Simulator**, the advanced BLDC motor control simulator! This document highlights all the new features and improvements in v2.0.0.
+
+Welcome to **BLIND SYSTEMS BLDC Simulator**, the advanced BLDC motor control simulator! This document highlights all the new features and improvements in v0.8.0.
 
 ---
 
 ## Addendum (March 2026) - Extended Simulation Stack
 
-The following capabilities were added after v2.0.0:
+The following capabilities were added after v0.8.0:
 
 1. Standard startup sequences
 
@@ -45,13 +50,13 @@ The following capabilities were added after v2.0.0:
 ### 1. **Fun Application Identity**
 
 - **New App Name:** ⚡ **BLIND SYSTEMS BLDC Simulator** (replacing generic "BLDC Motor Control Simulator")
-- **Version Display:** Now shows v2.0.0 in the window title
+- **Version Display:** Now shows v0.8.0 in the window title
 - **Professional Branding:** Complete visual refresh with consistent emoji icons throughout the interface
 
 **Window Title Example:**
 
 ```
-⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v2.0.0)
+⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v0.8.0)
 ```
 
 ---
@@ -411,7 +416,7 @@ Potential features for future versions:
 ## ✅ Feature Checklist
 
 - ✅ Renamed to "BLIND SYSTEMS BLDC Simulator" with emoji branding
-- ✅ Version v2.0.0 displayed in window title
+- ✅ Version v0.8.0 displayed in window title
 - ✅ Simulation duration control (0 = infinite)
 - ✅ 13-variable real-time monitoring display
 - ✅ Live rotor speed curve plotting in Monitoring tab
@@ -436,5 +441,5 @@ For more information, see:
 
 **Enjoy using BLIND SYSTEMS BLDC Simulator! Happy motor simulation! ⚡🔩**
 
-Version: 2.0.0  
+Version: 0.8.0  
 Last Updated: March 4, 2026

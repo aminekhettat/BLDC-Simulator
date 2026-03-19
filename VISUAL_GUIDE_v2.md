@@ -1,10 +1,15 @@
-# 🚀 Quick Visual Guide - BLIND SYSTEMS BLDC Simulator v2.0.0
+# 🚀 Quick Visual Guide - BLIND SYSTEMS BLDC Simulator v0.8.0
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
+
 
 ## Application Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v2.0.0)          │
+│ ⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v0.8.0)          │
 ├─────────────────────────────────────────────────────────────────┤
 │ File  Tools  Help                                               │
 ├─────────────────────────────────────────────────────────────────┤
@@ -40,14 +45,14 @@ BLDC Motor Control Simulator - V/f Control System
 ### After:
 
 ```
-⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v2.0.0)
+⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v0.8.0)
 ```
 
 **Everywhere in the app:**
 
 - Window title: ⚡ BLIND SYSTEMS BLDC Simulator
 - Speed display: ⚡ Rotor Speed
-- Startup log: ⚡ BLIND SYSTEMS BLDC Simulator v2.0.0
+- Startup log: ⚡ BLIND SYSTEMS BLDC Simulator v0.8.0
 
 ---
 
@@ -411,12 +416,12 @@ Manual Stop (you press F6)
 
 ---
 
-## What's Improved vs v1.0.0
+## What's Improved vs v0.8.0
 
-| Feature              | v1.0.0         | v2.0.0                     |
+| Feature              | v0.8.0         | v0.8.0                     |
 | -------------------- | -------------- | -------------------------- |
 | App Name             | Generic        | ⚡ BLIND SYSTEMS BLDC Simulator             |
-| Version Display      | None           | v2.0.0 (prominent)         |
+| Version Display      | None           | v0.8.0 (prominent)         |
 | Duration Control     | N/A            | 0=infinite, >0=finite      |
 | Monitoring Variables | 11             | 13 (added pos, time)       |
 | Speed Display        | Numerical only | + Live graph               |
@@ -450,7 +455,7 @@ Manual Stop (you press F6)
 
 ---
 
-## 🎉 You're Ready to Use BLIND SYSTEMS BLDC Simulator v2.0.0!
+## 🎉 You're Ready to Use BLIND SYSTEMS BLDC Simulator v0.8.0!
 
 ```
 Launch: python main.py
@@ -467,7 +472,7 @@ Done! 🚀⚡
 
 ---
 
-**Version:** 2.0.0  
+**Version:** 0.8.0  
 **Features:** 6/6 Implemented  
 **Status:** ✅ Production Ready  
 **Last Updated:** March 4, 2026

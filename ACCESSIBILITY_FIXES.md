@@ -1,4 +1,9 @@
 # Corrections d'Accessibilité et d'Export de Données
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
+
 
 ## Vue d'ensemble
 
@@ -209,6 +214,6 @@ python tests/test_feature_accessibility_integration.py
 
 ---
 
-**Version:** 2.0.0 - Modifications d'Accessibilité
+**Version:** 0.8.0 - Modifications d'Accessibilité
 **Date:** Octobre 2024
 **Auteur:** BLDC Control Team - Accessibility Update

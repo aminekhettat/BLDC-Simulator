@@ -8,9 +8,9 @@ Defines the interface that all controllers must implement for consistency
 and future device integration (e.g., FOC, sensorless control).
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 
-.. versionadded:: 1.0.0
+.. versionadded:: 0.8.0
     Initial base controller implementation
 """
 

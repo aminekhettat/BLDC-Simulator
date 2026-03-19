@@ -7,9 +7,9 @@ A time-dependent voltage profile can be defined to simulate battery sag,
 AC ripple rectification, or other variations.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 
-.. versionadded:: 1.0.0
+.. versionadded:: 0.8.0
     Initial implementation of power supply models
 """
 

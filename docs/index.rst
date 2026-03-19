@@ -4,6 +4,10 @@ BLDC Motor Control
 
 Welcome to the BLDC Motor Control documentation!
 
+Version ``0.8.0`` consolidates the March 2026 control and measurement work: topology-aware shunt current reconstruction,
+controller-selectable measured-vs-true FOC current feedback, and an expanded FFT analyzer with stacked magnitude/phase
+plots, configurable units, axis scaling, and export tools.
+
 This project provides a comprehensive simulation and control framework for three-phase Brushless DC (BLDC) motors with advanced features including:
 
 - **Field-Oriented Control (FOC)** and **Voltage-Frequency (V/F)** control modes
@@ -11,6 +15,8 @@ This project provides a comprehensive simulation and control framework for three
 - **Monte Carlo simulations** for performance analysis
 - **Accessible PyQt6 GUI** with screen reader support
 - **Real-time parameter monitoring** and data logging
+- **Topology-aware current measurement realism** for triple-, double-, and single-shunt inverter sensing
+- **Current spectrum analysis** with FFT magnitude/phase plots and CSV/image export
 
 Table of Contents
 =================

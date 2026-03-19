@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 project = "BLDC Motor Control"
 copyright = "2026, Amine Khettat"
 author = "Amine Khettat"
-release = "1.0.0"
+release = "0.8.0"
 
 # -- General configuration ---
 
@@ -22,6 +22,15 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx_autodoc_typehints",
 ]
+
+rst_prolog = """
+.. note::
+
+   License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+   Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
+   including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
+   from use or misuse.
+"""
 
 # Autosummary
 autosummary_generate = True

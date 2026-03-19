@@ -1,5 +1,10 @@
 # BLDC Motor Control - Development Notes
 
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
+
 ## Architecture Overview
 
 This document provides insights into the project architecture and design decisions.
@@ -7,6 +12,30 @@ This document provides insights into the project architecture and design decisio
 ## 2026 Runtime Architecture Extension
 
 The simulator architecture now includes four additional runtime layers:
+
+## Current Measurement and Analysis Extension (March 2026)
+
+The runtime stack now includes a measurement path that mirrors real inverter current observation:
+
+1. Current-Sense Topology Layer
+
+- Supports triple-, double-, and single-shunt sensing.
+- Preserves topology-specific reconstruction behavior, including sector-aware single-shunt inference.
+
+2. Controller Feedback Selection Layer
+
+- FOC can run from true motor currents or reconstructed measured currents.
+- This allows direct comparison between ideal plant feedback and controller-facing measurement realism.
+
+3. Measurement Visualization Layer
+
+- The GUI renders a live inverter bridge diagram for the selected topology.
+- Single-shunt mode uses a shared low-side return path to match the physical configuration.
+
+4. Spectrum Analysis Layer
+
+- FFT analysis now uses stacked magnitude and phase plots.
+- Users can toggle dB/linear amplitude, degrees/radians phase, per-axis linear/log scaling, grid display, and CSV/image export.
 
 ## Motor Parameter Import/Save Architecture
 

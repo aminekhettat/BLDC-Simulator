@@ -7,7 +7,7 @@ Central configuration for BLDC motor control application.
 Contains default parameters, paths, and application settings.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 from pathlib import Path

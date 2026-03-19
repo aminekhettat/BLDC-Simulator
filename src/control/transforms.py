@@ -6,9 +6,9 @@ Provides Clark, Park, and Concordia transforms used in FOC algorithms.
 Both forward (3-phase to two-axis) and inverse transforms are supported.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 
-.. versionadded:: 1.0.0
+.. versionadded:: 0.8.0
     Initial implementation of coordinate transforms
 """
 

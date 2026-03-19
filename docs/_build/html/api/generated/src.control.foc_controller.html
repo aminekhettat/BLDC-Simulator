@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>src.control.foc_controller &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>src.control.foc_controller &mdash; BLDC Motor Control 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/documentation_options.js?v=486e5634"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -68,6 +68,8 @@
 <li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_current_pi_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_current_pi_gains()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_voltage_saturation"><code class="docutils literal notranslate"><span class="pre">FOCController.set_voltage_saturation()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_current_references"><code class="docutils literal notranslate"><span class="pre">FOCController.set_current_references()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_current_feedback_mode"><code class="docutils literal notranslate"><span class="pre">FOCController.set_current_feedback_mode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_external_phase_currents"><code class="docutils literal notranslate"><span class="pre">FOCController.set_external_phase_currents()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_speed_reference"><code class="docutils literal notranslate"><span class="pre">FOCController.set_speed_reference()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_field_weakening"><code class="docutils literal notranslate"><span class="pre">FOCController.set_field_weakening()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#src.control.foc_controller.FOCController.auto_tune_pi"><code class="docutils literal notranslate"><span class="pre">FOCController.auto_tune_pi()</span></code></a></li>
@@ -140,7 +142,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-src.control.foc_controller">
+  <div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
+including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
+from use or misuse.</p>
+</div>
+<section id="module-src.control.foc_controller">
 <span id="src-control-foc-controller"></span><h1>src.control.foc_controller<a class="headerlink" href="#module-src.control.foc_controller" title="Link to this heading"></a></h1>
 <section id="field-oriented-control-foc-module">
 <h2>Field-Oriented Control (FOC) Module<a class="headerlink" href="#field-oriented-control-foc-module" title="Link to this heading"></a></h2>
@@ -152,11 +161,11 @@ transforms and running in either polar or Cartesian output modes.</p>
 <dd class="field-odd"><p>BLDC Control Team</p>
 </dd>
 <dt class="field-even">version<span class="colon">:</span></dt>
-<dd class="field-even"><p>1.0.0</p>
+<dd class="field-even"><p>0.8.0</p>
 </dd>
 </dl>
 <div class="versionadded">
-<p><span class="versionmodified added">Added in version 1.0.0: </span>Initial FOC implementation with PI regulators and auto-tune stub</p>
+<p><span class="versionmodified added">Added in version 0.8.0: </span>Initial FOC implementation with PI regulators and auto-tune stub</p>
 </div>
 <p class="rubric">Classes</p>
 <table class="autosummary longtable docutils align-default">
@@ -325,6 +334,28 @@ magnitude/angle</p></li>
 <dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_current_references">
 <span class="sig-name descname"><span class="pre">set_current_references</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iq_ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_current_references"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_current_references" title="Link to this definition"></a></dt>
 <dd><p>Set d/q current references.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_current_feedback_mode">
+<span class="sig-name descname"><span class="pre">set_current_feedback_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_external_feedback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_current_feedback_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_current_feedback_mode" title="Link to this definition"></a></dt>
+<dd><p>Select whether update() uses externally provided phase currents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_external_phase_currents">
+<span class="sig-name descname"><span class="pre">set_external_phase_currents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">currents_abc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/control/foc_controller.html#FOCController.set_external_phase_currents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_external_phase_currents" title="Link to this definition"></a></dt>
+<dd><p>Set external phase-current feedback (typically reconstructed shunt currents).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>

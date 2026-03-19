@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Advanced Topics &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>Advanced Topics &mdash; BLDC Motor Control 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -66,6 +66,18 @@
 <li class="toctree-l2"><a class="reference internal" href="#field-oriented-control-foc-implementation">Field-Oriented Control (FOC) Implementation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#space-vector-modulation-svm">Space Vector Modulation (SVM)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#loaded-no-field-weakening-calibration">Loaded No-Field-Weakening Calibration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#shunt-current-reconstruction-fidelity">Shunt Current Reconstruction Fidelity</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#foc-feedback-path-integration">FOC feedback path integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spectrum-analysis-workflow">Spectrum analysis workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#validation-scope">Validation scope</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#automated-verification-status">Automated verification status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adaptive-amplifier-gain-method-anti-saturation">Adaptive amplifier-gain method (anti-saturation)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#benchmark-conditions">Benchmark conditions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adaptive-gain-and-saturation-summary">Adaptive gain and saturation summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#representative-measured-vs-true-errors-me1718-adaptive-gain">Representative measured-vs-true errors (ME1718, adaptive gain)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interpretation">Interpretation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#monte-carlo-simulation">Monte Carlo Simulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#inductance-management">Inductance Management</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#power-loss-analysis">Power Loss Analysis</a></li>
@@ -113,7 +125,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="advanced-topics">
+  <div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
+including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
+from use or misuse.</p>
+</div>
+<section id="advanced-topics">
 <h1>Advanced Topics<a class="headerlink" href="#advanced-topics" title="Link to this heading"></a></h1>
 <section id="field-oriented-control-foc-implementation">
 <h2>Field-Oriented Control (FOC) Implementation<a class="headerlink" href="#field-oriented-control-foc-implementation" title="Link to this heading"></a></h2>
@@ -187,6 +206,207 @@ See <cite>src.control.svm_generator.SVMGenerator.generate_pwm()</cite> for detai
 <li><p>Selected speed-feasible torque: about <code class="docutils literal notranslate"><span class="pre">9.99</span> <span class="pre">Nm</span></code></p></li>
 <li><p>Final high-fidelity verification still fails orthogonality and conditioned efficiency, so the report remains informative rather than fully accepted.</p></li>
 </ul>
+</section>
+<section id="shunt-current-reconstruction-fidelity">
+<h2>Shunt Current Reconstruction Fidelity<a class="headerlink" href="#shunt-current-reconstruction-fidelity" title="Link to this heading"></a></h2>
+<p>This section summarizes measured-vs-true current fidelity for topology-aware
+shunt reconstruction and documents the anti-saturation gain adaptation used
+before benchmarking.</p>
+<section id="foc-feedback-path-integration">
+<h3>FOC feedback path integration<a class="headerlink" href="#foc-feedback-path-integration" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>The FOC loop can now consume either the true motor phase currents or the reconstructed shunt currents.</p></li>
+<li><p>This makes it possible to compare ideal control performance against controller behavior that is limited by measurement topology.</p></li>
+<li><p>The simulation engine preserves both histories so plots and regression tests can compare controller-facing currents against the underlying physics state.</p></li>
+</ul>
+</section>
+<section id="spectrum-analysis-workflow">
+<h3>Spectrum analysis workflow<a class="headerlink" href="#spectrum-analysis-workflow" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>The current spectrum window renders stacked magnitude and phase plots for the selected phase current.</p></li>
+<li><p>Magnitude can be displayed in linear units or dB; phase can be shown in degrees or radians.</p></li>
+<li><p>Each FFT subplot supports independent linear/log axis scaling and grid toggles.</p></li>
+<li><p>Export actions preserve the active units in both CSV headers and saved figures.</p></li>
+</ul>
+</section>
+<section id="validation-scope">
+<h3>Validation scope<a class="headerlink" href="#validation-scope" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Unit and integration checks: <code class="docutils literal notranslate"><span class="pre">tests/test_current_sense_verification.py</span></code></p></li>
+<li><dl class="simple">
+<dt>Real motor profiles:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/motor_profiles/innotec_255_ezs48_160.json</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/motor_profiles/motenergy_me1718_48v.json</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/motor_profiles/motenergy_me1719_48v.json</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="automated-verification-status">
+<h3>Automated verification status<a class="headerlink" href="#automated-verification-status" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">46</span> <span class="pre">passed</span></code> on <code class="docutils literal notranslate"><span class="pre">tests/test_current_sense_verification.py</span></code></p></li>
+<li><dl class="simple">
+<dt>Coverage includes:</dt><dd><ul>
+<li><p>triple-shunt direct measurement accuracy</p></li>
+<li><p>double-shunt Kirchhoff reconstruction consistency</p></li>
+<li><p>single-shunt sector-aware reconstruction across sectors 1..6</p></li>
+<li><p>engine-history consistency (<code class="docutils literal notranslate"><span class="pre">currents_*</span></code> vs <code class="docutils literal notranslate"><span class="pre">currents_*_true</span></code>)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="adaptive-amplifier-gain-method-anti-saturation">
+<h3>Adaptive amplifier-gain method (anti-saturation)<a class="headerlink" href="#adaptive-amplifier-gain-method-anti-saturation" title="Link to this heading"></a></h3>
+<p>Before running fidelity metrics on each motor profile, the current-sense
+amplifier gain is adapted from a peak-current probe.</p>
+<ol class="arabic">
+<li><dl class="simple">
+<dt>Run a short probe with low gain (<code class="docutils literal notranslate"><span class="pre">probe_gain</span> <span class="pre">=</span> <span class="pre">0.2</span></code>) to estimate</dt><dd><p><code class="docutils literal notranslate"><span class="pre">I_peak</span></code> from true physics currents.</p>
+</dd>
+</dl>
+</li>
+<li><p>Compute a safe gain with headroom:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">gain</span> <span class="pre">=</span> <span class="pre">min(v_offset,</span> <span class="pre">vcc</span> <span class="pre">-</span> <span class="pre">v_offset)</span> <span class="pre">*</span> <span class="pre">headroom</span> <span class="pre">/</span> <span class="pre">(r_shunt</span> <span class="pre">*</span> <span class="pre">I_peak)</span></code></p>
+</div></blockquote>
+</li>
+<li><p>Clamp gain to implementation bounds.</p></li>
+<li><p>Re-run fidelity metrics and verify zero ADC saturation.</p></li>
+</ol>
+</section>
+<section id="benchmark-conditions">
+<h3>Benchmark conditions<a class="headerlink" href="#benchmark-conditions" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">=</span> <span class="pre">1e-4</span> <span class="pre">s</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_steps</span> <span class="pre">=</span> <span class="pre">800</span></code></p></li>
+<li><p>load torque <code class="docutils literal notranslate"><span class="pre">2.0</span> <span class="pre">Nm</span></code></p></li>
+<li><p>three-phase sinusoidal excitation, magnitude <code class="docutils literal notranslate"><span class="pre">24.0</span> <span class="pre">V</span></code>, frequency <code class="docutils literal notranslate"><span class="pre">120</span> <span class="pre">Hz</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">r_shunt</span> <span class="pre">=</span> <span class="pre">1e-3</span> <span class="pre">ohm</span></code>, <code class="docutils literal notranslate"><span class="pre">vcc</span> <span class="pre">=</span> <span class="pre">3.3</span> <span class="pre">V</span></code>, <code class="docutils literal notranslate"><span class="pre">offset</span> <span class="pre">=</span> <span class="pre">1.65</span> <span class="pre">V</span></code></p></li>
+<li><p>gain headroom factor: <code class="docutils literal notranslate"><span class="pre">0.80</span></code></p></li>
+</ul>
+</section>
+<section id="adaptive-gain-and-saturation-summary">
+<h3>Adaptive gain and saturation summary<a class="headerlink" href="#adaptive-gain-and-saturation-summary" title="Link to this heading"></a></h3>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Per-profile calibrated gain and ADC saturation</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Motor profile
+- Estimated peak current (A)
+- Calibrated gain
+- Triple sat ratio
+- Double sat ratio
+- Single sat ratio</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Innotec 255-EZS48-160
+- 1685.820
+- 0.783002
+- 0.000
+- 0.000
+- 0.000</p></td>
+</tr>
+<tr class="row-odd"><td><p>Motenergy ME1718 48V
+- 1554.738
+- 0.849018
+- 0.000
+- 0.000
+- 0.000</p></td>
+</tr>
+<tr class="row-even"><td><p>Motenergy ME1719 48V
+- 1554.738
+- 0.849018
+- 0.000
+- 0.000
+- 0.000</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="representative-measured-vs-true-errors-me1718-adaptive-gain">
+<h3>Representative measured-vs-true errors (ME1718, adaptive gain)<a class="headerlink" href="#representative-measured-vs-true-errors-me1718-adaptive-gain" title="Link to this heading"></a></h3>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Error metrics by topology (A)</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Topology
+- Phase
+- Max abs error
+- RMS error
+- Median abs error
+- P95 abs error</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Triple
+- a
+- 3.185e-06
+- 1.337e-07
+- 6.392e-08
+- 1.219e-07</p></td>
+</tr>
+<tr class="row-odd"><td><p>Triple
+- b
+- 3.047e-06
+- 1.289e-07
+- 6.113e-08
+- 1.256e-07</p></td>
+</tr>
+<tr class="row-even"><td><p>Triple
+- c
+- 3.047e-06
+- 1.295e-07
+- 6.389e-08
+- 1.250e-07</p></td>
+</tr>
+<tr class="row-odd"><td><p>Double
+- c (reconstructed)
+- 6.232e-06
+- 2.318e-07
+- 6.254e-08
+- 1.277e-07</p></td>
+</tr>
+<tr class="row-even"><td><p>Single
+- a
+- 3.185e-06
+- 9.743e-07
+- 6.809e-07
+- 2.119e-06</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="interpretation">
+<h3>Interpretation<a class="headerlink" href="#interpretation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>With adaptive gain enabled, all evaluated real-motor profiles run with</dt><dd><p>zero ADC clipping in triple, double, and single-shunt modes.</p>
+</dd>
+</dl>
+</li>
+<li><p>Triple-shunt remains the closest to true currents (lowest RMS error).</p></li>
+<li><dl class="simple">
+<dt>Double-shunt keeps low error on measured phases and controlled error on the</dt><dd><p>reconstructed phase.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Single-shunt remains physically consistent and benefits directly from proper</dt><dd><p>gain tuning to preserve full observable current amplitude.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Raw benchmark reports are available in:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data/logs/current_sense_fidelity_innotec_255_ezs48_160_adaptive_gain.json</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/logs/current_sense_fidelity_me1718_adaptive_gain.json</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data/logs/current_sense_fidelity_motenergy_me1719_48v_adaptive_gain.json</span></code></p></li>
+</ul>
+</section>
 </section>
 <section id="monte-carlo-simulation">
 <h2>Monte Carlo Simulation<a class="headerlink" href="#monte-carlo-simulation" title="Link to this heading"></a></h2>

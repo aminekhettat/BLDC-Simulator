@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>src.control.foc_controller &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>src.control.foc_controller &mdash; BLDC Motor Control 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/documentation_options.js?v=486e5634"></script>
       <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -97,9 +97,9 @@
 <span class="sd">transforms and running in either polar or Cartesian output modes.</span>
 
 <span class="sd">:author: BLDC Control Team</span>
-<span class="sd">:version: 1.0.0</span>
+<span class="sd">:version: 0.8.0</span>
 
-<span class="sd">.. versionadded:: 1.0.0</span>
+<span class="sd">.. versionadded:: 0.8.0</span>
 <span class="sd">    Initial FOC implementation with PI regulators and auto-tune stub</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -316,7 +316,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sensorless_blend_min_speed_rpm</span> <span class="o">=</span> <span class="mf">250.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sensorless_blend_min_confidence</span> <span class="o">=</span> <span class="mf">0.65</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sensorless_blend_weight</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">theta_sensorless_raw</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_sensorless_raw</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Current-feedback source selection.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_external_current_feedback</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_external_phase_currents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div>
 
 
     <span class="nd">@staticmethod</span>
@@ -1130,6 +1134,23 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">iq_ref</span> <span class="o">=</span> <span class="n">iq_ref</span></div>
 
 
+<div class="viewcode-block" id="FOCController.set_current_feedback_mode">
+<a class="viewcode-back" href="../../../api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.set_current_feedback_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_current_feedback_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_external_feedback</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select whether update() uses externally provided phase currents.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_external_current_feedback</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">use_external_feedback</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FOCController.set_external_phase_currents">
+<a class="viewcode-back" href="../../../api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.set_external_phase_currents">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_external_phase_currents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">currents_abc</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set external phase-current feedback (typically reconstructed shunt currents).&quot;&quot;&quot;</span>
+        <span class="n">currents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">currents_abc</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">currents</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;currents_abc must have shape (3,)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_external_phase_currents</span> <span class="o">=</span> <span class="n">currents</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+
 <div class="viewcode-block" id="FOCController.set_speed_reference">
 <a class="viewcode-back" href="../../../api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.set_speed_reference">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_speed_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">speed_rpm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1239,8 +1260,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_theta_electrical</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
 
-        <span class="c1"># read phase currents and transform</span>
-        <span class="n">ia</span><span class="p">,</span> <span class="n">ib</span><span class="p">,</span> <span class="n">ic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">currents</span>
+        <span class="c1"># Read phase currents from selected feedback source.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_external_current_feedback</span><span class="p">:</span>
+            <span class="n">ia</span><span class="p">,</span> <span class="n">ib</span><span class="p">,</span> <span class="n">ic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_external_phase_currents</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ia</span><span class="p">,</span> <span class="n">ib</span><span class="p">,</span> <span class="n">ic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">currents</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_concordia</span><span class="p">:</span>
             <span class="n">v_alpha</span><span class="p">,</span> <span class="n">v_beta</span> <span class="o">=</span> <span class="n">concordia_transform</span><span class="p">(</span><span class="n">ia</span><span class="p">,</span> <span class="n">ib</span><span class="p">,</span> <span class="n">ic</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1368,6 +1392,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">theta_sensorless_raw</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">id_ref_command</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">iq_ref_command</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_external_current_feedback</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_external_phase_currents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_headroom_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_voltage_error_v</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_id_injection_a</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -1392,6 +1418,7 @@
             <span class="s2">&quot;speed_ref&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_ref</span><span class="p">,</span>
             <span class="s2">&quot;speed_error&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_error</span><span class="p">,</span>
             <span class="s2">&quot;speed_loop_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_speed_loop</span><span class="p">,</span>
+            <span class="s2">&quot;use_external_current_feedback&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_external_current_feedback</span><span class="p">,</span>
             <span class="s2">&quot;decouple_d_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_decouple_d</span><span class="p">,</span>
             <span class="s2">&quot;decouple_q_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_decouple_q</span><span class="p">,</span>
             <span class="s2">&quot;angle_observer_mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle_observer_mode</span><span class="p">,</span>

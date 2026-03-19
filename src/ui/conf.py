@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "BLDC Motor Control Simulator"
 copyright = "2024, BLDC Control Team"
 author = "BLDC Control Team"
-release = "2.0.0"
+release = "0.8.0"
 
 # -- General configuration ---------------------------------------------------
 extensions = [

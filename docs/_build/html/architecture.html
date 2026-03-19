@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Architecture &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>Architecture &mdash; BLDC Motor Control 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -66,6 +66,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#design-patterns">Design Patterns</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#core-simulation-flow">Core Simulation Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#key-components">Key Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#measurement-data-flow">Measurement Data Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#loaded-calibration-workflow">Loaded Calibration Workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#data-flow">Data Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#threading-model">Threading Model</a></li>
@@ -101,7 +102,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="architecture">
+  <div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
+including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
+from use or misuse.</p>
+</div>
+<section id="architecture">
 <h1>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h1>
 <section id="project-structure">
 <h2>Project Structure<a class="headerlink" href="#project-structure" title="Link to this heading"></a></h2>
@@ -183,16 +191,34 @@
 <p><strong>Simulation Engine</strong> (<cite>src.core.simulation_engine</cite>)
 - Time-stepping with configurable dt
 - Event dispatch for UI updates
-- Data collection and logging</p>
+- Data collection and logging
+- Parallel storage of true motor currents and controller-facing measured currents
+- Current-sense state snapshot including topology, amplifier outputs, ADC saturation, and effective phase voltages</p>
 <p><strong>UI Layer</strong> (<cite>src.ui.*</cite>)
 - PyQt6 main window
 - Accessible widgets with ARIA labels
 - Real-time plot management
-- Parameter input/output controls</p>
+- Parameter input/output controls
+- Live inverter bridge visualization that reflects the active shunt topology
+- Current spectrum window with stacked FFT magnitude/phase displays and export actions</p>
 <p><strong>Visualization</strong> (<cite>src.visualization.visualization</cite>)
 - Matplotlib integration
 - Configurable grid and plot styles
 - Export functionality</p>
+</section>
+<section id="measurement-data-flow">
+<h2>Measurement Data Flow<a class="headerlink" href="#measurement-data-flow" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Motor phase currents (true physics)
+    ↓
+[Inverter current-sense model]
+    ↓
+Measured/reconstructed phase currents
+    ↓
+[FOC feedback selector]
+    ↓
+Controller state, history buffers, FFT analyzer, and bridge visualization
+</pre></div>
+</div>
 </section>
 <section id="loaded-calibration-workflow">
 <h2>Loaded Calibration Workflow<a class="headerlink" href="#loaded-calibration-workflow" title="Link to this heading"></a></h2>

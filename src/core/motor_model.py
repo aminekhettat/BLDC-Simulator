@@ -15,9 +15,9 @@ The mechanical model includes:
 - Position integration: d(theta)/dt = omega
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 
-.. versionadded:: 1.0.0
+.. versionadded:: 0.8.0
     Initial implementation of BLDC motor model
 """
 

@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Features &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>Features &mdash; BLDC Motor Control 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -99,7 +99,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="features">
+  <div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
+including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
+from use or misuse.</p>
+</div>
+<section id="features">
 <h1>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h1>
 <section id="core-simulation-features">
 <h2>Core Simulation Features<a class="headerlink" href="#core-simulation-features" title="Link to this heading"></a></h2>
@@ -133,6 +140,9 @@
 <ul class="simple">
 <li><p><strong>Monte Carlo Simulations</strong>: Statistical analysis of motor performance across parameter variations</p></li>
 <li><p><strong>Real-time Monitoring</strong>: Live display of motor parameters, currents, voltages, and power</p></li>
+<li><p><strong>Current Measurement Realism</strong>: Triple-, double-, and single-shunt inverter sensing with topology-aware reconstruction and side-by-side true versus measured current history</p></li>
+<li><p><strong>Controller Feedback Selection</strong>: FOC can run from true motor currents or reconstructed shunt currents to mirror real embedded feedback paths</p></li>
+<li><p><strong>Current Spectrum Analyzer</strong>: Stacked FFT magnitude/phase views with per-axis linear/log scaling, optional dB amplitude, selectable phase units, grid toggles, and CSV/image export</p></li>
 <li><p><strong>Data Logging</strong>: CSV export with metadata for offline analysis</p></li>
 <li><p><strong>Power Analysis</strong>: Loss calculations including copper, iron, and mechanical losses</p></li>
 <li><p><strong>Power Factor Analysis</strong>: Waveform-based active/reactive/apparent power and PF metrics with reactive compensation sizing helpers</p></li>
@@ -154,17 +164,21 @@
 <li><p><strong>Accessible PyQt6 GUI</strong>
 - Screen reader support (NVDA, JAWS compatible)
 - Keyboard-only navigation
-- High contrast display support</p></li>
+- High contrast display support
+- Spoken status updates and narrated plot/export workflow hooks</p></li>
 <li><p><strong>Interactive Controls</strong>
 - Real-time parameter adjustment
 - Simulation speed control
 - Grid display with customizable spacing
-- Plot export functionality</p></li>
+- Plot export functionality
+- Current-sense topology selection and live inverter bridge visualization
+- FFT plot controls for amplitude/phase units and independent axis scaling</p></li>
 <li><p><strong>Monitoring Dashboard</strong>
 - Status bar with simulation parameters
 - Real-time waveform plots
 - Phase current and voltage visualization
-- Torque and power monitoring</p></li>
+- Torque and power monitoring
+- True-versus-measured current comparison for current-sense validation</p></li>
 </ul>
 </section>
 <section id="data-export">
@@ -174,6 +188,8 @@
 <li><p><strong>Custom Export Paths</strong>: Choose custom directories for data storage</p></li>
 <li><p><strong>JSON Metadata</strong>: Simulation parameters saved with results</p></li>
 <li><p><strong>Full Simulation History</strong>: All time-series data available for analysis</p></li>
+<li><p><strong>FFT CSV Export</strong>: Save frequency, magnitude, and phase data using the active display units</p></li>
+<li><p><strong>FFT Image Export</strong>: Capture the stacked magnitude/phase view as a shareable figure</p></li>
 </ul>
 </section>
 <section id="optimization">

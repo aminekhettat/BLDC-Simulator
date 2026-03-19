@@ -81,6 +81,163 @@ The repository includes a staged loaded-point calibration workflow in `examples/
 - Selected speed-feasible torque: about ``9.99 Nm``
 - Final high-fidelity verification still fails orthogonality and conditioned efficiency, so the report remains informative rather than fully accepted.
 
+Shunt Current Reconstruction Fidelity
+-------------------------------------
+
+This section summarizes measured-vs-true current fidelity for topology-aware
+shunt reconstruction and documents the anti-saturation gain adaptation used
+before benchmarking.
+
+FOC feedback path integration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The FOC loop can now consume either the true motor phase currents or the reconstructed shunt currents.
+- This makes it possible to compare ideal control performance against controller behavior that is limited by measurement topology.
+- The simulation engine preserves both histories so plots and regression tests can compare controller-facing currents against the underlying physics state.
+
+Spectrum analysis workflow
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The current spectrum window renders stacked magnitude and phase plots for the selected phase current.
+- Magnitude can be displayed in linear units or dB; phase can be shown in degrees or radians.
+- Each FFT subplot supports independent linear/log axis scaling and grid toggles.
+- Export actions preserve the active units in both CSV headers and saved figures.
+
+Validation scope
+^^^^^^^^^^^^^^^^
+
+- Unit and integration checks: ``tests/test_current_sense_verification.py``
+- Real motor profiles:
+    - ``data/motor_profiles/innotec_255_ezs48_160.json``
+    - ``data/motor_profiles/motenergy_me1718_48v.json``
+    - ``data/motor_profiles/motenergy_me1719_48v.json``
+
+Automated verification status
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- ``46 passed`` on ``tests/test_current_sense_verification.py``
+- Coverage includes:
+    - triple-shunt direct measurement accuracy
+    - double-shunt Kirchhoff reconstruction consistency
+    - single-shunt sector-aware reconstruction across sectors 1..6
+    - engine-history consistency (``currents_*`` vs ``currents_*_true``)
+
+Adaptive amplifier-gain method (anti-saturation)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Before running fidelity metrics on each motor profile, the current-sense
+amplifier gain is adapted from a peak-current probe.
+
+1. Run a short probe with low gain (``probe_gain = 0.2``) to estimate
+     ``I_peak`` from true physics currents.
+2. Compute a safe gain with headroom:
+
+     ``gain = min(v_offset, vcc - v_offset) * headroom / (r_shunt * I_peak)``
+
+3. Clamp gain to implementation bounds.
+4. Re-run fidelity metrics and verify zero ADC saturation.
+
+Benchmark conditions
+^^^^^^^^^^^^^^^^^^^^
+
+- ``dt = 1e-4 s``
+- ``n_steps = 800``
+- load torque ``2.0 Nm``
+- three-phase sinusoidal excitation, magnitude ``24.0 V``, frequency ``120 Hz``
+- ``r_shunt = 1e-3 ohm``, ``vcc = 3.3 V``, ``offset = 1.65 V``
+- gain headroom factor: ``0.80``
+
+Adaptive gain and saturation summary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table:: Per-profile calibrated gain and ADC saturation
+     :header-rows: 1
+
+     * - Motor profile
+         - Estimated peak current (A)
+         - Calibrated gain
+         - Triple sat ratio
+         - Double sat ratio
+         - Single sat ratio
+     * - Innotec 255-EZS48-160
+         - 1685.820
+         - 0.783002
+         - 0.000
+         - 0.000
+         - 0.000
+     * - Motenergy ME1718 48V
+         - 1554.738
+         - 0.849018
+         - 0.000
+         - 0.000
+         - 0.000
+     * - Motenergy ME1719 48V
+         - 1554.738
+         - 0.849018
+         - 0.000
+         - 0.000
+         - 0.000
+
+Representative measured-vs-true errors (ME1718, adaptive gain)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table:: Error metrics by topology (A)
+     :header-rows: 1
+
+     * - Topology
+         - Phase
+         - Max abs error
+         - RMS error
+         - Median abs error
+         - P95 abs error
+     * - Triple
+         - a
+         - 3.185e-06
+         - 1.337e-07
+         - 6.392e-08
+         - 1.219e-07
+     * - Triple
+         - b
+         - 3.047e-06
+         - 1.289e-07
+         - 6.113e-08
+         - 1.256e-07
+     * - Triple
+         - c
+         - 3.047e-06
+         - 1.295e-07
+         - 6.389e-08
+         - 1.250e-07
+     * - Double
+         - c (reconstructed)
+         - 6.232e-06
+         - 2.318e-07
+         - 6.254e-08
+         - 1.277e-07
+     * - Single
+         - a
+         - 3.185e-06
+         - 9.743e-07
+         - 6.809e-07
+         - 2.119e-06
+
+Interpretation
+^^^^^^^^^^^^^^
+
+- With adaptive gain enabled, all evaluated real-motor profiles run with
+    zero ADC clipping in triple, double, and single-shunt modes.
+- Triple-shunt remains the closest to true currents (lowest RMS error).
+- Double-shunt keeps low error on measured phases and controlled error on the
+    reconstructed phase.
+- Single-shunt remains physically consistent and benefits directly from proper
+    gain tuning to preserve full observable current amplitude.
+
+Raw benchmark reports are available in:
+
+- ``data/logs/current_sense_fidelity_innotec_255_ezs48_160_adaptive_gain.json``
+- ``data/logs/current_sense_fidelity_me1718_adaptive_gain.json``
+- ``data/logs/current_sense_fidelity_motenergy_me1719_48v_adaptive_gain.json``
+
 Monte Carlo Simulation
 ----------------------
 

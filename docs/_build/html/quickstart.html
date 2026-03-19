@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quick Start Guide &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>Quick Start Guide &mdash; BLDC Motor Control 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -47,6 +47,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-the-gui">Running the GUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#current-measurement-and-fft-workflow">Current Measurement and FFT Workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-examples">Running Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-tests">Running Tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#core-concepts">Core Concepts</a></li>
@@ -97,7 +98,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="quick-start-guide">
+  <div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
+including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
+from use or misuse.</p>
+</div>
+<section id="quick-start-guide">
 <h1>Quick Start Guide<a class="headerlink" href="#quick-start-guide" title="Link to this heading"></a></h1>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
@@ -134,6 +142,18 @@
 - Parameter monitoring and adjustment
 - Data logging and export</p>
 </section>
+<section id="current-measurement-and-fft-workflow">
+<h2>Current Measurement and FFT Workflow<a class="headerlink" href="#current-measurement-and-fft-workflow" title="Link to this heading"></a></h2>
+<p>The GUI now includes a measurement-oriented workflow for validating inverter current sensing and harmonic content:</p>
+<ol class="arabic simple">
+<li><p>Select the inverter current-sense topology (triple, double, or single shunt) in the GUI.</p></li>
+<li><p>Choose whether FOC should use true phase currents or reconstructed measured currents as its feedback source.</p></li>
+<li><p>Open the current spectrum window to inspect stacked FFT magnitude and phase plots.</p></li>
+<li><p>Toggle amplitude units (linear or dB), phase units (degrees or radians), and per-axis linear/log scaling.</p></li>
+<li><p>Export either FFT data as CSV or the current spectrum figure as an image.</p></li>
+</ol>
+<p>The live bridge drawing reflects the active shunt topology. In single-shunt mode it uses the physically correct shared low-side return path.</p>
+</section>
 <section id="running-examples">
 <h2>Running Examples<a class="headerlink" href="#running-examples" title="Link to this heading"></a></h2>
 <p>Field-Oriented Control example:</p>
@@ -157,7 +177,7 @@
 </pre></div>
 </div>
 <p>Or run accessibility tests:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">test_accessibility_fixes</span><span class="o">.</span><span class="n">py</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">tests</span><span class="o">/</span><span class="n">test_feature_accessibility_integration</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
 </section>

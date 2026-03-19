@@ -11,7 +11,7 @@ All widgets support:
 - Descriptive labels and help text
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 from PyQt6.QtWidgets import (

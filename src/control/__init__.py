@@ -5,7 +5,7 @@ Control Module
 This package contains control blocks for BLDC motor control.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 from .svm_generator import SVMGenerator, CartesianSVMGenerator

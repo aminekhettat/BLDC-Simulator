@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>src.ui.main_window &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>src.ui.main_window &mdash; BLDC Motor Control 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/documentation_options.js?v=486e5634"></script>
       <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -102,10 +102,11 @@
 <span class="sd">- Data export</span>
 
 <span class="sd">:author: BLDC Control Team</span>
-<span class="sd">:version: 1.0.0</span>
+<span class="sd">:version: 0.8.0</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
@@ -446,6 +447,16 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">next_control_time</span> <span class="o">-</span> <span class="mf">1e-15</span><span class="p">):</span>
                 <span class="n">calc_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
 
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="p">,</span> <span class="n">FOCController</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">,</span> <span class="s2">&quot;get_controller_phase_currents&quot;</span>
+                <span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">set_external_phase_currents</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">get_controller_phase_currents</span><span class="p">()</span>
+                        <span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="k">pass</span>
+
                 <span class="c1"># Get control output (could be polar or cartesian)</span>
                 <span class="n">ctrl_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">control_period_s</span><span class="p">)</span>
                 <span class="n">voltages</span> <span class="o">=</span> <span class="kc">None</span>
@@ -509,11 +520,24 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window_size_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Current Harmonic FFT&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setMinimumSize</span><span class="p">(</span><span class="mi">820</span><span class="p">,</span> <span class="mi">520</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setMinimumSize</span><span class="p">(</span><span class="mi">920</span><span class="p">,</span> <span class="mi">700</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_window_size_samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="n">window_size_samples</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_time_samples</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_window_size_samples</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ia_samples</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_window_size_samples</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_phase_deg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_mag_display</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_phase_display</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_grid_enabled</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mag_x_scale</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mag_y_scale</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_x_scale</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_y_scale</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_amplitude_mode</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_unit</span> <span class="o">=</span> <span class="s2">&quot;deg&quot;</span>
 
         <span class="n">central</span> <span class="o">=</span> <span class="n">QWidget</span><span class="p">()</span>
         <span class="n">layout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">()</span>
@@ -524,16 +548,91 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">summary_label</span><span class="o">.</span><span class="n">setWordWrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_label</span><span class="p">)</span>
 
+        <span class="n">controls_row</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_checkbox</span> <span class="o">=</span> <span class="n">QCheckBox</span><span class="p">(</span><span class="s2">&quot;Show Grid&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_checkbox</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_checkbox</span><span class="o">.</span><span class="n">stateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_display_options_changed</span><span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid_checkbox</span><span class="p">)</span>
+
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Mag X&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_x_scale_combo</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_x_scale_combo</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_x_scale_combo</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_on_display_options_changed</span>
+        <span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mag_x_scale_combo</span><span class="p">)</span>
+
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Mag Y&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_y_scale_combo</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_y_scale_combo</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_y_scale_combo</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_on_display_options_changed</span>
+        <span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mag_y_scale_combo</span><span class="p">)</span>
+
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Phase X&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_x_scale_combo</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_x_scale_combo</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_x_scale_combo</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_on_display_options_changed</span>
+        <span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phase_x_scale_combo</span><span class="p">)</span>
+
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Phase Y&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_y_scale_combo</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_y_scale_combo</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_y_scale_combo</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_on_display_options_changed</span>
+        <span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phase_y_scale_combo</span><span class="p">)</span>
+
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Amplitude&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_mode_combo</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_mode_combo</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;dB&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_mode_combo</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_on_display_options_changed</span>
+        <span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amplitude_mode_combo</span><span class="p">)</span>
+
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Phase Unit&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_unit_combo</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_unit_combo</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="s2">&quot;rad&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phase_unit_combo</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_on_display_options_changed</span>
+        <span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phase_unit_combo</span><span class="p">)</span>
+
+        <span class="n">btn_save_csv</span> <span class="o">=</span> <span class="n">AccessibleButton</span><span class="p">(</span>
+            <span class="s2">&quot;Save FFT CSV&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Save FFT frequency, magnitude, and phase as a CSV file.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">btn_save_csv</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_save_fft_csv</span><span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn_save_csv</span><span class="p">)</span>
+
+        <span class="n">btn_save_image</span> <span class="o">=</span> <span class="n">AccessibleButton</span><span class="p">(</span>
+            <span class="s2">&quot;Save FFT Graph Image&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Save FFT magnitude and phase graphs as an image file.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">btn_save_image</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_save_fft_image</span><span class="p">)</span>
+        <span class="n">controls_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn_save_image</span><span class="p">)</span>
+
+        <span class="n">layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">controls_row</span><span class="p">)</span>
+
         <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.figure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Figure</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.backends.backend_qt5agg</span><span class="w"> </span><span class="kn">import</span> <span class="n">FigureCanvasQTAgg</span> <span class="k">as</span> <span class="n">FigureCanvas</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span> <span class="o">=</span> <span class="n">Figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span> <span class="o">=</span> <span class="n">Figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="n">FigureCanvas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Phase-A Current Spectrum (Controller-Facing)&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Frequency (Hz)&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Magnitude (A)&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Phase-A Current FFT Magnitude (Controller-Facing)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Frequency (Hz)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Magnitude (A)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Phase-A Current FFT Phase&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Frequency (Hz)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Phase (deg)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
         <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="n">central</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
@@ -571,6 +670,72 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_ia_samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ia</span><span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="CurrentSpectrumWindow.apply_display_settings">
+<a class="viewcode-back" href="../../../api/ui.html#src.ui.main_window.CurrentSpectrumWindow.apply_display_settings">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_display_settings</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">grid_enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">mag_x_scale</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">mag_y_scale</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">phase_x_scale</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">phase_y_scale</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">amplitude_mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">phase_unit</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply FFT display configuration from parent GUI controls.&quot;&quot;&quot;</span>
+        <span class="n">grid_value</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">grid_enabled</span><span class="p">)</span>
+        <span class="n">mag_x_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">mag_x_scale</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">mag_y_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">mag_y_scale</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">phase_x_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">phase_x_scale</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">phase_y_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">phase_y_scale</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">amp_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">amplitude_mode</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">phase_unit_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">phase_unit</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="n">controls</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grid_checkbox</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mag_x_scale_combo</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mag_y_scale_combo</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_x_scale_combo</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_y_scale_combo</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_mode_combo</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_unit_combo</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">ctrl</span> <span class="ow">in</span> <span class="n">controls</span><span class="p">:</span>
+            <span class="n">ctrl</span><span class="o">.</span><span class="n">blockSignals</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grid_checkbox</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="n">grid_value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mag_x_scale_combo</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span><span class="n">mag_x_value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mag_y_scale_combo</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span><span class="n">mag_y_value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_x_scale_combo</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span><span class="n">phase_x_value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_y_scale_combo</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span><span class="n">phase_y_value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_mode_combo</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span>
+                <span class="s2">&quot;dB&quot;</span> <span class="k">if</span> <span class="n">amp_value</span> <span class="o">==</span> <span class="s2">&quot;db&quot;</span> <span class="k">else</span> <span class="s2">&quot;linear&quot;</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_unit_combo</span><span class="o">.</span><span class="n">setCurrentText</span><span class="p">(</span>
+                <span class="s2">&quot;rad&quot;</span> <span class="k">if</span> <span class="n">phase_unit_value</span> <span class="o">==</span> <span class="s2">&quot;rad&quot;</span> <span class="k">else</span> <span class="s2">&quot;deg&quot;</span>
+            <span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ctrl</span> <span class="ow">in</span> <span class="n">controls</span><span class="p">:</span>
+                <span class="n">ctrl</span><span class="o">.</span><span class="n">blockSignals</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_grid_enabled</span> <span class="o">=</span> <span class="n">grid_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mag_x_scale</span> <span class="o">=</span> <span class="n">mag_x_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mag_y_scale</span> <span class="o">=</span> <span class="n">mag_y_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_x_scale</span> <span class="o">=</span> <span class="n">phase_x_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_y_scale</span> <span class="o">=</span> <span class="n">phase_y_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_amplitude_mode</span> <span class="o">=</span> <span class="s2">&quot;db&quot;</span> <span class="k">if</span> <span class="n">amp_value</span> <span class="o">==</span> <span class="s2">&quot;db&quot;</span> <span class="k">else</span> <span class="s2">&quot;linear&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_unit</span> <span class="o">=</span> <span class="s2">&quot;rad&quot;</span> <span class="k">if</span> <span class="n">phase_unit_value</span> <span class="o">==</span> <span class="s2">&quot;rad&quot;</span> <span class="k">else</span> <span class="s2">&quot;deg&quot;</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_display_options_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_grid_enabled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_checkbox</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mag_x_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag_x_scale_combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mag_y_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag_y_scale_combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_x_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_x_scale_combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_y_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_y_scale_combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_amplitude_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_mode_combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phase_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_unit_combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_refresh_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute and draw FFT from buffered samples in this window thread context.&quot;&quot;&quot;</span>
         <span class="n">sample_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ia_samples</span><span class="p">)</span>
@@ -588,6 +753,7 @@
         <span class="n">spec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">centered</span><span class="p">)</span>
         <span class="n">freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="n">centered</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">dt</span><span class="p">)</span>
         <span class="n">mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">centered</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">phase_deg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">spec</span><span class="p">))</span>
 
         <span class="c1"># Ignore DC when selecting dominant component.</span>
         <span class="k">if</span> <span class="n">mag</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -600,18 +766,116 @@
             <span class="n">dominant_freq</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="n">thd</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">mag</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#1E88E5&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Phase-A Current Spectrum (Controller-Facing)&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Frequency (Hz)&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Magnitude (A)&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_freq</span> <span class="o">=</span> <span class="n">freq</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_mag</span> <span class="o">=</span> <span class="n">mag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_phase_deg</span> <span class="o">=</span> <span class="n">phase_deg</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_amplitude_mode</span> <span class="o">==</span> <span class="s2">&quot;db&quot;</span><span class="p">:</span>
+            <span class="n">mag_display</span> <span class="o">=</span> <span class="mf">20.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">mag</span><span class="p">,</span> <span class="mf">1e-12</span><span class="p">))</span>
+            <span class="n">mag_label</span> <span class="o">=</span> <span class="s2">&quot;Magnitude (dB)&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mag_display</span> <span class="o">=</span> <span class="n">mag</span>
+            <span class="n">mag_label</span> <span class="o">=</span> <span class="s2">&quot;Magnitude (A)&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_phase_unit</span> <span class="o">==</span> <span class="s2">&quot;rad&quot;</span><span class="p">:</span>
+            <span class="n">phase_display</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">phase_deg</span><span class="p">)</span>
+            <span class="n">phase_label</span> <span class="o">=</span> <span class="s2">&quot;Phase (rad)&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">phase_display</span> <span class="o">=</span> <span class="n">phase_deg</span>
+            <span class="n">phase_label</span> <span class="o">=</span> <span class="s2">&quot;Phase (deg)&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_mag_display</span> <span class="o">=</span> <span class="n">mag_display</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_phase_display</span> <span class="o">=</span> <span class="n">phase_display</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="n">freq_mag_plot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">freq</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="n">freq</span><span class="p">)</span>
+        <span class="n">mag_plot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mag_display</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mag_y_scale</span> <span class="o">==</span> <span class="s2">&quot;log&quot;</span><span class="p">:</span>
+            <span class="n">mag_plot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mag_plot</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">mag_plot</span><span class="p">)</span>
+
+        <span class="n">phase_plot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">phase_display</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_phase_y_scale</span> <span class="o">==</span> <span class="s2">&quot;log&quot;</span><span class="p">:</span>
+            <span class="n">phase_plot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">phase_plot</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">phase_plot</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">freq_mag_plot</span><span class="p">,</span> <span class="n">mag_plot</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#1E88E5&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">freq_mag_plot</span><span class="p">,</span> <span class="n">phase_plot</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#D32F2F&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.3</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Phase-A Current FFT Magnitude (Controller-Facing)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Frequency (Hz)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">mag_label</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Phase-A Current FFT Phase&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Frequency (Hz)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">phase_label</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mag_x_scale</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mag_y_scale</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_phase_x_scale</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_phase_y_scale</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_mag</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_grid_enabled</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax_phase</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_grid_enabled</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw_idle</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">summary_label</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;FFT window: </span><span class="si">{</span><span class="n">sample_count</span><span class="si">}</span><span class="s2"> samples, dominant frequency: </span><span class="si">{</span><span class="n">dominant_freq</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> Hz, THD: </span><span class="si">{</span><span class="n">thd</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span>
         <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_fft_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save latest FFT spectrum arrays to CSV.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_freq</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">QMessageBox</span><span class="o">.</span><span class="n">information</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;No FFT Data&quot;</span><span class="p">,</span> <span class="s2">&quot;Run the simulation first.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">QFileDialog</span><span class="o">.</span><span class="n">getSaveFileName</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Save FFT Data&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;logs&quot;</span> <span class="o">/</span> <span class="s2">&quot;current_fft_data.csv&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;CSV Files (*.csv)&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;.csv&quot;</span><span class="p">:</span>
+            <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">&quot;.csv&quot;</span><span class="p">)</span>
+        <span class="n">file_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">file_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span>
+            <span class="n">mag_col</span> <span class="o">=</span> <span class="s2">&quot;magnitude_db&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_amplitude_mode</span> <span class="o">==</span> <span class="s2">&quot;db&quot;</span> <span class="k">else</span> <span class="s2">&quot;magnitude_a&quot;</span>
+            <span class="n">phase_col</span> <span class="o">=</span> <span class="s2">&quot;phase_rad&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_phase_unit</span> <span class="o">==</span> <span class="s2">&quot;rad&quot;</span> <span class="k">else</span> <span class="s2">&quot;phase_deg&quot;</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="s2">&quot;frequency_hz&quot;</span><span class="p">,</span> <span class="n">mag_col</span><span class="p">,</span> <span class="n">phase_col</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">f_hz</span><span class="p">,</span> <span class="n">mag_value</span><span class="p">,</span> <span class="n">phase_value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_last_freq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_mag_display</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_phase_display</span>
+            <span class="p">):</span>
+                <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">f_hz</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">mag_value</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">phase_value</span><span class="p">)])</span>
+
+        <span class="n">QMessageBox</span><span class="o">.</span><span class="n">information</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;FFT Data Saved&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Saved: </span><span class="si">{</span><span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_fft_image</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save latest FFT graphs as an image.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_freq</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">QMessageBox</span><span class="o">.</span><span class="n">information</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;No FFT Data&quot;</span><span class="p">,</span> <span class="s2">&quot;Run the simulation first.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">QFileDialog</span><span class="o">.</span><span class="n">getSaveFileName</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;Save FFT Graph&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;plots&quot;</span> <span class="o">/</span> <span class="s2">&quot;current_fft.png&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;PNG Files (*.png);;JPEG Files (*.jpg)&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;.png&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpeg&quot;</span><span class="p">}:</span>
+            <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">&quot;.png&quot;</span><span class="p">)</span>
+        <span class="n">file_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">160</span><span class="p">)</span>
+        <span class="n">QMessageBox</span><span class="o">.</span><span class="n">information</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;FFT Graph Saved&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Saved: </span><span class="si">{</span><span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="CurrentSpectrumWindow.closeEvent">
 <a class="viewcode-back" href="../../../api/ui.html#src.ui.main_window.CurrentSpectrumWindow.closeEvent">[docs]</a>
@@ -646,7 +910,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="n">APP_NAME</span> <span class="o">=</span> <span class="s2">&quot;BLIND SYSTEMS BLDC Simulator&quot;</span>
-        <span class="n">APP_VERSION</span> <span class="o">=</span> <span class="s2">&quot;2.1.0&quot;</span>
+        <span class="n">APP_VERSION</span> <span class="o">=</span> <span class="s2">&quot;0.8.0&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">APP_NAME</span><span class="si">}</span><span class="s2"> - BLDC Motor Control Simulator (v</span><span class="si">{</span><span class="n">APP_VERSION</span><span class="si">}</span><span class="s2">)&quot;</span>
@@ -810,10 +1074,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_time_remaining</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Remaining: -- s&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_cpu_load</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;CPU: -- %&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_task</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Task: None&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_backend</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Backend: --&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status_bar_state</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">))</span>  <span class="c1"># Separator</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status_bar_task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">))</span>  <span class="c1"># Separator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status_bar_backend</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">))</span>  <span class="c1"># Separator</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status_bar_time_remaining</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">))</span>  <span class="c1"># Separator</span>
@@ -1061,7 +1328,7 @@
 
         <span class="n">html</span> <span class="o">=</span> <span class="p">(</span>
             <span class="s2">&quot;&lt;h1&gt;BLIND SYSTEMS BLDC Simulator - User Manual&lt;/h1&gt;&quot;</span>
-            <span class="s2">&quot;&lt;p&gt;&lt;b&gt;Version:&lt;/b&gt; 2.1.0&lt;/p&gt;&quot;</span>
+            <span class="s2">&quot;&lt;p&gt;&lt;b&gt;Version:&lt;/b&gt; 0.8.0&lt;/p&gt;&quot;</span>
             <span class="s2">&quot;&lt;p&gt;&lt;b&gt;Author:&lt;/b&gt; Amine Khettat&lt;/p&gt;&quot;</span>
             <span class="s2">&quot;&lt;h2&gt;1. Getting Started&lt;/h2&gt;&quot;</span>
             <span class="s2">&quot;&lt;p&gt;Configure motor, load and controller parameters, then start simulation.&lt;/p&gt;&quot;</span>
@@ -1212,6 +1479,7 @@
             <span class="s2">&quot;foc_controller&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;transform&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">foc_transform</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
                 <span class="s2">&quot;output_mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">foc_output_mode</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+                <span class="s2">&quot;current_feedback_source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">foc_current_feedback_source</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
                 <span class="s2">&quot;speed_loop_mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">foc_speed_loop_mode</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
                 <span class="s2">&quot;id_ref_a&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">foc_id_ref</span><span class="o">.</span><span class="n">value</span><span class="p">()),</span>
                 <span class="s2">&quot;iq_ref_a&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">foc_iq_ref</span><span class="o">.</span><span class="n">value</span><span class="p">()),</span>
@@ -1311,6 +1579,23 @@
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;hardware_seed&quot;</span><span class="p">)</span>
                 <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
             <span class="p">},</span>
+            <span class="s2">&quot;current_measurement&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_enable</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()),</span>
+                <span class="s2">&quot;topology&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_topology</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+                <span class="s2">&quot;shunt_resistance_ohm&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_r_shunt</span><span class="o">.</span><span class="n">value</span><span class="p">()),</span>
+                <span class="s2">&quot;nominal_gain&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_nominal_gain</span><span class="o">.</span><span class="n">value</span><span class="p">()),</span>
+                <span class="s2">&quot;nominal_offset_v&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_nominal_offset</span><span class="o">.</span><span class="n">value</span><span class="p">()),</span>
+                <span class="s2">&quot;fft_window_samples&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_window_samples</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;fft_show_grid&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_show_grid</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()),</span>
+                <span class="s2">&quot;fft_mag_x_scale&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_x_scale</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+                <span class="s2">&quot;fft_mag_y_scale&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_y_scale</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+                <span class="s2">&quot;fft_phase_x_scale&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_x_scale</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+                <span class="s2">&quot;fft_phase_y_scale&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_y_scale</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+                <span class="s2">&quot;fft_amplitude_mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_amplitude_mode</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+                <span class="s2">&quot;fft_phase_unit&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_unit</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+            <span class="p">},</span>
         <span class="p">}</span>
 
         <span class="k">return</span> <span class="n">config</span>
@@ -1351,7 +1636,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_show_about</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Show about dialog.&quot;&quot;&quot;</span>
         <span class="n">about_text</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;&lt;h2&gt;BLIND SYSTEMS BLDC Simulator v2.1.0&lt;/h2&gt;&quot;</span>
+            <span class="s2">&quot;&lt;h2&gt;BLIND SYSTEMS BLDC Simulator v0.8.0&lt;/h2&gt;&quot;</span>
             <span class="s2">&quot;&lt;p&gt;&lt;b&gt;Advanced BLDC Motor Control Simulator&lt;/b&gt;&lt;/p&gt;&quot;</span>
             <span class="s2">&quot;&lt;p&gt;&lt;b&gt;Author:&lt;/b&gt; Amine Khettat&lt;/p&gt;&quot;</span>
             <span class="s2">&quot;&lt;p&gt;&lt;b&gt;Copyright:&lt;/b&gt; 2026 BLIND SYSTEMS&lt;/p&gt;&quot;</span>
@@ -1917,6 +2202,13 @@
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Polar returns (mag,angle), Cartesian returns (v_alpha,v_beta).&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">foc_group_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">foc_output_mode</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">foc_current_feedback_source</span> <span class="o">=</span> <span class="n">LabeledComboBox</span><span class="p">(</span>
+            <span class="s2">&quot;Current Feedback Source&quot;</span><span class="p">,</span>
+            <span class="n">items</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Motor True Currents&quot;</span><span class="p">,</span> <span class="s2">&quot;Reconstructed (Shunt)&quot;</span><span class="p">],</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Select whether FOC current loops use true model currents or reconstructed shunt measurements.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">foc_group_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">foc_current_feedback_source</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">foc_id_ref</span> <span class="o">=</span> <span class="n">LabeledSpinBox</span><span class="p">(</span>
             <span class="s2">&quot;D-axis Current Ref&quot;</span><span class="p">,</span>
@@ -2736,6 +3028,9 @@
             <span class="n">items</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;single&quot;</span><span class="p">,</span> <span class="s2">&quot;double&quot;</span><span class="p">,</span> <span class="s2">&quot;triple&quot;</span><span class="p">],</span>
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Single, double, or triple-shunt current measurement topology.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_topology</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">_text</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_bridge_visualization</span><span class="p">({})</span>
+        <span class="p">)</span>
         <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_topology</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_r_shunt</span> <span class="o">=</span> <span class="n">LabeledSpinBox</span><span class="p">(</span>
@@ -2882,6 +3177,68 @@
         <span class="p">)</span>
         <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_window_samples</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_show_grid</span> <span class="o">=</span> <span class="n">QCheckBox</span><span class="p">(</span><span class="s2">&quot;Show FFT Grids&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_show_grid</span><span class="o">.</span><span class="n">setChecked</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_show_grid</span><span class="p">)</span>
+
+        <span class="n">fft_scale_row_1</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="n">fft_scale_row_1</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Magnitude X Scale&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_x_scale</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_x_scale</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">])</span>
+        <span class="n">fft_scale_row_1</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_x_scale</span><span class="p">)</span>
+        <span class="n">fft_scale_row_1</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Magnitude Y Scale&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_y_scale</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_y_scale</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">])</span>
+        <span class="n">fft_scale_row_1</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_y_scale</span><span class="p">)</span>
+        <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">fft_scale_row_1</span><span class="p">)</span>
+
+        <span class="n">fft_scale_row_2</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="n">fft_scale_row_2</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Phase X Scale&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_x_scale</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_x_scale</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">])</span>
+        <span class="n">fft_scale_row_2</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_x_scale</span><span class="p">)</span>
+        <span class="n">fft_scale_row_2</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Phase Y Scale&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_y_scale</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_y_scale</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">])</span>
+        <span class="n">fft_scale_row_2</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_y_scale</span><span class="p">)</span>
+        <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">fft_scale_row_2</span><span class="p">)</span>
+
+        <span class="n">fft_units_row</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+        <span class="n">fft_units_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Amplitude Unit&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_amplitude_mode</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_amplitude_mode</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;dB&quot;</span><span class="p">])</span>
+        <span class="n">fft_units_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_amplitude_mode</span><span class="p">)</span>
+        <span class="n">fft_units_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Phase Unit&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_unit</span> <span class="o">=</span> <span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_unit</span><span class="o">.</span><span class="n">addItems</span><span class="p">([</span><span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="s2">&quot;rad&quot;</span><span class="p">])</span>
+        <span class="n">fft_units_row</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_unit</span><span class="p">)</span>
+        <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addLayout</span><span class="p">(</span><span class="n">fft_units_row</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">combo</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_x_scale</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_y_scale</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_x_scale</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_y_scale</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_amplitude_mode</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_unit</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">combo</span><span class="o">.</span><span class="n">currentTextChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_apply_fft_display_settings</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_show_grid</span><span class="o">.</span><span class="n">stateChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_apply_fft_display_settings</span>
+        <span class="p">)</span>
+
+        <span class="n">bridge_title</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Live Inverter Bridge / Shunt Topology&quot;</span><span class="p">)</span>
+        <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">bridge_title</span><span class="p">)</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.figure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Figure</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.backends.backend_qt5agg</span><span class="w"> </span><span class="kn">import</span> <span class="n">FigureCanvasQTAgg</span> <span class="k">as</span> <span class="n">FigureCanvas</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bridge_figure</span> <span class="o">=</span> <span class="n">Figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.4</span><span class="p">,</span> <span class="mf">2.8</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bridge_canvas</span> <span class="o">=</span> <span class="n">FigureCanvas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_figure</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bridge_ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bridge_figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bridge_ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+        <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_canvas</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_status_label</span> <span class="o">=</span> <span class="n">QLabel</span><span class="p">(</span>
             <span class="s2">&quot;Current sensing disabled. Enable to expose measured-vs-true current telemetry.&quot;</span>
         <span class="p">)</span>
@@ -2895,7 +3252,22 @@
         <span class="n">btn_fft_window</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_open_current_fft_window</span><span class="p">)</span>
         <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn_fft_window</span><span class="p">)</span>
 
+        <span class="n">btn_fft_csv</span> <span class="o">=</span> <span class="n">AccessibleButton</span><span class="p">(</span>
+            <span class="s2">&quot;Save FFT Data CSV&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Save FFT frequency, magnitude, and phase data to CSV.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">btn_fft_csv</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_save_current_fft_csv</span><span class="p">)</span>
+        <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn_fft_csv</span><span class="p">)</span>
+
+        <span class="n">btn_fft_image</span> <span class="o">=</span> <span class="n">AccessibleButton</span><span class="p">(</span>
+            <span class="s2">&quot;Save FFT Graph Image&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Save FFT magnitude and phase graphs to an image file.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">btn_fft_image</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_save_current_fft_image</span><span class="p">)</span>
+        <span class="n">current_sense_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn_fft_image</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_group</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">current_sense_layout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_bridge_visualization</span><span class="p">({})</span>
         <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_group</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mcu_budget_group</span> <span class="o">=</span> <span class="n">AccessibleGroupBox</span><span class="p">(</span>
@@ -3379,6 +3751,13 @@
         <span class="p">)</span>
         <span class="n">btn_efficiency_tips</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_show_efficiency_recommendations</span><span class="p">)</span>
         <span class="n">button_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn_efficiency_tips</span><span class="p">)</span>
+
+        <span class="n">btn_plot_measured_vs_true</span> <span class="o">=</span> <span class="n">AccessibleButton</span><span class="p">(</span>
+            <span class="s2">&quot;Plot Measured vs True Currents&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Overlay measured and true physics phase currents with per-phase RMS error (requires current sensing enabled)&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">btn_plot_measured_vs_true</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_plot_measured_vs_true</span><span class="p">)</span>
+        <span class="n">button_layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn_plot_measured_vs_true</span><span class="p">)</span>
 
         <span class="n">btn_plot_custom</span> <span class="o">=</span> <span class="n">AccessibleButton</span><span class="p">(</span>
             <span class="s2">&quot;Plot Selected&quot;</span><span class="p">,</span> <span class="s2">&quot;Generate plot for user-selected variables&quot;</span>
@@ -3955,6 +4334,10 @@
                 <span class="n">use_concordia</span><span class="o">=</span><span class="n">use_conc</span><span class="p">,</span>
                 <span class="n">output_cartesian</span><span class="o">=</span><span class="n">out_cart</span><span class="p">,</span>
                 <span class="n">enable_speed_loop</span><span class="o">=</span><span class="n">speed_loop_enabled</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">set_current_feedback_mode</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">foc_current_feedback_source</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span>
+                <span class="o">==</span> <span class="s2">&quot;Reconstructed (Shunt)&quot;</span>
             <span class="p">)</span>
             <span class="c1"># set references</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">set_current_references</span><span class="p">(</span>
@@ -4800,11 +5183,177 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_update_monitoring</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_update_status_bar</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_update_current_sense_status</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_bridge_visualization</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">set_window_size</span><span class="p">(</span>
                     <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_window_samples</span><span class="o">.</span><span class="n">value</span><span class="p">())</span>
                 <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_apply_fft_display_settings</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">push_snapshot</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_fft_display_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply FFT graph display preferences to the detached FFT window.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">apply_display_settings</span><span class="p">(</span>
+            <span class="n">grid_enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_show_grid</span><span class="o">.</span><span class="n">isChecked</span><span class="p">(),</span>
+            <span class="n">mag_x_scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_x_scale</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+            <span class="n">mag_y_scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_mag_y_scale</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+            <span class="n">phase_x_scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_x_scale</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+            <span class="n">phase_y_scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_y_scale</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+            <span class="n">amplitude_mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_amplitude_mode</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+            <span class="n">phase_unit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_sense_fft_phase_unit</span><span class="o">.</span><span class="n">currentText</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_current_fft_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save FFT data from the detached FFT window.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_open_current_fft_window</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">_save_fft_csv</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_current_fft_image</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save FFT image from the detached FFT window.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_open_current_fft_window</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">_save_fft_image</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_bridge_visualization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw a live inverter bridge view and highlight selected shunt topology.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;bridge_ax&quot;</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.patches</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rectangle</span><span class="p">,</span> <span class="n">Circle</span>
+
+        <span class="n">topology</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_topology</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span>
+        <span class="n">meas</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">snapshot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;current_measurement&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">snapshot</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="k">else</span> <span class="p">{}</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">meas</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">meas</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;enabled&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="n">topology</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">meas</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;topology&quot;</span><span class="p">,</span> <span class="n">topology</span><span class="p">))</span>
+
+        <span class="n">va</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">snapshot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;voltages_a&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="n">vb</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">snapshot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;voltages_b&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="n">vc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">snapshot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;voltages_c&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="n">upper_on</span> <span class="o">=</span> <span class="p">[</span><span class="n">va</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">vb</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">vc</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">]</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bridge_ax</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]</span>
+        <span class="n">shunt_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;single&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+            <span class="s2">&quot;double&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+            <span class="s2">&quot;triple&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">topology</span><span class="p">,</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">])</span>
+
+        <span class="c1"># Draw a shared low-side source bus used by all three legs.</span>
+        <span class="n">low_side_bus_y</span> <span class="o">=</span> <span class="mf">0.10</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">2.8</span><span class="p">],</span> <span class="p">[</span><span class="n">low_side_bus_y</span><span class="p">,</span> <span class="n">low_side_bus_y</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#455A64&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">2.0</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">+</span> <span class="mf">0.2</span>
+            <span class="n">color_hi</span> <span class="o">=</span> <span class="s2">&quot;#2E7D32&quot;</span> <span class="k">if</span> <span class="n">upper_on</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;#CFD8DC&quot;</span>
+            <span class="n">color_lo</span> <span class="o">=</span> <span class="s2">&quot;#CFD8DC&quot;</span> <span class="k">if</span> <span class="n">upper_on</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;#2E7D32&quot;</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">Rectangle</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="mf">0.58</span><span class="p">),</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.28</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color_hi</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;#263238&quot;</span><span class="p">))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">Rectangle</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="mf">0.14</span><span class="p">),</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.28</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color_lo</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;#263238&quot;</span><span class="p">))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+                <span class="n">x</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="si">}</span><span class="s2">U&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+                <span class="n">x</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.49</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="si">}</span><span class="s2">L&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Connect each low-side switch source to the shared return bus.</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">],</span>
+                <span class="p">[</span><span class="mf">0.14</span><span class="p">,</span> <span class="n">low_side_bus_y</span><span class="p">],</span>
+                <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#455A64&quot;</span><span class="p">,</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">topology</span> <span class="o">!=</span> <span class="s2">&quot;single&quot;</span> <span class="ow">and</span> <span class="n">shunt_map</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span>
+                    <span class="n">Circle</span><span class="p">((</span><span class="n">x</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#F57C00&quot;</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;#E65100&quot;</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s2">&quot;shunt&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">topology</span> <span class="o">==</span> <span class="s2">&quot;single&quot;</span><span class="p">:</span>
+            <span class="c1"># Single-shunt hardware: one common shunt in the low-side return path to GND.</span>
+            <span class="n">shunt_x0</span> <span class="o">=</span> <span class="mf">1.45</span>
+            <span class="n">shunt_w</span> <span class="o">=</span> <span class="mf">0.10</span>
+            <span class="n">shunt_y0</span> <span class="o">=</span> <span class="mf">0.02</span>
+            <span class="n">shunt_h</span> <span class="o">=</span> <span class="mf">0.06</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="p">[</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">low_side_bus_y</span><span class="p">,</span> <span class="n">shunt_y0</span> <span class="o">+</span> <span class="n">shunt_h</span><span class="p">],</span>
+                <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#455A64&quot;</span><span class="p">,</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.6</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span>
+                <span class="n">Rectangle</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">shunt_x0</span><span class="p">,</span> <span class="n">shunt_y0</span><span class="p">),</span>
+                    <span class="n">shunt_w</span><span class="p">,</span>
+                    <span class="n">shunt_h</span><span class="p">,</span>
+                    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#F57C00&quot;</span><span class="p">,</span>
+                    <span class="n">ec</span><span class="o">=</span><span class="s2">&quot;#E65100&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">shunt_y0</span> <span class="o">-</span> <span class="mf">0.005</span><span class="p">,</span> <span class="s2">&quot;shunt&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+            <span class="c1"># Ground connection and symbol.</span>
+            <span class="n">gnd_y</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="p">[</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">],</span> <span class="p">[</span><span class="n">shunt_y0</span><span class="p">,</span> <span class="n">gnd_y</span> <span class="o">+</span> <span class="mf">0.015</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#455A64&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.6</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="p">[</span><span class="mf">1.42</span><span class="p">,</span> <span class="mf">1.58</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">gnd_y</span> <span class="o">+</span> <span class="mf">0.015</span><span class="p">,</span> <span class="n">gnd_y</span> <span class="o">+</span> <span class="mf">0.015</span><span class="p">],</span>
+                <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#263238&quot;</span><span class="p">,</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="p">[</span><span class="mf">1.44</span><span class="p">,</span> <span class="mf">1.56</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">gnd_y</span> <span class="o">+</span> <span class="mf">0.008</span><span class="p">,</span> <span class="n">gnd_y</span> <span class="o">+</span> <span class="mf">0.008</span><span class="p">],</span>
+                <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#263238&quot;</span><span class="p">,</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="p">[</span><span class="mf">1.46</span><span class="p">,</span> <span class="mf">1.54</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">gnd_y</span> <span class="o">+</span> <span class="mf">0.002</span><span class="p">,</span> <span class="n">gnd_y</span> <span class="o">+</span> <span class="mf">0.002</span><span class="p">],</span>
+                <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#263238&quot;</span><span class="p">,</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+            <span class="mf">0.02</span><span class="p">,</span>
+            <span class="mf">0.98</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Topology: </span><span class="si">{</span><span class="n">topology</span><span class="si">}</span><span class="s2"> | Switch state inferred from phase voltage sign&quot;</span><span class="p">,</span>
+            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+            <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">topology</span> <span class="o">==</span> <span class="s2">&quot;single&quot;</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+                <span class="mf">0.02</span><span class="p">,</span>
+                <span class="mf">0.90</span><span class="p">,</span>
+                <span class="s2">&quot;Single-shunt: shared low-side source bus -&gt; one shunt -&gt; ground&quot;</span><span class="p">,</span>
+                <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+                <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+                <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+                <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#37474F&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bridge_figure</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bridge_canvas</span><span class="o">.</span><span class="n">draw_idle</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_build_current_sense_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InverterCurrentSense</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create topology-aware current sense model from GUI settings.&quot;&quot;&quot;</span>
@@ -4863,7 +5412,7 @@
             <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_update_current_sense_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update current sensing status text for non-visual monitoring.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update current sensing status and narrate measurement quality metrics.&quot;&quot;&quot;</span>
         <span class="n">meas</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">snapshot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;current_measurement&quot;</span><span class="p">,</span> <span class="p">{})</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">snapshot</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
@@ -4889,9 +5438,56 @@
         <span class="n">drop_rms</span> <span class="o">=</span> <span class="p">(</span>
             <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">drop_arr</span><span class="p">))))</span> <span class="k">if</span> <span class="n">drop_arr</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mf">0.0</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_status_label</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Current sensing active. Topology: </span><span class="si">{</span><span class="n">topology</span><span class="si">}</span><span class="s2">, ADC saturation channels: </span><span class="si">{</span><span class="n">saturated_count</span><span class="si">}</span><span class="s2">, phase-drop RMS: </span><span class="si">{</span><span class="n">drop_rms</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> V&quot;</span>
+
+        <span class="c1"># Compute per-phase instantaneous measurement error if true currents available</span>
+        <span class="n">err_text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">err_speech</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">hist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">get_history</span><span class="p">()</span>
+            <span class="n">has_true</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;currents_a_true&quot;</span> <span class="ow">in</span> <span class="n">hist</span>
+                <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">hist</span><span class="p">[</span><span class="s2">&quot;currents_a_true&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">hist</span><span class="p">[</span><span class="s2">&quot;currents_a&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">has_true</span><span class="p">:</span>
+                <span class="n">errs_rms</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">errs_peak</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">ph</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">):</span>
+                    <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hist</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;currents_</span><span class="si">{</span><span class="n">ph</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hist</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;currents_</span><span class="si">{</span><span class="n">ph</span><span class="si">}</span><span class="s2">_true&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+                    <span class="n">diff</span> <span class="o">=</span> <span class="n">m</span> <span class="o">-</span> <span class="n">t</span>
+                    <span class="n">errs_rms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">diff</span><span class="o">**</span><span class="mi">2</span><span class="p">))))</span>
+                    <span class="n">errs_peak</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">diff</span><span class="p">))))</span>
+                <span class="n">err_text</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot; | Measurement error — &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;RMS A:</span><span class="si">{</span><span class="n">errs_rms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> B:</span><span class="si">{</span><span class="n">errs_rms</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> C:</span><span class="si">{</span><span class="n">errs_rms</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> A; &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Peak A:</span><span class="si">{</span><span class="n">errs_peak</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> B:</span><span class="si">{</span><span class="n">errs_peak</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> C:</span><span class="si">{</span><span class="n">errs_peak</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> A&quot;</span>
+                <span class="p">)</span>
+                <span class="n">err_speech</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot; Measurement RMS error: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;A </span><span class="si">{</span><span class="n">errs_rms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, B </span><span class="si">{</span><span class="n">errs_rms</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, C </span><span class="si">{</span><span class="n">errs_rms</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> amperes.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="n">status_text</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Current sensing active. Topology: </span><span class="si">{</span><span class="n">topology</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;ADC saturation channels: </span><span class="si">{</span><span class="n">saturated_count</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;phase-drop RMS: </span><span class="si">{</span><span class="n">drop_rms</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> V&quot;</span> <span class="o">+</span> <span class="n">err_text</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_sense_status_label</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">status_text</span><span class="p">)</span>
+
+        <span class="c1"># Periodic audio narration — every ~100 polling cycles to avoid speech spam.</span>
+        <span class="c1"># Use a simple counter stored on self.</span>
+        <span class="n">poll_count</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_sense_status_poll_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sense_status_poll_count</span> <span class="o">=</span> <span class="n">poll_count</span>
+        <span class="k">if</span> <span class="n">poll_count</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># narrate on first call and every 100 thereafter</span>
+            <span class="n">sat_msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">saturated_count</span><span class="si">}</span><span class="s2"> ADC channel</span><span class="si">{</span><span class="s1">&#39;s&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">saturated_count</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2"> saturated.&quot;</span>
+                <span class="k">if</span> <span class="n">saturated_count</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="k">else</span> <span class="s2">&quot;No ADC saturation.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">speak</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Current sensing active. Topology: </span><span class="si">{</span><span class="n">topology</span><span class="si">}</span><span class="s2">. &quot;</span> <span class="o">+</span> <span class="n">sat_msg</span> <span class="o">+</span> <span class="n">err_speech</span>
+            <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_open_current_fft_window</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Open or focus the asynchronous current FFT analysis window.&quot;&quot;&quot;</span>
@@ -4901,6 +5497,7 @@
                 <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">closed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_current_fft_window_closed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_fft_display_settings</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">raise_</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">current_fft_window</span><span class="o">.</span><span class="n">activateWindow</span><span class="p">()</span>
@@ -4943,6 +5540,20 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_cpu_load</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CPU: </span><span class="si">{</span><span class="n">cpu_load</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_cpu_load</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;CPU: -- %&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Update compute backend display</span>
+            <span class="n">backend_info</span> <span class="o">=</span> <span class="n">snapshot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;compute_backend&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend_info</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">selected</span> <span class="o">=</span> <span class="n">backend_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;selected&quot;</span><span class="p">,</span> <span class="s2">&quot;--&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                <span class="n">gpu_available</span> <span class="o">=</span> <span class="n">backend_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gpu_available&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">gpu_available</span> <span class="ow">and</span> <span class="n">selected</span> <span class="o">==</span> <span class="s2">&quot;GPU&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_backend</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backend: </span><span class="si">{</span><span class="n">selected</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">gpu_available</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_backend</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backend: </span><span class="si">{</span><span class="n">selected</span><span class="si">}</span><span class="s2"> (GPU avail)&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_backend</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backend: </span><span class="si">{</span><span class="n">selected</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">status_bar_backend</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;Backend: --&quot;</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="c1"># Silently fail to avoid disrupting GUI updates</span>
@@ -5157,6 +5768,56 @@
         <span class="p">)</span>
         <span class="n">figure</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
         <span class="n">speak</span><span class="p">(</span><span class="s2">&quot;Inverter analysis plot generated.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_plot_measured_vs_true</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate measured-vs-true current overlay with RMS error panel.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">get_history</span><span class="p">()[</span><span class="s2">&quot;time&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">QMessageBox</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Warning&quot;</span><span class="p">,</span> <span class="s2">&quot;No data to plot!&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">get_history</span><span class="p">()</span>
+        <span class="n">has_true</span> <span class="o">=</span> <span class="s2">&quot;currents_a_true&quot;</span> <span class="ow">in</span> <span class="n">history</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;currents_a_true&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">grid_on</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;plot_grid_checkbox&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_grid_checkbox</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">grid_spacing</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;plot_grid_spacing&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_grid_spacing</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">minor_grid</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;plot_minor_grid_checkbox&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_minor_grid_checkbox</span><span class="o">.</span><span class="n">isChecked</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">grid_spacing_y</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;plot_grid_spacing_y&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_grid_spacing_y</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">figure</span> <span class="o">=</span> <span class="n">SimulationPlotter</span><span class="o">.</span><span class="n">create_measured_vs_true_current_plot</span><span class="p">(</span>
+            <span class="n">history</span><span class="p">,</span>
+            <span class="n">grid_on</span><span class="o">=</span><span class="n">grid_on</span><span class="p">,</span>
+            <span class="n">grid_spacing</span><span class="o">=</span><span class="n">grid_spacing</span><span class="p">,</span>
+            <span class="n">minor_grid</span><span class="o">=</span><span class="n">minor_grid</span><span class="p">,</span>
+            <span class="n">grid_spacing_y</span><span class="o">=</span><span class="n">grid_spacing_y</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">figure</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">has_true</span><span class="p">:</span>
+            <span class="c1"># Compute and narrate summary RMS errors</span>
+            <span class="n">errs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ph</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">):</span>
+                <span class="n">meas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">history</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;currents_</span><span class="si">{</span><span class="n">ph</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+                <span class="n">true_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">history</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;currents_</span><span class="si">{</span><span class="n">ph</span><span class="si">}</span><span class="s2">_true&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+                <span class="n">rms</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">meas</span> <span class="o">-</span> <span class="n">true_v</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)))</span>
+                <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rms</span><span class="p">)</span>
+            <span class="n">speak</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Measured vs true current plot generated. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;RMS measurement error: phase A </span><span class="si">{</span><span class="n">errs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> A, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;phase B </span><span class="si">{</span><span class="n">errs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> A, phase C </span><span class="si">{</span><span class="n">errs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> A.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">speak</span><span class="p">(</span>
+                <span class="s2">&quot;Measured vs true current plot generated. &quot;</span>
+                <span class="s2">&quot;No true-current history available; enable current sensing and re-run simulation.&quot;</span>
+            <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_show_efficiency_recommendations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Show heuristic efficiency tuning suggestions for the current setup.&quot;&quot;&quot;</span>

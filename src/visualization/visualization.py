@@ -7,7 +7,7 @@ Handles plotting and visualization of simulation results.
 Uses matplotlib for real-time and saved plots.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 """
 
 import numpy as np

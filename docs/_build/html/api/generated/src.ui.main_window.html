@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>src.ui.main_window &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>src.ui.main_window &mdash; BLDC Motor Control 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/documentation_options.js?v=486e5634"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -82,6 +82,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.__init__"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.__init__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.set_window_size"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.set_window_size()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.push_snapshot"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.push_snapshot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.apply_display_settings"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.apply_display_settings()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#src.ui.main_window.CurrentSpectrumWindow.closeEvent"><code class="docutils literal notranslate"><span class="pre">CurrentSpectrumWindow.closeEvent()</span></code></a></li>
 </ul>
 </li>
@@ -155,7 +156,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-src.ui.main_window">
+  <div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
+including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
+from use or misuse.</p>
+</div>
+<section id="module-src.ui.main_window">
 <span id="src-ui-main-window"></span><h1>src.ui.main_window<a class="headerlink" href="#module-src.ui.main_window" title="Link to this heading"></a></h1>
 <section id="main-gui-window-module">
 <h2>Main GUI Window Module<a class="headerlink" href="#main-gui-window-module" title="Link to this heading"></a></h2>
@@ -171,7 +179,7 @@
 <dd class="field-odd"><p>BLDC Control Team</p>
 </dd>
 <dt class="field-even">version<span class="colon">:</span></dt>
-<dd class="field-even"><p>1.0.0</p>
+<dd class="field-even"><p>0.8.0</p>
 </dd>
 </dl>
 <p class="rubric">Classes</p>
@@ -344,6 +352,17 @@ arguments is the optional sequence of the names of the signal’s arguments.</p>
 <dt class="sig sig-object py" id="src.ui.main_window.CurrentSpectrumWindow.push_snapshot">
 <span class="sig-name descname"><span class="pre">push_snapshot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snapshot</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/ui/main_window.html#CurrentSpectrumWindow.push_snapshot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.CurrentSpectrumWindow.push_snapshot" title="Link to this definition"></a></dt>
 <dd><p>Consume latest simulation snapshot without blocking control loop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.ui.main_window.CurrentSpectrumWindow.apply_display_settings">
+<span class="sig-name descname"><span class="pre">apply_display_settings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mag_x_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mag_y_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_x_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_y_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_unit</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/src/ui/main_window.html#CurrentSpectrumWindow.apply_display_settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.ui.main_window.CurrentSpectrumWindow.apply_display_settings" title="Link to this definition"></a></dt>
+<dd><p>Apply FFT display configuration from parent GUI controls.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>

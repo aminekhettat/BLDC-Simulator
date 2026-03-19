@@ -15,9 +15,9 @@ Commonly used for:
 - Sequential voltage buildup
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 
-.. versionadded:: 1.0.0
+.. versionadded:: 0.8.0
     Initial V/f controller implementation
 """
 

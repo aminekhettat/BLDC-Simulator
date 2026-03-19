@@ -1,5 +1,10 @@
 # BLDC Motor Control Simulator - README
 
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
+
 ## Overview
 
 Comprehensive Python GUI application for BLDC and PMSM-style motor simulation with both V/f voltage-to-frequency control and Field-Oriented Control (FOC). The simulator is designed for **full screen reader accessibility**, profile-driven motor modeling, and repeatable calibration workflows ranging from unloaded convergence searches to loaded no-field-weakening operating-point tuning.
@@ -47,11 +52,16 @@ Comprehensive Python GUI application for BLDC and PMSM-style motor simulation wi
 - Tab key navigation throughout application
 - Clear keyboard shortcuts (F5=Start, F6=Stop, F7=Reset, Ctrl+S=Export)
 - Descriptive labels and help text for all controls
+- Live inverter bridge visualization that reflects the active current-sense topology
+- FOC current feedback selection between true motor currents and reconstructed shunt currents
 
 ### Data & Visualization
 
 - Real-time parameter monitoring
+- Current-sense validation with true-versus-measured phase current history
+- Current spectrum analysis with stacked FFT magnitude/phase plots
 - CSV export with metadata
+- FFT CSV export and FFT image export
 - Comprehensive plotting capabilities:
   - 3-phase currents, voltages, back-EMF
   - Speed and torque profiles
@@ -158,6 +168,18 @@ python main.py
 5. **Analyze Results**
    - Generate plots (Tab 5)
    - Export data to CSV (Ctrl+S)
+
+### Current Measurement and Spectrum Analysis
+
+The simulator includes an inverter current-sense workflow intended to match how embedded motor drives observe current:
+
+1. Select the shunt topology you want to simulate: triple shunt, double shunt, or single shunt.
+2. Choose whether FOC should use ideal true currents or reconstructed measured currents.
+3. Open the current spectrum window to inspect stacked FFT magnitude and phase plots.
+4. Change amplitude display between linear and dB, phase display between degrees and radians, and set linear/log axes independently.
+5. Export the FFT to CSV or save the stacked spectrum figure as an image.
+
+The bridge visualization updates in real time. For single-shunt mode, the drawing uses a shared low-side return path that matches the physical one-shunt topology.
 
 ### Advanced: Auto-Tuning FOC PI Parameters
 
@@ -355,7 +377,7 @@ The simulator is optimized for real-time efficiency:
 - [ ] Single-active calibration job enforcement and reliable process shutdown handling
 - [ ] Bottom status bar with elapsed time, remaining-time estimate, and CPU-load estimate
 - [ ] More realistic microcontroller-style scheduling for control and telemetry tasks
-- [ ] Shunt plus differential-amplifier current measurement model with gain, offset, and capacitance effects
+- [ ] Guided current-sense calibration assistant for matching simulated gain, offset, and filtering to measured hardware captures
 - [ ] Sensorless rotor position estimation and expanded hardware validation paths
 
 ## License & Attribution
@@ -407,5 +429,5 @@ sphinx-build -b html docs/ build/html
 ---
 
 **Author**: BLDC Control Team  
-**Version**: 1.0.0  
+**Version**: 0.8.0  
 **Date**: March 2026

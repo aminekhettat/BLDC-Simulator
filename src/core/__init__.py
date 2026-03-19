@@ -5,7 +5,7 @@ BLDC Motor Control - Core Module
 This package contains the core motor models and simulation engine for BLDC motor control.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 :date: 2026-03-03
 """
 

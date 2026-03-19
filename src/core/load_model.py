@@ -12,9 +12,9 @@ Supported load types:
 - Variable load (custom time-dependent profile)
 
 :author: Amine Khettat
-:version: 1.0.0
+:version: 0.8.0
 
-.. versionadded:: 1.0.0
+.. versionadded:: 0.8.0
     Initial implementation of load models
 """
 

@@ -33,6 +33,9 @@ Advanced Features
 
 - **Monte Carlo Simulations**: Statistical analysis of motor performance across parameter variations
 - **Real-time Monitoring**: Live display of motor parameters, currents, voltages, and power
+- **Current Measurement Realism**: Triple-, double-, and single-shunt inverter sensing with topology-aware reconstruction and side-by-side true versus measured current history
+- **Controller Feedback Selection**: FOC can run from true motor currents or reconstructed shunt currents to mirror real embedded feedback paths
+- **Current Spectrum Analyzer**: Stacked FFT magnitude/phase views with per-axis linear/log scaling, optional dB amplitude, selectable phase units, grid toggles, and CSV/image export
 - **Data Logging**: CSV export with metadata for offline analysis
 - **Power Analysis**: Loss calculations including copper, iron, and mechanical losses
 - **Power Factor Analysis**: Waveform-based active/reactive/apparent power and PF metrics with reactive compensation sizing helpers
@@ -54,18 +57,22 @@ User Interface
   - Screen reader support (NVDA, JAWS compatible)
   - Keyboard-only navigation
   - High contrast display support
+  - Spoken status updates and narrated plot/export workflow hooks
 
 - **Interactive Controls**
   - Real-time parameter adjustment
   - Simulation speed control
   - Grid display with customizable spacing
   - Plot export functionality
+  - Current-sense topology selection and live inverter bridge visualization
+  - FFT plot controls for amplitude/phase units and independent axis scaling
 
 - **Monitoring Dashboard**
   - Status bar with simulation parameters
   - Real-time waveform plots
   - Phase current and voltage visualization
   - Torque and power monitoring
+  - True-versus-measured current comparison for current-sense validation
 
 Data & Export
 -------------
@@ -74,6 +81,8 @@ Data & Export
 - **Custom Export Paths**: Choose custom directories for data storage
 - **JSON Metadata**: Simulation parameters saved with results
 - **Full Simulation History**: All time-series data available for analysis
+- **FFT CSV Export**: Save frequency, magnitude, and phase data using the active display units
+- **FFT Image Export**: Capture the stacked magnitude/phase view as a shareable figure
 
 Optimization
 ------------

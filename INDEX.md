@@ -1,4 +1,9 @@
-# 📚 BLIND SYSTEMS BLDC Simulator v2.0.0 - Complete Documentation Index
+# 📚 BLIND SYSTEMS BLDC Simulator v0.8.0 - Complete Documentation Index
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
+
 
 ## Latest Runtime Extension (March 2026)
 
@@ -110,13 +115,13 @@ Welcome to **⚡ BLIND SYSTEMS BLDC Simulator**, your advanced BLDC motor contro
 
 ---
 
-## 📋 Feature Overview (v2.0.0)
+## 📋 Feature Overview (v0.8.0)
 
 ### The 6 Major Features
 
 | #   | Feature                                          | Location         | Doc                                            |
 | --- | ------------------------------------------------ | ---------------- | ---------------------------------------------- |
-| 1   | ⚡ BLIND SYSTEMS BLDC Simulator Branding v2.0.0  | Window title     | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
+| 1   | ⚡ BLIND SYSTEMS BLDC Simulator Branding v0.8.0  | Window title     | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
 | 2   | Simulation Duration Control (0=infinite)         | Control Tab      | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
 | 3   | Enhanced Monitoring (13 variables + speed curve) | Monitoring Tab   | [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)       |
 | 4   | Standard Menu Bar (File/Tools/Help)              | Application Menu | [FEATURES_UPDATE_v2.md](FEATURES_UPDATE_v2.md) |
@@ -376,10 +381,10 @@ BLDC_motor_control/
 
 ---
 
-## ✅ Checklist: What's New in v2.0.0
+## ✅ Checklist: What's New in v0.8.0
 
 - ✅ ⚡ BLIND SYSTEMS BLDC Simulator branding
-- ✅ Version 2.0.0 displayed
+- ✅ Version 0.8.0 displayed
 - ✅ Duration control (0 = infinite)
 - ✅ 13 monitoring variables
 - ✅ Live speed curve
@@ -445,7 +450,7 @@ BLDC_motor_control/
 
 ## 📝 Version History
 
-### v2.0.0 (Current) - March 4, 2026
+### v0.8.0 (Current) - March 4, 2026
 
 - ✅ New application branding (⚡ BLIND SYSTEMS BLDC Simulator)
 - ✅ Simulation duration control
@@ -454,7 +459,7 @@ BLDC_motor_control/
 - ✅ Keyboard shortcuts
 - ✅ Live speed curve plotting
 
-### v1.0.0 - Previous Release
+### v0.8.0 - Previous Release
 
 - Basic motor simulation
 - V/f control only
@@ -486,11 +491,11 @@ You now have:
 **Start with:** [VISUAL_GUIDE_v2.md](VISUAL_GUIDE_v2.md)  
 **Then run:** `python main.py`
 
-**Enjoy BLIND SYSTEMS BLDC Simulator v2.0.0! ⚡**
+**Enjoy BLIND SYSTEMS BLDC Simulator v0.8.0! ⚡**
 
 ---
 
 **Last Updated:** March 4, 2026  
 **Status:** ✅ Complete & Tested  
-**Version:** 2.0.0  
+**Version:** 0.8.0  
 **Maintainer:** BLDC Control Team

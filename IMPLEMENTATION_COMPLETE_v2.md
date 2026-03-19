@@ -1,4 +1,9 @@
-# ⚡ BLIND SYSTEMS BLDC Simulator v2.0.0 - Implementation Summary
+# ⚡ BLIND SYSTEMS BLDC Simulator v0.8.0 - Implementation Summary
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
+
 
 ## 🎉 Successfully Implemented All Requested Features!
 
@@ -13,7 +18,7 @@ Your BLDC motor control application has been completely enhanced with a professi
 ### 1. **Fun Application Name & Branding** ⚡
 
 - ✅ Application renamed to: **⚡ BLIND SYSTEMS BLDC Simulator**
-- ✅ Version 2.0.0 displayed in window title and startup logs
+- ✅ Version 0.8.0 displayed in window title and startup logs
 - ✅ All UI elements branded with consistent emoji icons
   - ⚡ for power/speed related metrics
   - 📊 for monitoring
@@ -23,14 +28,14 @@ Your BLDC motor control application has been completely enhanced with a professi
 **Example Title Bar:**
 
 ```
-⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v2.0.0)
+⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator (v0.8.0)
 ```
 
 **Startup Log:**
 
 ```
 ============================================================
-⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator v2.0.0
+⚡ BLIND SYSTEMS BLDC Simulator - BLDC Motor Control Simulator v0.8.0
 ============================================================
 ```
 
@@ -290,7 +295,7 @@ Option A: Help → Quick Start Guide
 - Shows tips for best results
 
 Option B: Help → About BLIND SYSTEMS BLDC Simulator
-- Shows version 2.0.0
+- Shows version 0.8.0
 - Lists all supported algorithms
 - Credits and information
 ```
@@ -338,13 +343,13 @@ Result: 29 passed in 1.52s ✨
 
 2. **`main.py`** (Branding update)
    - Updated app name to "BLIND SYSTEMS BLDC Simulator"
-   - Updated version to 2.0.0
+   - Updated version to 0.8.0
    - Updated startup log banner
 
 ### Created Files:
 
 1. **`FEATURES_UPDATE_v2.md`** (New)
-   - Comprehensive documentation of v2.0.0 features
+   - Comprehensive documentation of v0.8.0 features
    - Usage examples and workflows
    - Implementation details
    - Best practices guide
@@ -378,7 +383,7 @@ python examples/example_vf_control.py
 
 | Feature                                               | Status | Location                 |
 | ----------------------------------------------------- | ------ | ------------------------ |
-| Application Name: BLIND SYSTEMS BLDC Simulator v2.0.0 | ✅     | Window Title             |
+| Application Name: BLIND SYSTEMS BLDC Simulator v0.8.0 | ✅     | Window Title             |
 | Finite Duration Simulation                            | ✅     | Control Tab              |
 | Infinite Duration Simulation                          | ✅     | Control Tab (duration=0) |
 | Real-time Monitoring (13 variables)                   | ✅     | Monitoring Tab (Left)    |
@@ -503,7 +508,7 @@ Your BLDC motor control application is now **production-ready** with:
 
 ---
 
-**Version:** 2.0.0  
+**Version:** 0.8.0  
 **Date:** March 4, 2026  
 **Status:** ✅ Complete & Tested  
 **Tests:** 29/29 Passing  

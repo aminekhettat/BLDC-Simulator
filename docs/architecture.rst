@@ -91,17 +91,36 @@ Key Components
 - Time-stepping with configurable dt
 - Event dispatch for UI updates
 - Data collection and logging
+- Parallel storage of true motor currents and controller-facing measured currents
+- Current-sense state snapshot including topology, amplifier outputs, ADC saturation, and effective phase voltages
 
 **UI Layer** (`src.ui.*`)
 - PyQt6 main window
 - Accessible widgets with ARIA labels
 - Real-time plot management
 - Parameter input/output controls
+- Live inverter bridge visualization that reflects the active shunt topology
+- Current spectrum window with stacked FFT magnitude/phase displays and export actions
 
 **Visualization** (`src.visualization.visualization`)
 - Matplotlib integration
 - Configurable grid and plot styles
 - Export functionality
+
+Measurement Data Flow
+---------------------
+
+::
+
+    Motor phase currents (true physics)
+        ↓
+    [Inverter current-sense model]
+        ↓
+    Measured/reconstructed phase currents
+        ↓
+    [FOC feedback selector]
+        ↓
+    Controller state, history buffers, FFT analyzer, and bridge visualization
 
 Loaded Calibration Workflow
 ---------------------------

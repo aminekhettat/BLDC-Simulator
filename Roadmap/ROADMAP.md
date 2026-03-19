@@ -1,5 +1,10 @@
 # BLDC Motor Control - Project Roadmap (March 2026)
 
+> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
+> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
+> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
+> or regulatory non-compliance resulting from use or misuse.
+
 ## Status Overview
 
 | Component                   | Status      | Last Updated       | Notes                                                          |
@@ -23,6 +28,23 @@
 ---
 
 ## Completed Features (This Release - March 2026)
+
+### Current Measurement Realism and FFT Analyzer [NEW]
+
+**Objective**: Bring the controller feedback path closer to real inverter hardware by modeling shunt-current measurement topologies and exposing analysis tools for the resulting waveforms.
+
+**What Was Delivered**:
+
+- ✅ Triple-, double-, and single-shunt current-sense support in the inverter measurement path
+- ✅ Reconstructed-current feedback option for FOC, alongside ideal true-current feedback
+- ✅ Live inverter bridge visualization that reflects the active shunt topology
+- ✅ Stacked FFT magnitude/phase plots with dB or linear amplitude, degree or radian phase, grid toggles, and independent axis scaling
+- ✅ FFT CSV export and FFT image export for offline review and reporting
+
+**Impact**:
+
+- The simulator can now expose controller behavior under realistic current reconstruction constraints.
+- Measurement fidelity can be inspected visually and through exported FFT data without losing accessibility-oriented workflow support.
 
 ### ⚡ Voltage-Headroom Field Weakening [NEW]
 

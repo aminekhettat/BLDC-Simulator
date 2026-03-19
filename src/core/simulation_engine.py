@@ -8,9 +8,9 @@ motor model, control blocks, load profile, and data logging.
 Provides efficient real-time simulation with optimized calculations.
 
 :author: BLDC Control Team
-:version: 1.0.0
+:version: 0.8.0
 
-.. versionadded:: 1.0.0
+.. versionadded:: 0.8.0
     Initial implementation of simulation engine
 """
 
