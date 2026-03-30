@@ -1,0 +1,64 @@
+#!C:/PROGRA~1/Python314/python.exe
+import os
+import subprocess
+import sys
+
+
+def run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
+		return subprocess.run(cmd, check=check, text=True, capture_output=True)
+
+
+def main() -> int:
+		merge_probe = run(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"], check=False)
+		if merge_probe.returncode == 0:
+				return 0
+
+		if os.environ.get("SKIP_AUTO_BUMP", "0") == "1":
+				return 0
+
+		if not os.path.exists(".bumpversion.cfg"):
+				return 0
+
+		bump_cmd = [
+				sys.executable,
+				"-m",
+				"bumpversion",
+				"--allow-dirty",
+				"--no-commit",
+				"--no-tag",
+		]
+		if os.environ.get("BUMP_HOOK_DRY_RUN", "0") == "1":
+				bump_cmd.append("--dry-run")
+		bump_cmd.append("patch")
+
+		bump = run(bump_cmd, check=False)
+		if bump.returncode != 0:
+				if bump.stdout:
+						print(bump.stdout.strip(), file=sys.stderr)
+				if bump.stderr:
+						print(bump.stderr.strip(), file=sys.stderr)
+				print("pre-commit: version bump failed.", file=sys.stderr)
+				return bump.returncode
+
+		if os.environ.get("BUMP_HOOK_DRY_RUN", "0") == "1":
+				return 0
+
+		run(
+				[
+						"git",
+						"add",
+						".bumpversion.cfg",
+						"main.py",
+						"src/__init__.py",
+						"src/ui/main_window.py",
+						"docs/conf.py",
+						"README.md",
+				],
+				check=False,
+		)
+		print("pre-commit: version bumped automatically.")
+		return 0
+
+
+if __name__ == "__main__":
+		raise SystemExit(main())

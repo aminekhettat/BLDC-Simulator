@@ -70,6 +70,9 @@ To reduce navigation overhead, project guidance is centered on a small set of en
 
 Automatic version incrementing is configured with `bump2version`.
 
+This repository also includes a pre-commit hook at `.githooks/pre-commit` to
+auto-increment the patch version before each commit when hooks are enabled.
+
 ```bash
 # Patch release (x.y.Z)
 bump2version patch
