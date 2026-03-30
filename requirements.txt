@@ -4,3 +4,4 @@ PyQt6>=6.5.0
 PyQt6-sip>=13.5.0
 pyttsx3>=2.90
 numba>=0.56.0
+bump2version>=1.0.1

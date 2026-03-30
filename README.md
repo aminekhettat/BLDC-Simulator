@@ -1,433 +1,115 @@
-# BLDC Motor Control Simulator - README
+# BLDC Simulator
 
-> **License Reminder:** This project is distributed under the MIT License. See [LICENSE](LICENSE).
-> **Disclaimer:** This application is provided as-is for simulation and research use. Users assume all risks.
-> The author disclaims liability for any direct or indirect damage, data loss, hardware issues, injury,
-> or regulatory non-compliance resulting from use or misuse.
+Professional BLDC and PMSM motor-control simulator with a desktop GUI, accessibility-first workflows, and repeatable calibration pipelines.
 
-## Overview
+Current Version: 0.8.0
 
-Comprehensive Python GUI application for BLDC and PMSM-style motor simulation with both V/f voltage-to-frequency control and Field-Oriented Control (FOC). The simulator is designed for **full screen reader accessibility**, profile-driven motor modeling, and repeatable calibration workflows ranging from unloaded convergence searches to loaded no-field-weakening operating-point tuning.
+## Why This Project
 
-## Key Features
+This repository provides a practical environment to design, validate, and compare motor-control strategies before hardware deployment. It combines realistic electrical and mechanical modeling with tooling for analysis, regression checks, and parameter tuning.
 
-### Motor Modeling
+## Core Capabilities
 
-- **Complete BLDC motor model** with 3-phase electrical dynamics
-- Profile-driven back-EMF support for sinusoidal dq/PMSM models and trapezoidal BLDC waveforms
-- Mechanical dynamics (inertia, friction)
-- Real-time numerical integration (RK4 method)
-- Optimized calculations using NumPy
+- BLDC/PMSM simulation with configurable motor, load, and supply models
+- V/f and FOC control paths with PI-based loop tuning
+- Accessibility-oriented PyQt6 interface (keyboard-first and screen-reader friendly)
+- Real-time monitoring, data logging, FFT analysis, and plotting
+- Motor profile import/export and repeatable calibration workflows
+- Regression-oriented test suite and baseline validation
 
-### Control System
+## Quick Start
 
-- **V/f (Voltage-to-Frequency) controller** for open-loop speed control
-- **Field-Oriented Control (FOC)** with selectable Clarke or Concordia transforms,
-  auto-tunable PI current regulators, and Cartesian/polar output modes
-- Space Vector Modulation (SVM) for 3-phase PWM generation
-- Frequency slew-rate limiting (soft-start capability)
-- Flexible control architecture for easy switching between algorithms
-- Advanced inverter realism with individually switchable blocks for:
-  device drop, current-dependent conduction loss, switching loss,
-  direction-aware dead-time distortion, freewheel diode loss,
-  minimum pulse suppression, DC-link ripple, thermal coupling, and phase mismatch
-
-### Load Profiles
-
-- Constant load
-- Ramp-up load (time-dependent)
-- Variable/cyclic load patterns
-- Custom load functions
-
-### Power Supply Profiles
-
-- Configurable DC bus voltage model
-- Constant or ramping voltage
-- Logged alongside motor data for analysis
-
-### Accessibility & GUI
-
-- **Built with PyQt6** (no tkinter - full accessibility support)
-- **Screen reader compatible** with NVDA, JAWS, etc.
-- Tab key navigation throughout application
-- Clear keyboard shortcuts (F5=Start, F6=Stop, F7=Reset, Ctrl+S=Export)
-- Descriptive labels and help text for all controls
-- Live inverter bridge visualization that reflects the active current-sense topology
-- FOC current feedback selection between true motor currents and reconstructed shunt currents
-
-### Data & Visualization
-
-- Real-time parameter monitoring
-- Current-sense validation with true-versus-measured phase current history
-- Current spectrum analysis with stacked FFT magnitude/phase plots
-- CSV export with metadata
-- FFT CSV export and FFT image export
-- Comprehensive plotting capabilities:
-  - 3-phase currents, voltages, back-EMF
-  - Speed and torque profiles
-  - Phase portraits
-  - Dedicated inverter analysis: DC-link voltage/ripple, loss breakdown,
-    junction temperature, and common-mode voltage
-- Custom multi-axis plotting for arbitrarily selected variables
-- Vocal assistance announcements for plot generation and simulation events
-
-### Auto-Tuning & Convergence
-
-- **Unbounded PI Parameter Search** - Iterative optimization of current and speed PI regulators
-- **Convergence Guarantees** - Continuous expansion of parameter space until convergence criteria met
-- **Three-Stage Pipeline**:
-  1. Current PI optimization (D/Q axis current regulators)
-  2. Speed PI optimization (outer speed loop)
-  3. Unbounded expansion loop (parameter space refinement until full convergence)
-- **Load-Aware Orthogonality Gate** - Validates FOC d/q decoupling with load-dependent tolerance
-- **Verified Convergence** - Extended 8-20s verification runs confirm stability after search
-- **Multi-Motor Profiles** - Pre-configured Innotec and Motenergy motor parameters with auto-tuned gains
-- **Loaded No-FW Calibration Workflow** - Smooth torque-ramp search at the practical no-field-weakening speed limit with staged acceptance: speed feasibility first, orthogonality second, conditioned efficiency last
-
-### Architecture
-
-- **Modular design** - Easy to extend with new controllers, observers, calibration flows, and measurement models
-- **Well-documented code** - Full Sphinx-style docstrings
-- **Efficient computations** - Optimized for real-time performance
-- **Type hints** - Clear interfaces for extension
-
-## Project Structure
-
-```
-BLDC_motor_control/
-├── main.py                      # Application entry point
-├── requirements.txt             # Python dependencies
-├── README.md
-├── src/
-│   ├── core/                    # Motor models and simulation
-│   │   ├── motor_model.py       # BLDC motor physics
-│   │   ├── load_model.py        # Load profiles
-│   │   └── simulation_engine.py # Main simulation loop
-│   ├── control/                 # Control algorithms
-│   │   ├── base_controller.py   # Abstract controller interface
-│   │   ├── svm_generator.py     # SVM modulation
-│   │   └── vf_controller.py     # V/f speed controller
-│   ├── ui/                      # GUI application
-│   │   ├── main_window.py       # Main window
-│   │   └── widgets/
-│   │       └── accessible_widgets.py  # Accessible PyQt6 widgets
-│   ├── utils/                   # Utilities
-│   │   ├── config.py            # Configuration parameters
-│   │   └── data_logger.py       # Data logging and export
-│   └── visualization/           # Plotting and visualization
-│       └── visualization.py     # matplotlib plots
-├── data/
-│   ├── logs/                    # CSV simulation data
-│   └── plots/                   # Generated plots
-└── tests/                       # Unit tests (future)
-```
-
-## Installation
-
-### Requirements
-
-- Python 3.9+
-- Windows/Linux/macOS
-
-### Setup
-
-1. **Install dependencies**:
+### 1. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-2. **Run application**:
+### 2. Launch the GUI
 
 ```bash
 python main.py
 ```
 
-## Usage Guide
-
-### Starting a Simulation
-
-1. **Configure Motor Parameters** (Tab 1)
-   - Enter motor nominal voltage, resistance, inductance
-   - Set back-EMF constant, torque constant
-   - Configure rotor inertia and friction
-
-2. **Set Load Profile** (Tab 2)
-   - Choose load type (Constant, Ramp, Variable)
-   - Configure load parameters (torque, duration, etc.)
-
-3. **Configure V/f Controller** (Tab 3)
-   - Set nominal voltage and frequency
-   - Adjust startup/ramp parameters
-   - Set speed reference
-
-4. **Start Simulation** (F5)
-   - Monitor real-time parameters (Tab 4)
-   - Controller and motor run simultaneously
-
-5. **Analyze Results**
-   - Generate plots (Tab 5)
-   - Export data to CSV (Ctrl+S)
-
-### Current Measurement and Spectrum Analysis
-
-The simulator includes an inverter current-sense workflow intended to match how embedded motor drives observe current:
-
-1. Select the shunt topology you want to simulate: triple shunt, double shunt, or single shunt.
-2. Choose whether FOC should use ideal true currents or reconstructed measured currents.
-3. Open the current spectrum window to inspect stacked FFT magnitude and phase plots.
-4. Change amplitude display between linear and dB, phase display between degrees and radians, and set linear/log axes independently.
-5. Export the FFT to CSV or save the stacked spectrum figure as an image.
-
-The bridge visualization updates in real time. For single-shunt mode, the drawing uses a shared low-side return path that matches the physical one-shunt topology.
-
-### Advanced: Auto-Tuning FOC PI Parameters
-
-The simulator includes production-grade auto-tuning scripts for FOC PI controller optimization:
-
-#### Quick Start - Unbounded Convergence (Recommended)
-
-Run auto-tuning until all motors converge to a target speed:
+### 3. Run tests (recommended before release)
 
 ```bash
-python examples/auto_tune_until_convergence.py \
-  --max-trials 0 \
-  --target-speed-rpm 1500 \
-  --search-time 0.6 \
-  --verify-time 8.0 \
-  --tolerance-ratio 0.02 \
-  --static-error-rpm-limit 10.0
+pytest -q
 ```
 
-**Key Parameters:**
+## Project Layout
 
-- `--max-trials 0`: Unbounded mode (continuous expansion until convergence)
-- `--max-trials N` (N>0): Bounded mode (finite N-trial search)
-- `--overcurrent-limit-a 0`: Disable overcurrent abort (keep searching)
-- `--overcurrent-limit-a A`: Enable abort at A amperes (guards against hardware risks)
-
-#### How It Works
-
-1. **Current PI Optimization** (120 trials nominal)
-   - Searches D/Q axis current regulator gains
-   - Orthogonality gate ensures FOC decoupling quality
-
-2. **Speed PI Optimization** (120 trials nominal)
-   - Searches outer speed loop gains
-   - Validates settlement and steady-state error
-
-3. **Unbounded Expansion** (active when `--max-trials ≤ 0`)
-   - If convergence not achieved, expands parameter search space
-   - Iteratively scales gains with diminishing factor (15% per round, capped at 1.5×)
-   - Continues until `full_converged: true` and `accepted: true`
-
-#### Session Output Example
-
-```json
-{
-  "profile": "Innotec 255-EZS48-160",
-  "accepted": true,
-  "full_converged": true,
-  "final_speed_rpm": 1498.79,
-  "final_speed_ratio": 0.9992,
-  "tested_trials": 71,
-  "trial_limit_mode": "unbounded",
-  "overcurrent_limit_a": null,
-  "target_speed_rpm": 1500.0,
-  "verification": {
-    "converged": true,
-    "full_converged": true,
-    "tail_abs_mean_error_rpm": 2.1,
-    "tail_abs_max_error_rpm": 8.7,
-    "settling_time_5pct_s": 0.32
-  }
-}
+```text
+.
+├── main.py
+├── src/
+│   ├── control/
+│   ├── core/
+│   ├── hardware/
+│   ├── ui/
+│   ├── utils/
+│   └── visualization/
+├── examples/
+├── tests/
+├── docs/
+├── data/
+└── references/
 ```
 
-### Advanced: Loaded No-Field-Weakening Calibration
+## Documentation (Simplified)
 
-Run the staged loaded-point calibration workflow for the Motenergy ME1718 profile:
+To reduce navigation overhead, project guidance is centered on a small set of entry points:
+
+- `README.md`: high-level overview, setup, release workflow
+- `QUICKSTART.md`: practical usage flow for first simulations
+- `CONTRIBUTING.md`: contribution and quality gates
+- `docs/index.rst`: Sphinx documentation index
+- `Roadmap/ROADMAP.md`: planned and completed milestones
+
+## Versioning Workflow
+
+Automatic version incrementing is configured with `bump2version`.
 
 ```bash
-python examples/calibrate_no_fw_loaded_point.py
+# Patch release (x.y.Z)
+bump2version patch
+
+# Minor release (x.Y.0)
+bump2version minor
+
+# Major release (X.0.0)
+bump2version major
 ```
 
-The script performs three phases:
+Tracked version locations include:
 
-1. Find a stable controller at the practical no-field-weakening speed cap derived from the prior converged session.
-2. Increase load torque with a smooth ramp and keep the highest torque that still passes speed tracking.
-3. Retune the final operating point using staged acceptance so torque reachability is not rejected prematurely by orthogonality or efficiency gates.
+- `main.py`
+- `src/__init__.py`
+- `src/ui/main_window.py`
+- `docs/conf.py`
+- `README.md`
 
-The latest generated report is written to `data/logs/calibration_me1718_no_fw_loaded_point.json`. In the current snapshot, the workflow found a speed-feasible loaded point near `9.99 Nm` at `1617.44 rpm`, but the final high-fidelity verification still fails the orthogonality and conditioned-efficiency gates.
+## Release Checklist
 
-### Keyboard Shortcuts
+Before merging or publishing a release:
 
-- **F5**: Start simulation
-- **F6**: Stop simulation
-- **F7**: Reset to initial state
-- **Ctrl+S**: Export data
-- **Ctrl+Q**: Quit application
-- **Tab**: Navigate between fields
-- **Arrow keys**: Navigate lists when focused
-
-## Screen Reader Usage
-
-The application is designed for NVDA, JAWS, and other screen readers:
-
-1. **Field Labels**: All input fields have descriptive labels
-2. **Help Text**: Each parameter has accessibility descriptions
-3. **Tab Navigation**: Fluent tab-key navigation between sections
-4. **Status Updates**: Real-time values announced for monitoring
-5. **Buttons**: Clear action descriptions
-
-### Tips for Screen Reader Users
-
-- Use Tab to move between tabs, then arrow keys to navigate within
-- Listen for parameter descriptions before entering values
-- Status values in monitoring tab update automatically during simulation
-- Use Alt+F4 to close application, or Ctrl+Q
-
-## Mathematical Background
-
-### BLDC Motor Model
-
-**Electrical Equation (Phase):**
-
-```
-v_phase = R*i_phase + L*di_phase/dt + e_back_emf
-```
-
-**Back-EMF (Profile-Defined):**
-
-```
-e = K_emf * ω * f_emf(θ)
-```
-
-Where `f_emf(θ)` is selected by the motor profile. dq/PMSM-oriented profiles use sinusoidal EMF, while six-step BLDC-oriented profiles can use trapezoidal EMF.
-
-**Mechanical Equation:**
-
-```
-dω/dt = (τ_electromagnetic - τ_load - f*ω) / J
-```
-
-### V/f Control
-
-**Linear V/f Characteristic:**
-
-```
-V(f) = V_startup + K_vf * f
-```
-
-Where `K_vf = (V_nominal - V_startup) / f_nominal`
-
-### SVM Modulation
-
-Generates 3-phase PWM using sector-based space vector synthesis:
-
-1. Identify voltage sector (1-6)
-2. Calculate dwell times for adjacent vectors
-3. Generate time-averaged phase voltages
-
-## Configuration
-
-Key parameters in `src/utils/config.py`:
-
-- **Motor Defaults**: Nominal voltage, resistance, inductance, etc.
-- **Simulation**: Time step (dt), maximum history size
-- **V/f Controller**: Nominal V/f parameters, slew rates
-- **GUI**: Update interval, plot buffer size
-
-Modify these for different motor types or simulation speeds.
-
-## Extension Points
-
-The architecture is designed for further controller and calibration extension:
-
-1. **BaseController Interface** (`src/control/base_controller.py`)
-   - Inherit for new control algorithms
-   - Implement `update()`, `reset()`, `get_state()`
-
-2. **Coordinate Transformations**
-   - Clarke transform (3-phase → α-β)
-   - Park transform (α-β → d-q)
-
-3. **Calibration Workflows**
-   - Extend the example scripts for unloaded, loaded, or multi-motor tuning
-   - Reuse staged acceptance keys for search-vs-verification separation
-   - Add measurement realism or hardware constraints to candidate evaluation
-
-4. **Rotor Position Estimation**
-   - Sensorless estimation from back-EMF
-   - PLL for grid synchronization
-
-## Performance Optimization
-
-The simulator is optimized for real-time efficiency:
-
-1. **NumPy Vectorization**: Batch calculations on arrays
-2. **RK4 Integration**: Accurate state updates at O(dt^5)
-3. **Threading**: Background simulation thread (non-blocking GUI)
-4. **Selective Logging**: Optional data logging to reduce overhead
-5. **Buffered History**: Circular buffer for limited memory usage
-
-## Future Enhancements
-
-- [ ] GUI-triggered loaded calibration workflow with accessible progress narration
-- [ ] Single-active calibration job enforcement and reliable process shutdown handling
-- [ ] Bottom status bar with elapsed time, remaining-time estimate, and CPU-load estimate
-- [ ] More realistic microcontroller-style scheduling for control and telemetry tasks
-- [ ] Guided current-sense calibration assistant for matching simulated gain, offset, and filtering to measured hardware captures
-- [ ] Sensorless rotor position estimation and expanded hardware validation paths
-
-## License & Attribution
-
-Educational use simulator. Based on standard BLDC motor control theory.
-
-## Support & Documentation
-
-- **Full Sphinx docstrings** in all modules
-- **Type hints** for clarity
-- **Examples** in docstrings
-
-## Release & Governance Checklist
-
-Before merge or release:
-
-1. Regression gate is green in CI: `Regression Gates / regression`
-2. Baseline integrity and regression tests pass locally:
-
-```bash
-pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py tests/test_regression_reporting.py -v
-```
-
-3. If baseline JSON files changed, include in PR:
-   - `Baseline rationale:`
-   - `Drift evidence:`
-4. Use templates:
-   - PR template: `.github/PULL_REQUEST_TEMPLATE.md`
-   - Release notes template: `RELEASE_NOTES_TEMPLATE.md`
-
-Policy references:
-
-- `CONTRIBUTING.md`
-- `docs/branch_protection.rst`
-
-Generate documentation:
-
-```bash
-sphinx-build -b html docs/ build/html
-```
+1. Run regression and baseline tests.
+2. Verify generated artifacts and plots when control behavior changes.
+3. Bump the version with `bump2version`.
+4. Update release notes using `RELEASE_NOTES_TEMPLATE.md`.
+5. Push only after local checks are green.
 
 ## References
 
-- BLDC motor control fundamentals
-- SVM modulation techniques
-- V/f control characteristics
-- PyQt6 accessibility documentation
+- Control-theory and formula references are under `references/`.
+- Sphinx API and user documentation live under `docs/`.
 
----
+## License and Safety
 
-**Author**: BLDC Control Team  
-**Version**: 0.8.0  
-**Date**: March 2026
+- License: MIT (see `LICENSE`)
+- This simulator is provided as-is for research, calibration, and educational use.
+- Users are responsible for validation before applying settings to real hardware.
+
+## Author
+
+Amine Khettat

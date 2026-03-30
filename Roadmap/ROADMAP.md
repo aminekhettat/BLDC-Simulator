@@ -102,7 +102,7 @@
 **File Changes**:
 
 - `examples/auto_tune_until_convergence.py`: 1834 lines (full feature implementation)
-- `README.md`: Added auto-tuning convergence section with usage examples
+- `README.md`: Consolidated release guidance and usage overview
 - `ARCHITECTURE.md`: Documented auto-tuning system architecture and outcomes
 - `RELEASE_NOTES_MARCH_2026.md`: Comprehensive release documentation
 
@@ -364,7 +364,7 @@ pytest tests/test_baseline_integrity.py \
 
 ### Complete (March 2026)
 
-- ✅ README.md - Usage and feature overview
+- ✅ README.md - Primary project overview and release workflow
 - ✅ QUICKSTART.md - Getting started guide
 - ✅ ARCHITECTURE.md - System design and components
 - ✅ CONTRIBUTING.md - Development guidelines
