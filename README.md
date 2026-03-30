@@ -2,7 +2,7 @@
 
 Professional BLDC and PMSM motor-control simulator with a desktop GUI, accessibility-first workflows, and repeatable calibration pipelines.
 
-Current Version: 0.8.0
+Current Version: 0.8.1
 
 ## Why This Project
 
@@ -72,6 +72,7 @@ Automatic version incrementing is configured with `bump2version`.
 
 This repository also includes a pre-commit hook at `.githooks/pre-commit` to
 auto-increment the patch version before each commit when hooks are enabled.
+Set `SKIP_AUTO_BUMP=1` in the shell only when you intentionally want to bypass one commit.
 
 ```bash
 # Patch release (x.y.Z)
