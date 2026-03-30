@@ -1,0 +1,99 @@
+{
+  "motor_profile_name": "Motenergy ME1719 48V",
+  "motor_params": {
+    "nominal_voltage": 48.0,
+    "phase_resistance": 0.00517,
+    "phase_inductance": 4.125e-05,
+    "back_emf_constant": 0.143,
+    "torque_constant": 0.143,
+    "rotor_inertia": 0.00224,
+    "friction_coefficient": 0.001,
+    "poles_pairs": 5
+  },
+  "tuning_result": {
+    "current_kp": 0.18647121380916076,
+    "current_ki": 16.168822299219045,
+    "speed_kp": 0.588979020979021,
+    "speed_ki": 2.62937062937063,
+    "current_margin": {
+      "gain_margin_db": Infinity,
+      "phase_margin_deg": 90.48936828736502,
+      "gain_crossover_hz": 719.3243502471037,
+      "phase_crossover_hz": null
+    },
+    "speed_margin": {
+      "gain_margin_db": Infinity,
+      "phase_margin_deg": 83.95022910221412,
+      "gain_crossover_hz": 6.025309038996647,
+      "phase_crossover_hz": null
+    }
+  },
+  "analytical_initial_guess": {
+    "current_kp": 0.15510000000000002,
+    "current_ki": 19.439200000000003,
+    "speed_kp": 0.588979020979021,
+    "speed_ki": 2.62937062937063,
+    "omega_c_rad_s": 3760.0000000000005,
+    "omega_s_rad_s": 37.6
+  },
+  "validation_metrics": {
+    "margins": {
+      "current_loop": {
+        "gain_margin_db": Infinity,
+        "phase_margin_deg": 90.48936828736502
+      },
+      "speed_loop": {
+        "gain_margin_db": Infinity,
+        "phase_margin_deg": 83.95022910221412
+      }
+    },
+    "state_space": {
+      "current_loop": {
+        "controllable": true,
+        "observable": true
+      },
+      "speed_loop": {
+        "controllable": true,
+        "observable": true
+      }
+    }
+  },
+  "simulation_validation": {
+    "70pct_max": {
+      "stable": true,
+      "mean_speed_rpm": 1230.6961248157834,
+      "speed_error_rpm": 0.03749951063628032,
+      "speed_error_pct": 0.0030471090735647473,
+      "id_dc_a": 0.0754742120988867,
+      "iq_dc_a": 0.8760698623860115,
+      "flux_angle_deg": 85.0760744420848,
+      "orthogonality_error_deg": 4.923925557915197,
+      "target_speed_rpm": 1230.658625305147,
+      "max_no_fw_speed_rpm": 1758.0837504359247
+    },
+    "90pct_max": {
+      "stable": true,
+      "mean_speed_rpm": 1582.3074904184434,
+      "speed_error_rpm": 0.032115026111114275,
+      "speed_error_pct": 0.0020296736339685,
+      "id_dc_a": 0.14484977700795504,
+      "iq_dc_a": 1.1371988700766822,
+      "flux_angle_deg": 82.74108513360135,
+      "orthogonality_error_deg": 7.258914866398655,
+      "target_speed_rpm": 1582.2753753923323,
+      "max_no_fw_speed_rpm": 1758.0837504359247
+    },
+    "100pct_max": {
+      "stable": true,
+      "mean_speed_rpm": 1758.062192672529,
+      "speed_error_rpm": -0.02155776339577642,
+      "speed_error_pct": -0.0012262079886940014,
+      "id_dc_a": 0.2310095759771826,
+      "iq_dc_a": 1.2560389220585149,
+      "flux_angle_deg": 79.57867374632048,
+      "orthogonality_error_deg": 10.421326253679524,
+      "target_speed_rpm": 1758.0837504359247,
+      "max_no_fw_speed_rpm": 1758.0837504359247
+    }
+  }
+}
