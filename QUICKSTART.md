@@ -8,6 +8,9 @@ BLDC Motor Control - Quick Start Guide
 =======================================
 
 This guide will help you get started with the BLDC motor control simulator.
+
+The Calibration tab exposes a single Auto-Calibrate action for the full
+analytic and physics-based calibration workflow.
 """
 
 # QUICK START GUIDE - BLDC Motor Control Simulator

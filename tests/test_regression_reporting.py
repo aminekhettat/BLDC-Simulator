@@ -7,8 +7,9 @@ Atomic features tested in this module:
 - startup transition threshold report format contains columns
 """
 
-from src.utils.regression_baseline import DriftRow, ThresholdRow
 from src.utils.regression_baseline import (
+    DriftRow,
+    ThresholdRow,
     build_drift_report,
     evaluate_startup_transition_thresholds,
     format_drift_report,

@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Core Module &mdash; BLDC Motor Control 0.8.1 documentation</title>
+  <title>Core Module &mdash; BLDC Motor Control 0.9.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="../_static/documentation_options.js?v=9dc39874"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
@@ -95,6 +95,14 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#power-supply-model">Power Supply Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.core.power_model.EfficiencyAdjustmentRecommendation"><code class="docutils literal notranslate"><span class="pre">EfficiencyAdjustmentRecommendation</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.efficiency"><code class="docutils literal notranslate"><span class="pre">EfficiencyAdjustmentRecommendation.efficiency</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.power_factor"><code class="docutils literal notranslate"><span class="pre">EfficiencyAdjustmentRecommendation.power_factor</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.target_efficiency"><code class="docutils literal notranslate"><span class="pre">EfficiencyAdjustmentRecommendation.target_efficiency</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.needs_attention"><code class="docutils literal notranslate"><span class="pre">EfficiencyAdjustmentRecommendation.needs_attention</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.suggestions"><code class="docutils literal notranslate"><span class="pre">EfficiencyAdjustmentRecommendation.suggestions</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#src.core.power_model.compute_power_metrics"><code class="docutils literal notranslate"><span class="pre">compute_power_metrics()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#src.core.power_model.required_reactive_compensation"><code class="docutils literal notranslate"><span class="pre">required_reactive_compensation()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#src.core.power_model.compute_efficiency_metrics"><code class="docutils literal notranslate"><span class="pre">compute_efficiency_metrics()</span></code></a></li>
@@ -122,6 +130,8 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#src.core.power_model.VariableSupply"><code class="docutils literal notranslate"><span class="pre">VariableSupply</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.VariableSupply.__init__"><code class="docutils literal notranslate"><span class="pre">VariableSupply.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.VariableSupply.time_array"><code class="docutils literal notranslate"><span class="pre">VariableSupply.time_array</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.VariableSupply.voltage_array"><code class="docutils literal notranslate"><span class="pre">VariableSupply.voltage_array</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.core.power_model.VariableSupply.get_voltage"><code class="docutils literal notranslate"><span class="pre">VariableSupply.get_voltage()</span></code></a></li>
 </ul>
 </li>
@@ -214,7 +224,7 @@
              
   <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+<p>License reminder: this project is distributed under a Custom restricted license (no redistribution). See the repository LICENSE file.
 Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
 including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
 from use or misuse.</p>
@@ -596,6 +606,38 @@ AC ripple rectification, or other variations.</p>
 <p><span class="versionmodified added">Added in version 0.8.0: </span>Initial implementation of power supply models</p>
 </div>
 </section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.core.power_model.EfficiencyAdjustmentRecommendation">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">EfficiencyAdjustmentRecommendation</span></span><a class="reference internal" href="../_modules/src/core/power_model.html#EfficiencyAdjustmentRecommendation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.EfficiencyAdjustmentRecommendation" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypedDict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></a></p>
+<p>Structured recommendation payload for efficiency heuristics.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.power_model.EfficiencyAdjustmentRecommendation.efficiency">
+<span class="sig-name descname"><span class="pre">efficiency</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.efficiency" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.power_model.EfficiencyAdjustmentRecommendation.power_factor">
+<span class="sig-name descname"><span class="pre">power_factor</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.power_factor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.power_model.EfficiencyAdjustmentRecommendation.target_efficiency">
+<span class="sig-name descname"><span class="pre">target_efficiency</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.target_efficiency" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.power_model.EfficiencyAdjustmentRecommendation.needs_attention">
+<span class="sig-name descname"><span class="pre">needs_attention</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><a class="headerlink" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.needs_attention" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.power_model.EfficiencyAdjustmentRecommendation.suggestions">
+<span class="sig-name descname"><span class="pre">suggestions</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.core.power_model.EfficiencyAdjustmentRecommendation.suggestions" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="src.core.power_model.compute_power_metrics">
 <span class="sig-prename descclassname"><span class="pre">src.core.power_model.</span></span><span class="sig-name descname"><span class="pre">compute_power_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/core/power_model.html#compute_power_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.compute_power_metrics" title="Link to this definition"></a></dt>
@@ -655,7 +697,7 @@ AC ripple rectification, or other variations.</p>
 <dd><p>Return simple heuristic suggestions for improving simulated efficiency.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="generated/src.core.power_model.html#src.core.power_model.EfficiencyAdjustmentRecommendation" title="src.core.power_model.EfficiencyAdjustmentRecommendation"><code class="xref py py-class docutils literal notranslate"><span class="pre">EfficiencyAdjustmentRecommendation</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -780,6 +822,16 @@ hook for simulation workflows.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="src.core.power_model.VariableSupply.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/core/power_model.html#VariableSupply.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.core.power_model.VariableSupply.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.power_model.VariableSupply.time_array">
+<span class="sig-name descname"><span class="pre">time_array</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.core.power_model.VariableSupply.time_array" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.core.power_model.VariableSupply.voltage_array">
+<span class="sig-name descname"><span class="pre">voltage_array</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#src.core.power_model.VariableSupply.voltage_array" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">

@@ -35,8 +35,7 @@ except Exception as e:
 
 # Test 2: Motor model with numba
 try:
-    from src.core.motor_model import HAS_NUMBA, BLDCMotor
-    from src.core.motor_model import MotorParameters
+    from src.core.motor_model import HAS_NUMBA, BLDCMotor, MotorParameters
 
     motor = BLDCMotor(MotorParameters())
     print(f"âœ… Motor model with numba support: OK (HAS_NUMBA={HAS_NUMBA})")

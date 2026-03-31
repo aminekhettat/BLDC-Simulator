@@ -2,7 +2,7 @@
 
 Advanced BLDC and PMSM motor-control simulator with a desktop GUI, accessibility-first workflows, and repeatable calibration pipelines.
 
-Current Version: 0.9.1
+Current Version: 0.9.3
 
 ## Why This Project
 
@@ -43,6 +43,9 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+In the Calibration tab, use the single Auto-Calibrate action to run the full
+analytic and physics-based calibration workflow from the local UI.
 
 ### 3. Run tests (recommended before release)
 

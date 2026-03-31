@@ -18,6 +18,7 @@
    .. autosummary::
    
       ConstantSupply
+      EfficiencyAdjustmentRecommendation
       PowerFactorController
       RampSupply
       SupplyProfile

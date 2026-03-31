@@ -58,7 +58,6 @@ Atomic features tested in this module:
 """
 
 import sys
-from typing import cast
 
 import numpy as np
 import pytest

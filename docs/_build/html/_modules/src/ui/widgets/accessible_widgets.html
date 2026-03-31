@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>src.ui.widgets.accessible_widgets &mdash; BLDC Motor Control 0.8.1 documentation</title>
+  <title>src.ui.widgets.accessible_widgets &mdash; BLDC Motor Control 0.9.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="../../../../_static/documentation_options.js?v=9dc39874"></script>
       <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/js/theme.js"></script>
@@ -415,7 +415,7 @@
 <a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledSpinBox.value">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current value.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spinner</span><span class="o">.</span><span class="n">value</span><span class="p">()</span></div>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spinner</span><span class="o">.</span><span class="n">value</span><span class="p">())</span></div>
 
 
 <div class="viewcode-block" id="LabeledSpinBox.setValue">
@@ -469,7 +469,7 @@
 <a class="viewcode-back" href="../../../../api/ui.html#src.ui.widgets.accessible_widgets.LabeledComboBox.currentText">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">currentText</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get selected text.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">()</span></div>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combo</span><span class="o">.</span><span class="n">currentText</span><span class="p">())</span></div>
 
 
 <div class="viewcode-block" id="LabeledComboBox.setCurrentText">

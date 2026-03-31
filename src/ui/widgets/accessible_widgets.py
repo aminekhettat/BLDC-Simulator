@@ -279,7 +279,7 @@ class LabeledSpinBox(QWidget):
 
     def value(self) -> float:
         """Get current value."""
-        return self.spinner.value()
+        return float(self.spinner.value())
 
     def setValue(self, val: float) -> None:
         """Set value."""
@@ -321,7 +321,7 @@ class LabeledComboBox(QWidget):
 
     def currentText(self) -> str:
         """Get selected text."""
-        return self.combo.currentText()
+        return str(self.combo.currentText())
 
     def setCurrentText(self, text: str) -> None:
         """Set selected text."""

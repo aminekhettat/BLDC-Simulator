@@ -21,8 +21,9 @@ Atomic features tested in this module:
 """
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, cast
+from typing import cast
 
 import numpy as np
 import pytest
