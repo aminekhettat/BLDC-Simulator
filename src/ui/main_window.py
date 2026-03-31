@@ -804,9 +804,9 @@ class BLDCMotorControlGUI(QMainWindow):
         self.sim_thread: SimulationThread | None = None
         self.logger = DataLogger()
 
-        # Calibration process state
-        self.calib_process: QProcess | None = None
-        self.calib_output_path: Path | None = None
+        # Auto-calibrate-all process state (two-stage: FOC PI gains → FW loaded-point)
+        self.auto_calib_process: QProcess | None = None
+        self._auto_calib_stage: int = 0  # 0=idle, 1=step1_foc, 2=step2_fw
 
         # UI state
         self.is_running = False
@@ -3774,26 +3774,37 @@ class BLDCMotorControlGUI(QMainWindow):
         profile_group.setLayout(pg_layout)
         layout.addWidget(profile_group)
 
-        # ── Control buttons ──────────────────────────────────────────
-        btn_row = QHBoxLayout()
-
-        self.btn_start_calib = AccessibleButton(
-            "Start Calibration",
-            "Begin three-stage field-weakening loaded-point calibration",
+        # ── Auto-Calibrate All — single action for full analytic pipeline ──
+        auto_calib_group = AccessibleGroupBox(
+            "Full Auto-Calibration (Analytic + Physics)",
+            "Run both calibration stages for all motor profiles: "
+            "step 1 analytically computes FOC PI gains (current/speed loops) "
+            "from motor parameters (L, R, J, B, Kt), then refines them with a "
+            "frequency-domain grid search; step 2 derives field-weakening "
+            "parameters physically from nameplate data (Ke, rated speed, rated "
+            "current, Vdc) and validates them with a closed-loop sweep.",
         )
-        self.btn_start_calib.clicked.connect(self._start_calibration)
-        btn_row.addWidget(self.btn_start_calib)
+        auto_btn_row = QHBoxLayout()
 
-        self.btn_stop_calib = AccessibleButton(
-            "Stop Calibration",
-            "Terminate the running calibration process",
+        self.btn_auto_calib_all = AccessibleButton(
+            "Auto-Calibrate All  (Analytic + Physics)",
+            "Stage 1 — analytic FOC PI gains for all profiles; "
+            "Stage 2 — physics-based field-weakening for all profiles",
         )
-        self.btn_stop_calib.setEnabled(False)
-        self.btn_stop_calib.clicked.connect(self._stop_calibration)
-        btn_row.addWidget(self.btn_stop_calib)
+        self.btn_auto_calib_all.clicked.connect(self._start_auto_calibrate_all)
+        auto_btn_row.addWidget(self.btn_auto_calib_all)
 
-        btn_row.addStretch()
-        layout.addLayout(btn_row)
+        self.btn_stop_auto_calib = AccessibleButton(
+            "Stop Auto-Calibration",
+            "Terminate the running auto-calibration pipeline",
+        )
+        self.btn_stop_auto_calib.setEnabled(False)
+        self.btn_stop_auto_calib.clicked.connect(self._stop_auto_calibrate_all)
+        auto_btn_row.addWidget(self.btn_stop_auto_calib)
+
+        auto_btn_row.addStretch()
+        auto_calib_group.setLayout(auto_btn_row)
+        layout.addWidget(auto_calib_group)
 
         # ── Progress log ─────────────────────────────────────────────
         prog_group = AccessibleGroupBox(
@@ -3857,197 +3868,160 @@ class BLDCMotorControlGUI(QMainWindow):
         self.calib_session_label.setText(f"Session: {session_path.name}{exists_tag}")
         self.calib_output_label.setText(f"Output: {out_path.name}")
 
-    def _start_calibration(self) -> None:
-        """Launch the FW loaded-point calibration as a managed child process."""
-        # Check if another task is running
-        if not self._can_start_task("calibration"):
+
+
+
+
+    # ------------------------------------------------------------------
+    # Auto-Calibrate All (Analytic + Physics) — two-stage pipeline
+    # ------------------------------------------------------------------
+
+    def _start_auto_calibrate_all(self) -> None:
+        """Launch the full two-stage analytic/physics auto-calibration pipeline.
+
+        Stage 1 – ``auto_calibrate_all_motors.py``:
+            Derives FOC PI gains analytically from motor parameters
+            (L, R, J, B, Kt) then refines them with a frequency-domain
+            multi-resolution grid search for all profiles.
+
+        Stage 2 – ``auto_calibrate_fw_all_motors.py``:
+            Derives field-weakening parameters physically from nameplate
+            data (Ke, rated speed, rated current, Vdc) and validates them
+            with a closed-loop simulation sweep for all profiles.
+        """
+        if not self._can_start_task("auto_calibration"):
             return
-
-        if (
-            self.calib_process is not None
-            and self.calib_process.state() != QProcess.ProcessState.NotRunning
-        ):
-            speak("Calibration is already running.")
-            return
-
-        profile_name = self.calib_profile_combo.currentText()
-        if not profile_name or profile_name == "(no profiles found)":
-            QMessageBox.warning(self, "No Profile", "Please select a valid motor profile first.")
-            return
-
-        profile_path = MOTOR_PROFILES_DIR / profile_name
-        stem = profile_path.stem
-        session_dir = MOTOR_PROFILES_DIR.parent / "tuning_sessions" / "until_converged"
-        session_path = session_dir / f"{stem}_until_converged.json"
-        out_path = MOTOR_PROFILES_DIR.parent / "logs" / f"calibration_{stem}_fw_loaded_point.json"
-
-        if not profile_path.exists():
-            QMessageBox.critical(self, "Missing Profile", f"Profile not found:\n{profile_path}")
-            return
-
-        if not session_path.exists():
-            QMessageBox.critical(
-                self,
-                "Missing Session",
-                f"No tuning session found for {profile_name}.\n"
-                f"Expected:\n{session_path}\n\n"
-                "Run the auto-tuning convergence script first.",
-            )
-            return
-
-        self.calib_output_path = out_path
-
-        # Locate the calibration script relative to this file
-        script_path = (
-            Path(__file__).resolve().parents[2] / "examples" / "calibrate_fw_loaded_point.py"
-        )
 
         self.calib_log.clear()
-        self.calib_log.append(f"[Starting calibration for {profile_name}]\n")
-        self.calib_result_status.setText("Status: Running\u2026")
-        self.btn_start_calib.setEnabled(False)
-        self.btn_stop_calib.setEnabled(True)
-
-        self.calib_process = QProcess(self)
-        self.calib_process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
-        self.calib_process.readyReadStandardOutput.connect(self._on_calib_output)
-        self.calib_process.finished.connect(self._on_calib_finished)
-        self.calib_process.start(
-            sys.executable,
-            [
-                str(script_path),
-                "--profile",
-                str(profile_path),
-                "--session",
-                str(session_path),
-                "--output",
-                str(out_path),
-            ],
+        self.calib_log.append(
+            "╔══════════════════════════════════════════════════════════════╗\n"
+            "║  AUTO-CALIBRATE ALL  —  Analytic + Physics pipeline          ║\n"
+            "╚══════════════════════════════════════════════════════════════╝\n"
+            "\n[Stage 1/2]  FOC PI gains — analytic initial guess + frequency-domain refinement\n"
         )
-        self._mark_task_running("calibration")
-
-        # Update status bar
+        self.calib_result_status.setText("Status: Running — Stage 1/2 (FOC PI gains)…")
+        self.btn_auto_calib_all.setEnabled(False)
+        self.btn_stop_auto_calib.setEnabled(True)
+        self._mark_task_running("auto_calibration")
         self.status_bar_state.setText("State: Running")
-        self.status_bar_task.setText("Task: Calibration")
+        self.status_bar_task.setText("Task: Auto-Calibration (Stage 1/2)")
         self.status_bar_time_remaining.setText("Remaining: -- s")
 
-        speak(f"Calibration started for {stem.replace('_', ' ')}.")
+        script_path = (
+            Path(__file__).resolve().parents[2] / "examples" / "auto_calibrate_all_motors.py"
+        )
+        self._auto_calib_stage = 1
+        self.auto_calib_process = QProcess(self)
+        self.auto_calib_process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        self.auto_calib_process.readyReadStandardOutput.connect(self._on_auto_calib_output)
+        self.auto_calib_process.finished.connect(self._on_auto_calib_step1_finished)
+        self.auto_calib_process.start(sys.executable, [str(script_path)])
+        speak("Auto-calibration stage one started: analytic FOC PI gains for all motors.")
 
-    def _stop_calibration(self) -> None:
-        """Terminate the running calibration process gracefully with timeout."""
-        if (
-            self.calib_process is not None
-            and self.calib_process.state() != QProcess.ProcessState.NotRunning
-        ):
-            # Attempt graceful termination first
-            self.calib_process.terminate()
-            # Give it up to 2 seconds to finish gracefully
-            if not self.calib_process.waitForFinished(2000):
-                # If it didn't finish, force kill
-                self.calib_process.kill()
-                self.calib_process.waitForFinished(1000)
-            self.calib_log.append("\n[Calibration stopped by user]")
-            self.calib_result_status.setText("Status: Stopped")
-
-        # Update status bar
-        self.status_bar_state.setText("State: Stopped")
-        self.status_bar_task.setText("Task: None")
-        self.status_bar_time_remaining.setText("Remaining: -- s")
-
-        self.btn_start_calib.setEnabled(True)
-        self.btn_stop_calib.setEnabled(False)
-        self._mark_task_finished("calibration")
-        speak("Calibration stopped.")
-
-    def _on_calib_output(self) -> None:  # noqa: C901  # TODO: extract per-line parsing helpers (12)
-        """Append captured stdout from calibration process to the progress log."""
-        assert self.calib_process is not None
-        raw = self.calib_process.readAllStandardOutput().data()
+    def _on_auto_calib_output(self) -> None:
+        """Stream stdout from the running auto-calibration process to the log."""
+        if self.auto_calib_process is None:
+            return
+        raw = self.auto_calib_process.readAllStandardOutput().data()
         text = raw.decode("utf-8", errors="replace")
         for line in text.splitlines():
             self.calib_log.append(line)
-        # Auto-scroll to bottom
         sb = self.calib_log.verticalScrollBar()
         if sb is not None:
             sb.setValue(sb.maximum())
-        # Speak key milestones for blind users
-        if "STEP1_START" in text:
-            speak("Step 1: Rated speed field weakening convergence started.")
-        elif "STEP2_START" in text:
-            speak("Step 2: Torque ramp search started.")
-        elif "STEP3_START" in text:
-            speak("Step 3: Final working point tuning started.")
-        if "TORQUE_OK" in text:
-            for line in text.splitlines():
-                if line.startswith("TORQUE_OK"):
-                    parts = line.split()
-                    nm = parts[1] if len(parts) > 1 else "?"
-                    speak(f"Torque {nm} Newton metres achievable.")
-        if "TORQUE_FAIL" in text:
-            for line in text.splitlines():
-                if line.startswith("TORQUE_FAIL"):
-                    parts = line.split()
-                    nm = parts[1] if len(parts) > 1 else "?"
-                    speak(f"Torque {nm} Newton metres not achievable.")
-        if "REPORT_SAVED" in text:
-            speak("Calibration report saved to disk.")
+        # Speak key analytic milestones for accessibility
+        lower = text.lower()
+        if "analytical initial guess" in lower:
+            speak("Analytic initial guess computed.")
+        if "optimized gains" in lower:
+            speak("Gain optimisation complete.")
+        if "calibration complete" in lower or "all motors done" in lower:
+            speak("All motors calibrated.")
 
-    def _on_calib_finished(self, exit_code: int, exit_status) -> None:
-        """Handle calibration process completion and display results."""
-        self.btn_start_calib.setEnabled(True)
-        self.btn_stop_calib.setEnabled(False)
+    def _on_auto_calib_step1_finished(self, exit_code: int, exit_status) -> None:
+        """Handle completion of stage 1 and launch stage 2 if successful."""
+        if self._auto_calib_stage != 1:
+            return  # Already cancelled
 
-        # Update status bar
+        if exit_code != 0:
+            self.calib_log.append(
+                f"\n[Stage 1 FAILED — exit code {exit_code}. Pipeline aborted.]\n"
+            )
+            self.calib_result_status.setText(f"Status: Failed at Stage 1 (exit {exit_code})")
+            speak("Auto-calibration stage one failed. Pipeline aborted.")
+            self._reset_auto_calib_ui()
+            return
+
+        self.calib_log.append(
+            "\n[Stage 1 complete ✓]\n"
+            "\n[Stage 2/2]  Field-weakening — physics-based derivation + closed-loop validation\n"
+        )
+        self.calib_result_status.setText("Status: Running — Stage 2/2 (Field-weakening)…")
+        self.status_bar_task.setText("Task: Auto-Calibration (Stage 2/2)")
+        speak("Stage one complete. Starting stage two: physics-based field-weakening for all motors.")
+
+        script_path = (
+            Path(__file__).resolve().parents[2] / "examples" / "auto_calibrate_fw_all_motors.py"
+        )
+        self._auto_calib_stage = 2
+        # Disconnect step-1 finished signal before reusing the process slot
+        self.auto_calib_process = QProcess(self)
+        self.auto_calib_process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        self.auto_calib_process.readyReadStandardOutput.connect(self._on_auto_calib_output)
+        self.auto_calib_process.finished.connect(self._on_auto_calib_step2_finished)
+        self.auto_calib_process.start(sys.executable, [str(script_path)])
+
+    def _on_auto_calib_step2_finished(self, exit_code: int, exit_status) -> None:
+        """Handle completion of the full two-stage pipeline."""
+        if self._auto_calib_stage != 2:
+            return  # Already cancelled
+
+        if exit_code == 0:
+            self.calib_log.append("\n[Stage 2 complete ✓]\n\n[Auto-calibration pipeline DONE]\n")
+            self.calib_result_status.setText("Status: Complete ✓ (Analytic + Physics)")
+            speak(
+                "Auto-calibration pipeline complete. "
+                "FOC PI gains and field-weakening parameters updated for all motors."
+            )
+            status_bar = self.statusBar()
+            if status_bar is not None:
+                status_bar.showMessage(
+                    "Auto-calibration complete — all motor profiles updated.", 10000
+                )
+        else:
+            self.calib_log.append(
+                f"\n[Stage 2 FAILED — exit code {exit_code}]\n"
+            )
+            self.calib_result_status.setText(f"Status: Failed at Stage 2 (exit {exit_code})")
+            speak("Auto-calibration stage two failed.")
+
+        self._reset_auto_calib_ui()
+
+    def _stop_auto_calibrate_all(self) -> None:
+        """Terminate the running auto-calibration pipeline gracefully."""
+        if (
+            self.auto_calib_process is not None
+            and self.auto_calib_process.state() != QProcess.ProcessState.NotRunning
+        ):
+            self.auto_calib_process.terminate()
+            if not self.auto_calib_process.waitForFinished(2000):
+                self.auto_calib_process.kill()
+                self.auto_calib_process.waitForFinished(1000)
+        self.calib_log.append("\n[Auto-calibration stopped by user]\n")
+        self.calib_result_status.setText("Status: Stopped")
+        speak("Auto-calibration stopped.")
+        self._reset_auto_calib_ui()
+
+    def _reset_auto_calib_ui(self) -> None:
+        """Restore auto-calibration button states after completion or stop."""
+        self._auto_calib_stage = 0
+        self.auto_calib_process = None
+        self.btn_auto_calib_all.setEnabled(True)
+        self.btn_stop_auto_calib.setEnabled(False)
         self.status_bar_state.setText("State: Stopped")
         self.status_bar_task.setText("Task: None")
         self.status_bar_time_remaining.setText("Remaining: -- s")
-
-        if (
-            exit_code == 0
-            and self.calib_output_path is not None
-            and self.calib_output_path.exists()
-        ):
-            try:
-                report = json.loads(self.calib_output_path.read_text(encoding="utf-8"))
-                step3 = report.get("step3_final_working_point_tuning", {})
-                hifi = step3.get("result_high_fidelity", {})
-                metrics = hifi.get("metrics", {})
-                speed = float(metrics.get("mean_speed_rpm_last_1s", 0.0))
-                eff = float(metrics.get("efficiency_pct_last_1s", 0.0))
-                fw_inj = float(metrics.get("fw_injection_dc_a_last_1s", 0.0))
-                target_torque = float(step3.get("target_load_nm", 0.0))
-                success = bool(step3.get("success", False))
-
-                status_str = "PASS" if success else "FAIL"
-                self.calib_result_status.setText(f"Status: {status_str}")
-                self.calib_result_speed.setText(f"Achieved Speed: {speed:.1f} RPM")
-                self.calib_result_load.setText(f"Load Torque: {target_torque:.2f} Nm")
-                self.calib_result_efficiency.setText(f"Efficiency: {eff:.1f}%")
-                self.calib_result_fw.setText(f"FW Injection: {fw_inj:.1f} A")
-
-                msg = (
-                    f"Calibration complete. "
-                    f"Speed {speed:.0f} RPM. "
-                    f"Efficiency {eff:.0f} percent. "
-                    f"Field weakening injection {abs(fw_inj):.1f} Amperes. "
-                    f"Result: {status_str}."
-                )
-                speak(msg)
-                status_bar = self.statusBar()
-                if status_bar is not None:
-                    status_bar.showMessage(
-                        f"Calibration {status_str}: {speed:.0f} RPM, {eff:.0f}% eff, FW={fw_inj:.1f} A",
-                        10000,
-                    )
-            except Exception as exc:
-                self.calib_result_status.setText(f"Status: Error reading results \u2014 {exc}")
-                speak("Calibration finished but results could not be read.")
-        else:
-            self.calib_result_status.setText(f"Status: Failed (exit {exit_code})")
-            speak("Calibration process failed.")
-
-        self.calib_process = None
-        self._mark_task_finished("calibration")
+        self._mark_task_finished("auto_calibration")
 
     def closeEvent(self, event) -> None:
         """
@@ -4062,16 +4036,14 @@ class BLDCMotorControlGUI(QMainWindow):
                     self.sim_thread.wait(5000)  # Wait up to 5 seconds
                 self.is_running = False
 
-            # Terminate calibration process
-            if hasattr(self, "calib_process") and self.calib_process is not None:
-                if self.calib_process.state() != QProcess.ProcessState.NotRunning:
-                    self.calib_process.terminate()
-                    # Give it a moment to terminate gracefully
-                    if not self.calib_process.waitForFinished(2000):
-                        # If it didn't finish, force kill
-                        self.calib_process.kill()
-                        self.calib_process.waitForFinished(1000)
-                self.calib_process = None
+            # Terminate auto-calibrate-all process
+            if hasattr(self, "auto_calib_process") and self.auto_calib_process is not None:
+                if self.auto_calib_process.state() != QProcess.ProcessState.NotRunning:
+                    self.auto_calib_process.terminate()
+                    if not self.auto_calib_process.waitForFinished(2000):
+                        self.auto_calib_process.kill()
+                        self.auto_calib_process.waitForFinished(1000)
+                self.auto_calib_process = None
 
             # Cancel any pending timers
             if hasattr(self, "update_timer"):
@@ -4435,8 +4407,8 @@ class BLDCMotorControlGUI(QMainWindow):
             # Stop the running task
             if running == "simulation" and self.is_running:
                 self._stop_simulation()
-            elif running == "calibration" and self.calib_process is not None:
-                self._stop_calibration()
+            elif running == "auto_calibration" and self.auto_calib_process is not None:
+                self._stop_auto_calibrate_all()
             return True
 
         # User canceled
