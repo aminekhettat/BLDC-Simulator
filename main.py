@@ -11,9 +11,9 @@ Requirements:
     See requirements.txt
 
 :author: BLDC Control Team
-:version: 0.9.1
+:version: 0.9.2
 
-.. versionadded:: 0.9.1
+.. versionadded:: 0.9.2
     Initial application release
 """
 
@@ -57,7 +57,7 @@ def main():
 
         # Set application info
         app.setApplicationName("BLIND SYSTEMS BLDC Simulator")
-        app.setApplicationVersion("0.9.1")
+        app.setApplicationVersion("0.9.2")
 
         # Create and show main window
         window = BLDCMotorControlGUI()
