@@ -26,7 +26,7 @@ extensions = [
 rst_prolog = """
 .. note::
 
-   License reminder: this project is distributed under the MIT License. See the repository LICENSE file.
+   License reminder: this project is distributed under a Custom restricted license (no redistribution). See the repository LICENSE file.
    Disclaimer: this simulator is provided as-is for research, calibration, and educational use. Users assume all risks,
    including any direct or indirect damage, data loss, hardware damage, injury, or regulatory non-compliance arising
    from use or misuse.
