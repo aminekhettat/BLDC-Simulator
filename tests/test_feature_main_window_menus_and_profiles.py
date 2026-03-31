@@ -287,15 +287,23 @@ def test_open_html_help_missing_and_existing(gui, monkeypatch):
     docs_build.mkdir(parents=True, exist_ok=True)
     html_index = docs_build / "index.html"
 
-    if html_index.exists():
-        html_index.unlink()
-    gui._open_html_help()
-    assert warned["called"] is True
+    original_bytes = html_index.read_bytes() if html_index.exists() else None
 
-    warned["called"] = False
-    html_index.write_text("<html><body>help</body></html>", encoding="utf-8")
-    gui._open_html_help()
-    assert opened["called"] is True
+    try:
+        if html_index.exists():
+            html_index.unlink()
+        gui._open_html_help()
+        assert warned["called"] is True
+
+        warned["called"] = False
+        html_index.write_text("<html><body>help</body></html>", encoding="utf-8")
+        gui._open_html_help()
+        assert opened["called"] is True
+    finally:
+        if original_bytes is None:
+            html_index.unlink(missing_ok=True)
+        else:
+            html_index.write_bytes(original_bytes)
 
 
 def test_get_simulation_params_info_with_and_without_engine(gui):
