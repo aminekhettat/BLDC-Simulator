@@ -18,9 +18,10 @@ Supported load types:
     Initial implementation of load models
 """
 
-import numpy as np
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, List
+from collections.abc import Callable
+
+import numpy as np
 
 
 class LoadProfile(ABC):
@@ -41,7 +42,6 @@ class LoadProfile(ABC):
         :return: Load torque [N*m]
         :rtype: float
         """
-        pass
 
     def reset(self) -> None:
         """
@@ -50,7 +50,6 @@ class LoadProfile(ABC):
         Not all profiles need resetting, but this method provides
         a consistent interface.
         """
-        pass
 
 
 class ConstantLoad(LoadProfile):
@@ -98,7 +97,8 @@ class RampLoad(LoadProfile):
     **Load Profile:**
 
     .. math::
-        \\tau(t) = \\tau_0 + \\frac{(\\tau_f - \\tau_0)}{t_ramp} * t \\quad (0 \\leq t \\leq t_{ramp})
+        \\tau(t) = \\tau_0 + \\frac{(\\tau_f - \\tau_0)}{t_{ramp}} \\cdot t,
+        \\quad 0 \\leq t \\leq t_{ramp}
 
     .. math::
         \\tau(t) = \\tau_f \\quad (t > t_{ramp})
@@ -142,12 +142,11 @@ class RampLoad(LoadProfile):
         """
         if time <= 0:
             return self.initial
-        elif time >= self.duration:
+        if time >= self.duration:
             return self.final
-        else:
-            # Linear interpolation
-            slope = (self.final - self.initial) / self.duration
-            return self.initial + slope * time
+        # Linear interpolation
+        slope = (self.final - self.initial) / self.duration
+        return self.initial + slope * time
 
 
 class VariableLoad(LoadProfile):
@@ -173,9 +172,9 @@ class VariableLoad(LoadProfile):
 
     def __init__(
         self,
-        torque_func: Optional[Callable[[float], float]] = None,
-        time_points: Optional[List[float]] = None,
-        torque_points: Optional[List[float]] = None,
+        torque_func: Callable[[float], float] | None = None,
+        time_points: list[float] | None = None,
+        torque_points: list[float] | None = None,
     ):
         """
         Initialize variable load with either function or data points.
@@ -195,6 +194,8 @@ class VariableLoad(LoadProfile):
             raise ValueError("Must provide either torque_func or time_points")
 
         self.torque_func = torque_func
+        self.time_points: np.ndarray | None
+        self.torque_points: np.ndarray | None
 
         if time_points is not None:
             if torque_points is None:
@@ -234,21 +235,22 @@ class VariableLoad(LoadProfile):
         """
         if self.torque_func is not None:
             return float(self.torque_func(time))
+        if self.time_points is None or self.torque_points is None:
+            raise RuntimeError("VariableLoad is not initialized with time/torque arrays")
 
         # Use data points with linear interpolation
         if time <= self.time_points[0]:
-            return self.torque_points[0]
-        elif time >= self.time_points[-1]:
-            return self.torque_points[-1]
-        else:
-            # Find interval and interpolate
-            idx = np.searchsorted(self.time_points, time)
-            t0, t1 = self.time_points[idx - 1], self.time_points[idx]
-            tau0, tau1 = self.torque_points[idx - 1], self.torque_points[idx]
+            return float(self.torque_points[0])
+        if time >= self.time_points[-1]:
+            return float(self.torque_points[-1])
+        # Find interval and interpolate
+        idx = np.searchsorted(self.time_points, time)
+        t0, t1 = self.time_points[idx - 1], self.time_points[idx]
+        tau0, tau1 = self.torque_points[idx - 1], self.torque_points[idx]
 
-            # Linear interpolation
-            alpha = (time - t0) / (t1 - t0)
-            return tau0 + alpha * (tau1 - tau0)
+        # Linear interpolation
+        alpha = (time - t0) / (t1 - t0)
+        return float(tau0 + alpha * (tau1 - tau0))
 
 
 class CyclicLoad(LoadProfile):
@@ -308,6 +310,6 @@ class CyclicLoad(LoadProfile):
         :return: Load torque [N*m]
         :rtype: float
         """
-        return self.offset + self.amplitude * np.sin(
-            2 * np.pi * self.frequency * time + self.phase
+        return float(
+            self.offset + self.amplitude * np.sin(2 * np.pi * self.frequency * time + self.phase)
         )

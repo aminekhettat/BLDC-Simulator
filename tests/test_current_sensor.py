@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - Construction
 - Properties
@@ -10,13 +10,13 @@ Atomic features tested in this module:
 - InputValidation
 - GetState
 """
+
 import math
 
 import numpy as np
 import pytest
 
 from src.hardware.current_sensor import CurrentSensorModel
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -114,16 +114,12 @@ class TestIdealBypassFilter:
     """c_filter=0 â†’ Ï„=0 â†’ instant response, no distortion."""
 
     def test_single_channel_ideal(self):
-        s = CurrentSensorModel(
-            r_shunt=0.001, amplifier_gain=20.0, c_filter=0.0, n_channels=1
-        )
+        s = CurrentSensorModel(r_shunt=0.001, amplifier_gain=20.0, c_filter=0.0, n_channels=1)
         out = s.measure(np.array([5.0]), dt=1e-4)
         assert out[0] == pytest.approx(5.0, rel=1e-9)
 
     def test_three_channel_ideal(self):
-        s = CurrentSensorModel(
-            r_shunt=0.001, amplifier_gain=20.0, c_filter=0.0, n_channels=3
-        )
+        s = CurrentSensorModel(r_shunt=0.001, amplifier_gain=20.0, c_filter=0.0, n_channels=3)
         inp = np.array([3.0, -2.0, 1.5])
         out = s.measure(inp, dt=1e-4)
         np.testing.assert_allclose(out, inp, rtol=1e-9)
@@ -132,9 +128,7 @@ class TestIdealBypassFilter:
         """Changing R_shunt should not change reconstructed current (ideal)."""
         inp = np.array([10.0])
         for r in [0.0005, 0.001, 0.005, 0.01]:
-            s = CurrentSensorModel(
-                r_shunt=r, amplifier_gain=20.0, c_filter=0.0, n_channels=1
-            )
+            s = CurrentSensorModel(r_shunt=r, amplifier_gain=20.0, c_filter=0.0, n_channels=1)
             out = s.measure(inp.copy(), dt=1e-4)
             assert out[0] == pytest.approx(10.0, rel=1e-9), f"failed for r_shunt={r}"
 
@@ -299,9 +293,7 @@ class TestReset:
         out_first = s.measure(np.array([1.0]), dt=dt)
         # After reset, first output = dt/(Ï„+dt) Ã— 1.0/R_shunt/gain (from zero)
         tau = s.tau
-        expected = dt / (
-            tau + dt
-        )  # fraction of the step (before gain inversion, remains 1:1)
+        expected = dt / (tau + dt)  # fraction of the step (before gain inversion, remains 1:1)
         assert out_first[0] == pytest.approx(expected, rel=1e-6)
 
 
@@ -356,9 +348,3 @@ class TestGetState:
         # With bypass filter, V_filt = V_amp = gain Ã— R_shunt Ã— I
         v_amp = s.amplifier_gain * s.r_shunt * 2.0
         assert state["filter_state_v"][0] == pytest.approx(v_amp, rel=1e-9)
-
-
-
-
-
-

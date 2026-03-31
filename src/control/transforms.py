@@ -13,10 +13,9 @@ Both forward (3-phase to two-axis) and inverse transforms are supported.
 """
 
 import numpy as np
-from typing import Tuple
 
 
-def clarke_transform(va: float, vb: float, vc: float) -> Tuple[float, float]:
+def clarke_transform(va: float, vb: float, vc: float) -> tuple[float, float]:
     """
     Clarke transform (three-phase to stationary two-axis alpha-beta)
     assuming va + vb + vc = 0.
@@ -31,7 +30,7 @@ def clarke_transform(va: float, vb: float, vc: float) -> Tuple[float, float]:
     return v_alpha, v_beta
 
 
-def inverse_clarke(v_alpha: float, v_beta: float) -> Tuple[float, float, float]:
+def inverse_clarke(v_alpha: float, v_beta: float) -> tuple[float, float, float]:
     """
     Inverse Clarke transform (alpha-beta to three-phase)
 
@@ -45,7 +44,7 @@ def inverse_clarke(v_alpha: float, v_beta: float) -> Tuple[float, float, float]:
     return va, vb, vc
 
 
-def park_transform(v_alpha: float, v_beta: float, theta: float) -> Tuple[float, float]:
+def park_transform(v_alpha: float, v_beta: float, theta: float) -> tuple[float, float]:
     """
     Park transform (alpha-beta to rotating d-q frame).
 
@@ -61,7 +60,7 @@ def park_transform(v_alpha: float, v_beta: float, theta: float) -> Tuple[float, 
     return v_d, v_q
 
 
-def inverse_park(v_d: float, v_q: float, theta: float) -> Tuple[float, float]:
+def inverse_park(v_d: float, v_q: float, theta: float) -> tuple[float, float]:
     """
     Inverse Park transform (d-q to alpha-beta frame).
 
@@ -77,7 +76,7 @@ def inverse_park(v_d: float, v_q: float, theta: float) -> Tuple[float, float]:
     return v_alpha, v_beta
 
 
-def concordia_transform(va: float, vb: float, vc: float) -> Tuple[float, float]:
+def concordia_transform(va: float, vb: float, vc: float) -> tuple[float, float]:
     """
     Concordia (also called symmetrical component) transform which is
     formally equivalent to Clark but keeps factor of 2/3 scaling.  Useful
@@ -93,7 +92,7 @@ def concordia_transform(va: float, vb: float, vc: float) -> Tuple[float, float]:
     return alpha, beta
 
 
-def inverse_concordia(alpha: float, beta: float) -> Tuple[float, float, float]:
+def inverse_concordia(alpha: float, beta: float) -> tuple[float, float, float]:
     """
     Inverse Concordia transform (alpha-beta back to three-phase).
 

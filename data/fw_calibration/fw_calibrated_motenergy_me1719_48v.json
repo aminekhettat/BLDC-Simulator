@@ -1,0 +1,88 @@
+{
+  "schema": "bldc.fw_calibration.v1",
+  "motor_profile_name": "Motenergy ME1719 48V",
+  "motor_params_summary": {
+    "R": 0.00517,
+    "L": 4.125e-05,
+    "Ke": 0.143,
+    "Kt": 0.143,
+    "J": 0.00224,
+    "pp": 5,
+    "Vnom": 48.0,
+    "N_rated": 4000.0,
+    "I_rated": 100.0,
+    "T_rated": 14.3
+  },
+  "physics_params": {
+    "flux_weakening_id_coefficient": 0.024712315213600653,
+    "flux_weakening_min_ratio": 0.3248633017109861,
+    "fw_start_rpm": 1665.5530267287709,
+    "fw_gain": 14.83,
+    "fw_id_max_a": 25.0,
+    "fw_headroom_target_v": 1.385640646055102,
+    "no_fw_max_rpm": 1850.6144741430787,
+    "rated_speed_rpm": 4000.0,
+    "ratio_required": 0.4395209376089812,
+    "fw_needed": true
+  },
+  "selected_gain": 14.83,
+  "selected_fw_id_max_a": 25.0,
+  "operating_points": [
+    {
+      "target_rpm": 1758.0837504359247,
+      "load_torque_nm": 7.15,
+      "achieved_rpm": 1758.0808857018244,
+      "speed_error_rpm": -0.0028647341002852045,
+      "speed_error_pct": -0.0001629463954475935,
+      "fw_injection_a": -0.0024283591720521847,
+      "id_a": 9.244255041462347,
+      "iq_a": 59.62793585658213,
+      "efficiency_pct": 66.8106376861011,
+      "stable": true,
+      "status": "PASS"
+    },
+    {
+      "target_rpm": 4000.0,
+      "load_torque_nm": 0.0,
+      "achieved_rpm": 3984.9078976051796,
+      "speed_error_rpm": -15.092102394820358,
+      "speed_error_pct": -0.377302559870509,
+      "fw_injection_a": -22.659476934903104,
+      "id_a": -20.66283374987896,
+      "iq_a": 9.499475038705247,
+      "efficiency_pct": 0.0,
+      "stable": true,
+      "status": "PASS"
+    },
+    {
+      "target_rpm": 4000.0,
+      "load_torque_nm": 4.29,
+      "achieved_rpm": 3998.2665792717485,
+      "speed_error_rpm": -1.7334207282515308,
+      "speed_error_pct": -0.04333551820628827,
+      "fw_injection_a": -24.643796763127252,
+      "id_a": -1.8385985561895348,
+      "iq_a": 66.71196583673846,
+      "efficiency_pct": 63.09206087704232,
+      "stable": true,
+      "status": "PASS"
+    },
+    {
+      "target_rpm": 4000.0,
+      "load_torque_nm": 8.58,
+      "achieved_rpm": 2718.8352549590836,
+      "speed_error_rpm": -1281.1647450409164,
+      "speed_error_pct": -32.02911862602291,
+      "fw_injection_a": -10.4445388238059,
+      "id_a": 12.213198224992308,
+      "iq_a": 94.70225456695846,
+      "efficiency_pct": 66.5300279059165,
+      "stable": true,
+      "status": "FAIL"
+    }
+  ],
+  "all_passed": false,
+  "best_achieved_rpm": 3998.2665792717485,
+  "calibration_time_s": 276.1017403029982,
+  "notes": "Sweep over 5 combinations; best gain=14.83, fw_id_max=25.0 A, k_fw=0.02471."
+}

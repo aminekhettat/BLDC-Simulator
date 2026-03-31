@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-03-31T15:38:33.270286",
+  "num_samples": 50000,
+  "duration": 4.9999499999950165,
+  "example": "V/f Control with Ramping Load",
+  "simulation_time": 5.0,
+  "motor": "Default BLDC Motor",
+  "control": "V/f with 100 Hz reference",
+  "load": "Ramp 0-2 N\u00b7m over 2s"
+}

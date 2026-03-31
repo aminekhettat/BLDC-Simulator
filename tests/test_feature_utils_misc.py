@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - src lazy import and missing attribute
 - variable load uses callback
@@ -15,6 +15,7 @@ Atomic features tested in this module:
 - data logger saves default name and loads
 - data logger custom path and non numeric load
 """
+
 import csv
 from pathlib import Path
 
@@ -183,9 +184,7 @@ def test_compute_backend_resolve_modes_and_as_dict(monkeypatch):
     with pytest.raises(RuntimeError):
         compute_backend.resolve_compute_backend("gpu")
 
-    monkeypatch.setattr(
-        compute_backend, "_probe_cupy", lambda: (True, "cupy_cuda_devices=1")
-    )
+    monkeypatch.setattr(compute_backend, "_probe_cupy", lambda: (True, "cupy_cuda_devices=1"))
     gpu_state = compute_backend.resolve_compute_backend("gpu")
     assert compute_backend.as_dict(gpu_state) == {
         "requested": "gpu",
@@ -200,9 +199,7 @@ def test_compute_backend_resolve_modes_and_as_dict(monkeypatch):
 
 def test_data_logger_saves_default_name_and_loads(tmp_path: Path):
     logger = DataLogger(log_dir=tmp_path)
-    csv_path = logger.save_simulation_data(
-        _sample_history(), metadata={"scenario": "unit"}
-    )
+    csv_path = logger.save_simulation_data(_sample_history(), metadata={"scenario": "unit"})
 
     assert csv_path.exists()
     assert csv_path.suffix == ".csv"
@@ -236,9 +233,3 @@ def test_data_logger_custom_path_and_non_numeric_load(tmp_path: Path):
 
     loaded = logger.load_simulation_data(broken_csv)
     assert loaded["speed"][0] == pytest.approx(0.0)
-
-
-
-
-
-

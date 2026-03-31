@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - MarkTask
 - TerminateProcessGracefully
@@ -235,9 +235,7 @@ class TestCloseEvent:
         window.calib_process = None
         window.close()  # should not raise
 
-    def test_close_event_kills_calib_process_if_terminate_times_out(
-        self, qapp, monkeypatch
-    ):
+    def test_close_event_kills_calib_process_if_terminate_times_out(self, qapp, monkeypatch):
         monkeypatch.setattr("src.ui.main_window.speak", lambda *a: None)
         window = BLDCMotorControlGUI()
         fake_proc = _FakeQProcess(running=True, wait_for_finished=False)
@@ -388,9 +386,7 @@ class TestOnCalibProfileChanged:
         monkeypatch.setattr(mw, "MOTOR_PROFILES_DIR", profiles_dir)
         gui._on_calib_profile_changed("my_motor.json")
 
-        assert (
-            "calibration_my_motor_fw_loaded_point.json" in gui.calib_output_label.text()
-        )
+        assert "calibration_my_motor_fw_loaded_point.json" in gui.calib_output_label.text()
 
 
 class TestStartCalibration:
@@ -478,9 +474,7 @@ class TestStartCalibration:
         monkeypatch.setattr(mw, "MOTOR_PROFILES_DIR", profiles_dir)
 
         mock_process = MagicMock()
-        monkeypatch.setattr(
-            "src.ui.main_window.QProcess", MagicMock(return_value=mock_process)
-        )
+        monkeypatch.setattr("src.ui.main_window.QProcess", MagicMock(return_value=mock_process))
 
         gui.calib_process = None
         gui.calib_profile_combo.clear()

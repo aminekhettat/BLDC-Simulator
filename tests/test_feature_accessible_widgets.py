@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - accessible double spin box updates tooltip
 - accessible spin box updates tooltip
@@ -12,6 +12,7 @@ Atomic features tested in this module:
 - accessible list widget selection and keyboard toggle
 - accessible list widget selection changed without current item
 """
+
 import sys
 
 import pytest
@@ -26,12 +27,11 @@ from src.ui.widgets.accessible_widgets import (
     AccessibleGroupBox,
     AccessibleListWidget,
     AccessibleSpinBox,
-    AccessibleTabWidget,
     AccessibleTableWidget,
+    AccessibleTabWidget,
     LabeledComboBox,
     LabeledSpinBox,
 )
-
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -86,9 +86,7 @@ def test_accessible_button_keyboard_activation_and_fallback():
     space_event = QKeyEvent(
         QKeyEvent.Type.KeyPress, Qt.Key.Key_Space, Qt.KeyboardModifier.NoModifier
     )
-    other_event = QKeyEvent(
-        QKeyEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier
-    )
+    other_event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier)
 
     w.keyPressEvent(enter_event)
     w.keyPressEvent(space_event)
@@ -196,9 +194,3 @@ def test_accessible_list_widget_selection_changed_without_current_item():
     # Ensure method does not crash when no current item is selected.
     lst._on_selection_changed()
     assert isinstance(lst, QWidget)
-
-
-
-
-
-

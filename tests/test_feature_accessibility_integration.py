@@ -1,8 +1,9 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - accessibility related modules import
 - accessibility widget instances have accessible names
 """
+
 import sys
 
 from PyQt6.QtWidgets import QApplication
@@ -10,11 +11,11 @@ from PyQt6.QtWidgets import QApplication
 
 def test_accessibility_related_modules_import():
     """Keep a lightweight integration smoke-test for accessibility wiring."""
+    from src.ui.main_window import BLDCMotorControlGUI
     from src.ui.widgets.accessible_widgets import (
         AccessibleListWidget,
         AccessibleTableWidget,
     )
-    from src.ui.main_window import BLDCMotorControlGUI
 
     assert AccessibleTableWidget is not None
     assert AccessibleListWidget is not None
@@ -35,9 +36,3 @@ def test_accessibility_widget_instances_have_accessible_names():
 
     assert table.accessibleName() == "Test Table"
     assert list_widget.accessibleName() == "Test List"
-
-
-
-
-
-

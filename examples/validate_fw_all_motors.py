@@ -4,8 +4,6 @@ Tests FW calibration on all available motor profiles in the project.
 Results are aggregated into a comprehensive validation report.
 """
 
-# ruff: noqa: E402
-
 import json
 import sys
 import time
@@ -230,9 +228,7 @@ def validate_motor(motor_name: str, profile_path: Path, session_path: Path):
         return None
 
     print("\nResults:")
-    print(
-        f"  Speed: {result['speed_rpm']:.1f} RPM (error: {result['speed_error_rpm']:+.1f} RPM)"
-    )
+    print(f"  Speed: {result['speed_rpm']:.1f} RPM (error: {result['speed_error_rpm']:+.1f} RPM)")
     print(f"  Speed Error: {result['speed_error_pct']:+.2f}%")
     print(f"  d-axis (flux): {result['id_a']:.2f} A")
     print(f"  q-axis (torque): {result['iq_a']:.2f} A")
@@ -304,9 +300,7 @@ def main():
         print(
             f"    Speed: {result['speed_rpm']:.1f} RPM (error: {result['speed_error_pct']:+.2f}%)"
         )
-        print(
-            f"    FW: {result['fw_injection_a']:.2f} A, Eff: {result['efficiency_pct']:.1f}%"
-        )
+        print(f"    FW: {result['fw_injection_a']:.2f} A, Eff: {result['efficiency_pct']:.1f}%")
 
     print(f"\nOverall: {passed}/{total} motors passed FW validation")
 

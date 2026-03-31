@@ -27,7 +27,7 @@ inverter model.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -107,7 +107,7 @@ class SVMGenerator:
         # Stateful realism blocks keep their own bus and temperature states.
         self._cap_voltage = float(dc_voltage)
         self._junction_temperature_c = float(self.realism.ambient_temperature_c)
-        self._last_telemetry: Dict[str, float | int | bool] = {}
+        self._last_telemetry: dict[str, float | int | bool] = {}
 
         # Preserve the legacy public attributes used by existing tests and any
         # downstream analysis code.
@@ -156,9 +156,7 @@ class SVMGenerator:
         """Reset capacitor voltage, temperature, and cached telemetry."""
         self._cap_voltage = float(self.source_dc_voltage)
         self._junction_temperature_c = float(self.realism.ambient_temperature_c)
-        self._last_telemetry = self._make_empty_telemetry(
-            self._compute_available_bus_voltage()
-        )
+        self._last_telemetry = self._make_empty_telemetry(self._compute_available_bus_voltage())
 
     def modulate(self, magnitude: float, angle: float) -> np.ndarray:
         """Generate 3-phase SVM voltages and apply enabled realism blocks."""
@@ -248,17 +246,17 @@ class SVMGenerator:
         """Backward-compatible access to switching-loss coefficient."""
         return self.realism.switching_loss_coeff_v_per_a_khz
 
-    def set_nonidealities(
+    def set_nonidealities(  # noqa: C901  # TODO: split validation logic into sub-validators (14)
         self,
         device_drop_v: float = 0.0,
         dead_time_fraction: float = 0.0,
         conduction_resistance_ohm: float = 0.0,
         switching_frequency_hz: float = 0.0,
         switching_loss_coeff_v_per_a_khz: float = 0.0,
-        enable_device_drop: Optional[bool] = None,
-        enable_dead_time: Optional[bool] = None,
-        enable_conduction_drop: Optional[bool] = None,
-        enable_switching_loss: Optional[bool] = None,
+        enable_device_drop: bool | None = None,
+        enable_dead_time: bool | None = None,
+        enable_conduction_drop: bool | None = None,
+        enable_switching_loss: bool | None = None,
         enable_diode_freewheel: bool = False,
         diode_drop_v: float = 0.0,
         diode_resistance_ohm: float = 0.0,
@@ -322,14 +320,10 @@ class SVMGenerator:
             raise ValueError("phase scale factors must be positive")
 
         self.realism.enable_device_drop = (
-            bool(device_drop_v > 0.0)
-            if enable_device_drop is None
-            else bool(enable_device_drop)
+            bool(device_drop_v > 0.0) if enable_device_drop is None else bool(enable_device_drop)
         )
         self.realism.enable_dead_time = (
-            bool(dead_time_fraction > 0.0)
-            if enable_dead_time is None
-            else bool(enable_dead_time)
+            bool(dead_time_fraction > 0.0) if enable_dead_time is None else bool(enable_dead_time)
         )
         self.realism.enable_conduction_drop = (
             bool(conduction_resistance_ohm > 0.0)
@@ -337,9 +331,7 @@ class SVMGenerator:
             else bool(enable_conduction_drop)
         )
         self.realism.enable_switching_loss = (
-            bool(
-                switching_frequency_hz > 0.0 and switching_loss_coeff_v_per_a_khz > 0.0
-            )
+            bool(switching_frequency_hz > 0.0 and switching_loss_coeff_v_per_a_khz > 0.0)
             if enable_switching_loss is None
             else bool(enable_switching_loss)
         )
@@ -348,9 +340,7 @@ class SVMGenerator:
         self.realism.dead_time_fraction = float(dead_time_fraction)
         self.realism.conduction_resistance_ohm = float(conduction_resistance_ohm)
         self.realism.switching_frequency_hz = float(switching_frequency_hz)
-        self.realism.switching_loss_coeff_v_per_a_khz = float(
-            switching_loss_coeff_v_per_a_khz
-        )
+        self.realism.switching_loss_coeff_v_per_a_khz = float(switching_loss_coeff_v_per_a_khz)
 
         self.realism.enable_diode_freewheel = bool(enable_diode_freewheel)
         self.realism.diode_drop_v = float(diode_drop_v)
@@ -361,9 +351,7 @@ class SVMGenerator:
 
         self.realism.enable_bus_ripple = bool(enable_bus_ripple)
         self.realism.dc_link_capacitance_f = float(dc_link_capacitance_f)
-        self.realism.dc_link_source_resistance_ohm = float(
-            dc_link_source_resistance_ohm
-        )
+        self.realism.dc_link_source_resistance_ohm = float(dc_link_source_resistance_ohm)
         self.realism.dc_link_esr_ohm = float(dc_link_esr_ohm)
 
         self.realism.enable_thermal_coupling = bool(enable_thermal_coupling)
@@ -423,10 +411,7 @@ class SVMGenerator:
         if self.realism.enable_dead_time and self.realism.dead_time_fraction > 0.0:
             activity = np.clip(np.abs(out) / half_bus, 0.0, 1.0)
             dead_time_error = (
-                current_sign
-                * self.realism.dead_time_fraction
-                * available_bus
-                * activity
+                current_sign * self.realism.dead_time_fraction * available_bus * activity
             )
             out = out - dead_time_error
             dead_time_loss = float(np.sum(np.abs(dead_time_error) * current_abs))
@@ -453,14 +438,9 @@ class SVMGenerator:
             total_drop += device_drop
             device_loss = float(np.sum(device_drop * current_abs))
 
-        if (
-            self.realism.enable_conduction_drop
-            and self.realism.conduction_resistance_ohm > 0.0
-        ):
+        if self.realism.enable_conduction_drop and self.realism.conduction_resistance_ohm > 0.0:
             conduction_res = (
-                self.realism.conduction_resistance_ohm
-                * resistance_temp_scale
-                * drop_scales
+                self.realism.conduction_resistance_ohm * resistance_temp_scale * drop_scales
             )
             conduction_drop = conduction_res * current_abs
             total_drop += conduction_drop
@@ -472,9 +452,7 @@ class SVMGenerator:
             and self.realism.switching_loss_coeff_v_per_a_khz > 0.0
         ):
             f_khz = self.realism.switching_frequency_hz / 1000.0
-            switching_drop = (
-                self.realism.switching_loss_coeff_v_per_a_khz * current_abs * f_khz
-            )
+            switching_drop = self.realism.switching_loss_coeff_v_per_a_khz * current_abs * f_khz
             total_drop += switching_drop
             switching_loss = float(np.sum(switching_drop * current_abs))
 
@@ -486,8 +464,7 @@ class SVMGenerator:
         if np.any(freewheel_mask):
             diode_drop = np.where(
                 freewheel_mask,
-                self.realism.diode_drop_v
-                + self.realism.diode_resistance_ohm * current_abs,
+                self.realism.diode_drop_v + self.realism.diode_resistance_ohm * current_abs,
                 0.0,
             )
             total_drop += diode_drop
@@ -551,26 +528,16 @@ class SVMGenerator:
 
     def _compute_available_bus_voltage(self) -> float:
         """Return the bus voltage currently available to the bridge."""
-        if (
-            not self.realism.enable_bus_ripple
-            or self.realism.dc_link_capacitance_f <= 0.0
-        ):
+        if not self.realism.enable_bus_ripple or self.realism.dc_link_capacitance_f <= 0.0:
             return max(self.source_dc_voltage, 1e-9)
 
-        estimated_bus_current = float(
-            self._last_telemetry.get("dc_link_bus_current_a", 0.0)
-        )
-        effective_bus = self._cap_voltage - (
-            estimated_bus_current * self.realism.dc_link_esr_ohm
-        )
+        estimated_bus_current = float(self._last_telemetry.get("dc_link_bus_current_a", 0.0))
+        effective_bus = self._cap_voltage - (estimated_bus_current * self.realism.dc_link_esr_ohm)
         return max(effective_bus, 1e-9)
 
     def _update_bus_ripple_state(self, source_current: float) -> None:
         """Update reduced-order DC-link capacitor state for the next step."""
-        if (
-            not self.realism.enable_bus_ripple
-            or self.realism.dc_link_capacitance_f <= 0.0
-        ):
+        if not self.realism.enable_bus_ripple or self.realism.dc_link_capacitance_f <= 0.0:
             self._cap_voltage = float(self.source_dc_voltage)
             return
 
@@ -601,9 +568,7 @@ class SVMGenerator:
             self._junction_temperature_c = float(self.realism.ambient_temperature_c)
             return
 
-        cooling_power = (
-            self._junction_temperature_c - self.realism.ambient_temperature_c
-        ) / r_th
+        cooling_power = (self._junction_temperature_c - self.realism.ambient_temperature_c) / r_th
         d_temp = (total_loss_power_w - cooling_power) * self.sample_time_s / c_th
         self._junction_temperature_c += d_temp
 
@@ -633,15 +598,13 @@ class SVMGenerator:
             dtype=np.float64,
         )
 
-    def get_last_telemetry(self) -> Dict[str, float | int | bool]:
+    def get_last_telemetry(self) -> dict[str, float | int | bool]:
         """Return telemetry from the last modulation step."""
         if not self._last_telemetry:
-            self._last_telemetry = self._make_empty_telemetry(
-                self._compute_available_bus_voltage()
-            )
+            self._last_telemetry = self._make_empty_telemetry(self._compute_available_bus_voltage())
         return dict(self._last_telemetry)
 
-    def get_realism_state(self) -> Dict[str, Any]:
+    def get_realism_state(self) -> dict[str, Any]:
         """Return the complete inverter configuration and runtime state."""
         return {
             **self.get_last_telemetry(),
@@ -655,7 +618,7 @@ class SVMGenerator:
     def _make_empty_telemetry(
         self,
         effective_bus: float,
-    ) -> Dict[str, float | int | bool]:
+    ) -> dict[str, float | int | bool]:
         """Build a zeroed telemetry packet used before the first modulation step."""
         return {
             "source_dc_voltage": float(self.source_dc_voltage),

@@ -7,7 +7,7 @@ ships a mock DAQ backend that can be used for dry-run testing.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -48,7 +48,7 @@ class MockDAQHardware(HardwareInterface):
     without requiring physical devices.
     """
 
-    def __init__(self, noise_std: float = 0.0, seed: Optional[int] = None) -> None:
+    def __init__(self, noise_std: float = 0.0, seed: int | None = None) -> None:
         super().__init__(name="mock-daq")
         self.noise_std = max(float(noise_std), 0.0)
         self._rng = np.random.default_rng(seed)

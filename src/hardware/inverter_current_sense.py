@@ -12,9 +12,9 @@ deviation studies.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Literal
-import math
 
 import numpy as np
 
@@ -119,9 +119,7 @@ class InverterCurrentSense:
         if offset_v is not None:
             ch.actual_offset_v = float(offset_v)
 
-    def _channel_measure(
-        self, i_shunt_a: float, dt: float, idx: int
-    ) -> tuple[float, float, bool]:
+    def _channel_measure(self, i_shunt_a: float, dt: float, idx: int) -> tuple[float, float, bool]:
         """Return (i_reconstructed, v_adc, saturated) for one channel."""
         ch = self.channels[idx]
 
@@ -143,9 +141,7 @@ class InverterCurrentSense:
         return i_reco, v_adc, saturated
 
     @staticmethod
-    def sector_from_voltages(
-        voltages_abc: np.ndarray, min_magnitude: float = 0.1
-    ) -> "int | None":
+    def sector_from_voltages(voltages_abc: np.ndarray, min_magnitude: float = 0.1) -> int | None:
         """Derive the SVM sector (1-6) from averaged 3-phase voltages.
 
         Returns ``None`` when the voltage vector is too small to determine a
@@ -166,7 +162,7 @@ class InverterCurrentSense:
         self,
         currents_abc: np.ndarray,
         dt: float,
-        svm_sector: "int | None" = None,
+        svm_sector: int | None = None,
     ) -> dict:
         """Measure and reconstruct phase currents for the configured topology.
 
@@ -212,9 +208,7 @@ class InverterCurrentSense:
                 # During active vector V1: i_bus_v1 = sign_v1 * i_phase[ph_v1]
                 # During active vector V2: i_bus_v2 = sign_v2 * i_phase[ph_v2]
                 # Both samples flow through the same analog path (single channel).
-                (sign_v1, ph_v1), (sign_v2, ph_v2), ph_kh = self._SECTOR_OBSERVABLE[
-                    svm_sector
-                ]
+                (sign_v1, ph_v1), (sign_v2, ph_v2), ph_kh = self._SECTOR_OBSERVABLE[svm_sector]
                 i_bus_v1 = sign_v1 * float(currents[ph_v1])
                 i_bus_v2 = sign_v2 * float(currents[ph_v2])
 
@@ -239,9 +233,7 @@ class InverterCurrentSense:
                 i_bus_reco, v_adc[0], sat[0] = self._channel_measure(i_bus, dt, 0)
                 denom = max(0.5 * (abs(i_a) + abs(i_b) + abs(i_c)), 1e-9)
                 scale = i_bus_reco / denom
-                measured = np.array(
-                    [i_a * scale, i_b * scale, i_c * scale], dtype=np.float64
-                )
+                measured = np.array([i_a * scale, i_b * scale, i_c * scale], dtype=np.float64)
 
         self._last_measured_currents_abc = measured
         return {
@@ -261,9 +253,7 @@ class InverterCurrentSense:
         v_cmd = np.asarray(commanded_voltages_abc, dtype=np.float64)
         i_abc = np.asarray(currents_abc, dtype=np.float64)
         if v_cmd.shape != (3,) or i_abc.shape != (3,):
-            raise ValueError(
-                "commanded_voltages_abc and currents_abc must have shape (3,)"
-            )
+            raise ValueError("commanded_voltages_abc and currents_abc must have shape (3,)")
 
         drop = np.zeros(3, dtype=np.float64)
 

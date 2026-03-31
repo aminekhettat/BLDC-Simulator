@@ -71,7 +71,7 @@ def load_motor_profile(file_path: Path) -> dict[str, Any]:
 
 def _normalize_motor_params(input_params: dict[str, Any]) -> dict[str, Any]:
     """Return validated motor parameters with safe defaults for missing keys."""
-    params = dict(DEFAULT_MOTOR_PARAMS)
+    params: dict[str, Any] = dict(DEFAULT_MOTOR_PARAMS)
     params.update(input_params or {})
 
     missing = [k for k in _REQUIRED_PARAM_KEYS if k not in params]

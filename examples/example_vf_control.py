@@ -17,18 +17,19 @@ This example shows:
 6. Data export and plotting
 """
 
-import numpy as np
 from pathlib import Path
 
-from src.core import BLDCMotor, MotorParameters, SimulationEngine, RampLoad  # noqa: E402
-from src.control import SVMGenerator, VFController  # noqa: E402
+import numpy as np
+
+from src.control import SVMGenerator, VFController
+from src.core import BLDCMotor, MotorParameters, RampLoad, SimulationEngine
 from src.utils.config import (
-    SIMULATION_PARAMS,
     DEFAULT_MOTOR_PARAMS,
+    SIMULATION_PARAMS,
     VF_CONTROLLER_PARAMS,
-)  # noqa: E402
-from src.utils.data_logger import DataLogger  # noqa: E402
-from src.visualization.visualization import SimulationPlotter  # noqa: E402
+)
+from src.utils.data_logger import DataLogger
+from src.visualization.visualization import SimulationPlotter
 
 
 def main():
@@ -53,9 +54,7 @@ def main():
     )
 
     motor = BLDCMotor(motor_params, dt=SIMULATION_PARAMS["dt"])
-    print(
-        f"  Motor: {motor_params.num_poles} poles, {motor_params.nominal_voltage}V nominal"
-    )
+    print(f"  Motor: {motor_params.num_poles} poles, {motor_params.nominal_voltage}V nominal")
 
     # ===== STEP 2: Configure Load =====
     print("\n[2] Configuring Load Profile...")
@@ -65,12 +64,8 @@ def main():
 
     # ===== STEP 3: Create Simulation Engine =====
     print("\n[3] Creating Simulation Engine...")
-    engine = SimulationEngine(
-        motor, load, dt=SIMULATION_PARAMS["dt"], max_history=50000
-    )
-    print(
-        f"  Engine: dt={SIMULATION_PARAMS['dt']}s, max history {engine.max_history} samples"
-    )
+    engine = SimulationEngine(motor, load, dt=SIMULATION_PARAMS["dt"], max_history=50000)
+    print(f"  Engine: dt={SIMULATION_PARAMS['dt']}s, max history {engine.max_history} samples")
 
     # ===== STEP 4: Create Control Blocks =====
     print("\n[4] Creating Control Blocks...")

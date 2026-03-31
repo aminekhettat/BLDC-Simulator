@@ -10,12 +10,12 @@ Uses matplotlib for real-time and saved plots.
 :version: 0.8.0
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from pathlib import Path
-from typing import Dict, Optional
 import logging
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.figure import Figure
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +33,13 @@ class SimulationPlotter:
     """
 
     @staticmethod
-    def create_3phase_plot(
-        history: Dict[str, np.ndarray],
+    def create_3phase_plot(  # noqa: C901  # TODO: extract subplot-building helpers (19)
+        history: dict[str, np.ndarray],
         figsize: tuple = (12, 8),
         grid_on: bool = True,
-        grid_spacing: Optional[float] = None,
+        grid_spacing: float | None = None,
         minor_grid: bool = False,
-        grid_spacing_y: Optional[float] = None,
+        grid_spacing_y: float | None = None,
     ) -> Figure:
         """
         Create figure with 3-phase motor variables.
@@ -65,12 +65,8 @@ class SimulationPlotter:
             color=PLOT_STYLE["current_color"],
             linewidth=1.5,
         )
-        ax1.plot(
-            time, history["currents_b"], label="Phase B", linestyle="--", linewidth=1.5
-        )
-        ax1.plot(
-            time, history["currents_c"], label="Phase C", linestyle=":", linewidth=1.5
-        )
+        ax1.plot(time, history["currents_b"], label="Phase B", linestyle="--", linewidth=1.5)
+        ax1.plot(time, history["currents_c"], label="Phase C", linestyle=":", linewidth=1.5)
         ax1.set_xlabel("Time (s)", fontsize=10)
         ax1.set_ylabel("Current (A)", fontsize=10)
         ax1.set_title("3-Phase Currents", fontsize=11, fontweight="bold")
@@ -97,12 +93,8 @@ class SimulationPlotter:
             color=PLOT_STYLE["voltage_color"],
             linewidth=1.5,
         )
-        ax2.plot(
-            time, history["voltages_b"], label="Phase B", linestyle="--", linewidth=1.5
-        )
-        ax2.plot(
-            time, history["voltages_c"], label="Phase C", linestyle=":", linewidth=1.5
-        )
+        ax2.plot(time, history["voltages_b"], label="Phase B", linestyle="--", linewidth=1.5)
+        ax2.plot(time, history["voltages_c"], label="Phase C", linestyle=":", linewidth=1.5)
         ax2.set_xlabel("Time (s)", fontsize=10)
         ax2.set_ylabel("Voltage (V)", fontsize=10)
         ax2.set_title("3-Phase Voltages", fontsize=11, fontweight="bold")
@@ -170,9 +162,7 @@ class SimulationPlotter:
             color=PLOT_STYLE["torque_color"],
             linewidth=1.5,
         )
-        ax5.plot(
-            time, history["load_torque"], label="Load", linestyle="--", linewidth=1.5
-        )
+        ax5.plot(time, history["load_torque"], label="Load", linestyle="--", linewidth=1.5)
         ax5.set_xlabel("Time (s)", fontsize=10)
         ax5.set_ylabel("Torque (N*m)", fontsize=10)
         ax5.set_title("Torque Comparison", fontsize=11, fontweight="bold")
@@ -220,11 +210,11 @@ class SimulationPlotter:
 
     @staticmethod
     def create_current_plot(
-        history: Dict[str, np.ndarray],
+        history: dict[str, np.ndarray],
         grid_on: bool = True,
-        grid_spacing: Optional[float] = None,
+        grid_spacing: float | None = None,
         minor_grid: bool = False,
-        grid_spacing_y: Optional[float] = None,
+        grid_spacing_y: float | None = None,
     ) -> Figure:
         """
         Create dedicated current analysis plot.
@@ -249,12 +239,8 @@ class SimulationPlotter:
 
         ax = fig.add_subplot(1, 1, 1)
         ax.plot(time, history["currents_a"], label="Phase A", linewidth=2)
-        ax.plot(
-            time, history["currents_b"], label="Phase B", linestyle="--", linewidth=2
-        )
-        ax.plot(
-            time, history["currents_c"], label="Phase C", linestyle=":", linewidth=2
-        )
+        ax.plot(time, history["currents_b"], label="Phase B", linestyle="--", linewidth=2)
+        ax.plot(time, history["currents_c"], label="Phase C", linestyle=":", linewidth=2)
 
         ax.set_xlabel("Time (s)", fontsize=11, fontweight="bold")
         ax.set_ylabel("Current (A)", fontsize=11, fontweight="bold")
@@ -281,12 +267,12 @@ class SimulationPlotter:
 
     @staticmethod
     def create_pfc_analysis_plot(
-        history: Dict[str, np.ndarray],
+        history: dict[str, np.ndarray],
         figsize: tuple = (11, 9),
         grid_on: bool = True,
-        grid_spacing: Optional[float] = None,
+        grid_spacing: float | None = None,
         minor_grid: bool = False,
-        grid_spacing_y: Optional[float] = None,
+        grid_spacing_y: float | None = None,
     ) -> Figure:
         """Create a dedicated PFC telemetry plot with PF, power, and command trends."""
         from matplotlib.ticker import MultipleLocator
@@ -298,12 +284,8 @@ class SimulationPlotter:
         if time.size == 0:
             raise ValueError("history contains no samples")
 
-        pf = np.asarray(
-            history.get("power_factor", np.zeros_like(time)), dtype=np.float64
-        )
-        active_power = np.asarray(
-            history.get("input_power", np.zeros_like(time)), dtype=np.float64
-        )
+        pf = np.asarray(history.get("power_factor", np.zeros_like(time)), dtype=np.float64)
+        active_power = np.asarray(history.get("input_power", np.zeros_like(time)), dtype=np.float64)
         pfc_command = np.asarray(
             history.get("pfc_command_var", np.zeros_like(time)), dtype=np.float64
         )
@@ -351,12 +333,12 @@ class SimulationPlotter:
 
     @staticmethod
     def create_efficiency_analysis_plot(
-        history: Dict[str, np.ndarray],
+        history: dict[str, np.ndarray],
         figsize: tuple = (11, 9),
         grid_on: bool = True,
-        grid_spacing: Optional[float] = None,
+        grid_spacing: float | None = None,
         minor_grid: bool = False,
-        grid_spacing_y: Optional[float] = None,
+        grid_spacing_y: float | None = None,
     ) -> Figure:
         """Create a dedicated efficiency plot with input/output/loss power trends."""
         from matplotlib.ticker import MultipleLocator
@@ -368,9 +350,7 @@ class SimulationPlotter:
         if time.size == 0:
             raise ValueError("history contains no samples")
 
-        input_power = np.asarray(
-            history.get("input_power", np.zeros_like(time)), dtype=np.float64
-        )
+        input_power = np.asarray(history.get("input_power", np.zeros_like(time)), dtype=np.float64)
         mech_power = np.asarray(
             history.get("mechanical_output_power", np.zeros_like(time)),
             dtype=np.float64,
@@ -378,9 +358,7 @@ class SimulationPlotter:
         loss_power = np.asarray(
             history.get("total_loss_power", np.zeros_like(time)), dtype=np.float64
         )
-        efficiency = np.asarray(
-            history.get("efficiency", np.zeros_like(time)), dtype=np.float64
-        )
+        efficiency = np.asarray(history.get("efficiency", np.zeros_like(time)), dtype=np.float64)
 
         fig, axes = plt.subplots(4, 1, figsize=figsize, sharex=True)
 
@@ -421,12 +399,12 @@ class SimulationPlotter:
 
     @staticmethod
     def create_inverter_analysis_plot(
-        history: Dict[str, np.ndarray],
+        history: dict[str, np.ndarray],
         figsize: tuple = (11, 11),
         grid_on: bool = True,
-        grid_spacing: Optional[float] = None,
+        grid_spacing: float | None = None,
         minor_grid: bool = False,
-        grid_spacing_y: Optional[float] = None,
+        grid_spacing_y: float | None = None,
     ) -> Figure:
         """Create a dedicated inverter-realism telemetry plot."""
         from matplotlib.ticker import MultipleLocator
@@ -441,9 +419,7 @@ class SimulationPlotter:
         effective_bus = np.asarray(
             history.get("effective_dc_voltage", np.zeros_like(time)), dtype=np.float64
         )
-        ripple = np.asarray(
-            history.get("dc_link_ripple_v", np.zeros_like(time)), dtype=np.float64
-        )
+        ripple = np.asarray(history.get("dc_link_ripple_v", np.zeros_like(time)), dtype=np.float64)
         bus_current = np.asarray(
             history.get("dc_link_bus_current_a", np.zeros_like(time)), dtype=np.float64
         )
@@ -489,9 +465,7 @@ class SimulationPlotter:
         axes[0].plot(time, effective_bus, color="#1565C0", linewidth=1.8)
         axes[0].plot(time, ripple, color="#EF6C00", linewidth=1.4, linestyle="--")
         axes[0].set_ylabel("V")
-        axes[0].set_title(
-            "DC-Link Effective Voltage and Ripple", fontsize=11, fontweight="bold"
-        )
+        axes[0].set_title("DC-Link Effective Voltage and Ripple", fontsize=11, fontweight="bold")
         axes[0].legend(["Effective Bus", "Ripple"], loc="best")
         _style_axis(axes[0])
 
@@ -537,13 +511,13 @@ class SimulationPlotter:
 
     @staticmethod
     def create_multi_axis_plot(
-        history: Dict[str, np.ndarray],
+        history: dict[str, np.ndarray],
         variables: list,
         figsize: tuple = (10, 6),
         grid_on: bool = True,
-        grid_spacing: Optional[float] = None,
+        grid_spacing: float | None = None,
         minor_grid: bool = False,
-        grid_spacing_y: Optional[float] = None,
+        grid_spacing_y: float | None = None,
     ) -> Figure:
         """
         Create a multi-axis plot for an arbitrary list of variables.
@@ -575,7 +549,7 @@ class SimulationPlotter:
         time = history["time"]
 
         axes = [ax_primary]
-        colors = plt.cm.tab10.colors
+        colors = plt.cm.tab10.colors  # type: ignore[attr-defined]
 
         for idx, var in enumerate(variables):
             if var not in history:
@@ -628,12 +602,12 @@ class SimulationPlotter:
 
     @staticmethod
     def create_measured_vs_true_current_plot(
-        history: Dict[str, np.ndarray],
+        history: dict[str, np.ndarray],
         figsize: tuple = (12, 10),
         grid_on: bool = True,
-        grid_spacing: Optional[float] = None,
+        grid_spacing: float | None = None,
         minor_grid: bool = False,
-        grid_spacing_y: Optional[float] = None,
+        grid_spacing_y: float | None = None,
     ) -> Figure:
         """Create a 4-panel overlay plot comparing measured vs true phase currents.
 
@@ -658,8 +632,7 @@ class SimulationPlotter:
         from matplotlib.ticker import MultipleLocator
 
         has_true = all(
-            k in history
-            for k in ("currents_a_true", "currents_b_true", "currents_c_true")
+            k in history for k in ("currents_a_true", "currents_b_true", "currents_c_true")
         )
 
         time = np.asarray(history["time"], dtype=np.float64)
@@ -685,9 +658,7 @@ class SimulationPlotter:
         for row_idx, (ph, label, color) in enumerate(phases):
             ax = axes[row_idx]
             measured = np.asarray(history[f"currents_{ph}"], dtype=np.float64)
-            ax.plot(
-                time, measured, label=f"{label} measured", color=color, linewidth=1.8
-            )
+            ax.plot(time, measured, label=f"{label} measured", color=color, linewidth=1.8)
             if has_true:
                 true_vals = np.asarray(history[f"currents_{ph}_true"], dtype=np.float64)
                 ax.plot(

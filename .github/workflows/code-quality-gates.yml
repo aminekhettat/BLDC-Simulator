@@ -1,0 +1,74 @@
+name: Code Quality Gates
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - docs/_build/**
+      - data/logs/**
+      - "**/__pycache__/**"
+  pull_request:
+    paths-ignore:
+      - docs/_build/**
+      - data/logs/**
+      - "**/__pycache__/**"
+  workflow_dispatch:
+
+concurrency:
+  group: code-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: File-length gate
+        run: python scripts/check_file_length.py
+
+      - name: Mypy type check
+        run: mypy src
+
+      - name: Bandit security scan
+        run: bandit -c bandit.yaml -r src
+
+      - name: Run tests with 100% coverage gate
+        env:
+          MPLBACKEND: Agg
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          python -m pytest tests/ \
+            --cov=src \
+            --cov-report=term-missing:skip-covered \
+            --cov-report=xml:data/logs/coverage.xml \
+            --cov-fail-under=100 \
+            -q
+
+      - name: Build Sphinx HTML docs
+        run: python -m sphinx -b html docs docs/_build/html
+
+      - name: Dependency vulnerability audit
+        run: pip-audit -r requirements.txt

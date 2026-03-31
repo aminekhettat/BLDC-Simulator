@@ -77,9 +77,7 @@ def estimate_max_speed_no_fw_rpm(
     Uses a conservative linear SVM voltage limit: Vmax ~= Vdc / sqrt(3).
     """
     ke = max(float(params.back_emf_constant), 1e-12)
-    v_max = (float(dc_voltage) / np.sqrt(3.0)) * float(
-        np.clip(utilization_margin, 0.1, 1.0)
-    )
+    v_max = (float(dc_voltage) / np.sqrt(3.0)) * float(np.clip(utilization_margin, 0.1, 1.0))
     omega_max = v_max / ke
     return float(omega_max * 60.0 / (2.0 * np.pi))
 

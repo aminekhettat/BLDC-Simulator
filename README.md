@@ -1,8 +1,8 @@
 # BLDC Simulator
 
-Professional BLDC and PMSM motor-control simulator with a desktop GUI, accessibility-first workflows, and repeatable calibration pipelines.
+Advanced BLDC and PMSM motor-control simulator with a desktop GUI, accessibility-first workflows, and repeatable calibration pipelines.
 
-Current Version: 0.8.1
+Current Version: 0.9.0
 
 ## Why This Project
 
@@ -10,10 +10,23 @@ This repository provides a practical environment to design, validate, and compar
 
 ## Core Capabilities
 
+The list below highlights major capabilities. For the complete implemented feature inventory,
+see `docs/features.rst`.
+
 - BLDC/PMSM simulation with configurable motor, load, and supply models
 - V/f and FOC control paths with PI-based loop tuning
+- Space Vector Modulation (SVM) with inverter telemetry hooks
+- Standard startup sequencing (alignment/open-loop to closed-loop handoff)
 - Accessibility-oriented PyQt6 interface (keyboard-first and screen-reader friendly)
+- Optional audio assistance for key status and workflow events
 - Real-time monitoring, data logging, FFT analysis, and plotting
+- RK4 numerical-stability advisory with dt/PWM recommendations for safe simulation settings
+- Current-sense realism (single/double/triple shunt) with true-vs-measured comparison
+- Power-factor and efficiency telemetry with tuning recommendations
+- Inverter realism blocks (drop/loss/ripple/thermal/asymmetry) and dedicated analysis plots
+- Hardware backend abstraction with mock DAQ support for dry-run integration
+- Control timing telemetry (calc duration, CPU load, MCU-load estimation helpers)
+- Compute backend policy (`auto`, `cpu`, `gpu`) with safe fallback behavior
 - Motor profile import/export and repeatable calibration workflows
 - Regression-oriented test suite and baseline validation
 
@@ -36,6 +49,35 @@ python main.py
 ```bash
 pytest -q
 ```
+
+### 4. Run mandatory pre-commit gates
+
+```bash
+pip install -r requirements-dev.txt
+python -m pre_commit run --all-files
+```
+
+Before each commit, the repository hook at `.githooks/pre-commit` now enforces:
+
+- Documentation policy check (code/config changes must include relevant doc updates)
+- Sphinx HTML regeneration (`python -m sphinx -b html docs docs/_build/html`)
+- Quality gates (`ruff`, `mypy`, `bandit`)
+- Full test run with coverage gate (`pytest --cov=src --cov-fail-under=100`)
+- Dependency vulnerability audit (`pip-audit -r requirements.txt`)
+
+Emergency bypass variables exist but are not intended for normal development:
+
+- `SKIP_MANDATORY_GATES=1`
+- `SKIP_DOC_POLICY_CHECK=1`
+
+CI also enforces:
+
+- Ruff lint checks
+- Mypy type checks on `src/`
+- Bandit security scan on `src/`
+- Sphinx HTML documentation build
+- Full tests with 100% `src/` coverage threshold
+- `pip-audit` vulnerability scan for runtime dependencies
 
 ## Project Layout
 
@@ -100,17 +142,19 @@ Before merging or publishing a release:
 1. Run regression and baseline tests.
 2. Verify generated artifacts and plots when control behavior changes.
 3. Bump the version with `bump2version`.
-4. Update release notes using `RELEASE_NOTES_TEMPLATE.md`.
-5. Push only after local checks are green.
+4. Follow `.github/RELEASE_CHECKLIST.md`.
+5. Update release notes using `RELEASE_NOTES_TEMPLATE.md`.
+6. Push only after local checks are green.
 
 ## References
 
 - Control-theory and formula references are under `references/`.
 - Sphinx API and user documentation live under `docs/`.
+- Security disclosure and handling policy is in `SECURITY.md`.
 
 ## License and Safety
 
-- License: MIT (see `LICENSE`)
+- License: Custom restricted license (see `LICENSE`)
 - This simulator is provided as-is for research, calibration, and educational use.
 - Users are responsible for validation before applying settings to real hardware.
 

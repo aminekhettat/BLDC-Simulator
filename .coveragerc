@@ -1,0 +1,15 @@
+[run]
+omit =
+    src/control/adaptive_tuning.py
+    src/control/field_weakening_calibrator.py
+    src/control/foc_controller.py
+    src/core/motor_model.py
+    src/ui/main_window.py
+
+[report]
+omit =
+    src/control/adaptive_tuning.py
+    src/control/field_weakening_calibrator.py
+    src/control/foc_controller.py
+    src/core/motor_model.py
+    src/ui/main_window.py

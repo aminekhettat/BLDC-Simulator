@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
@@ -181,9 +181,7 @@ def run_candidate(
         and second < first
     )
 
-    return Result(
-        stable, convergent, final, ferr, tail_mean, tail_max, first, second, neg_speed
-    )
+    return Result(stable, convergent, final, ferr, tail_mean, tail_max, first, second, neg_speed)
 
 
 def score(res: Result) -> float:
@@ -244,9 +242,7 @@ def main() -> None:
     best_phase_score = float("inf")
 
     for i, c in enumerate(phase_cands, start=1):
-        r = run_candidate(
-            params, c, speed_ref_rpm, sim_time_s=0.15, load_torque_nm=load_torque_nm
-        )
+        r = run_candidate(params, c, speed_ref_rpm, sim_time_s=0.15, load_torque_nm=load_torque_nm)
         s = score(r)
         if s < best_phase_score:
             best_phase = c
@@ -292,18 +288,14 @@ def main() -> None:
     # Keep runtime practical: evaluate deterministic subset.
     tuning = tuning[:540]
     total = len(tuning)
-    print(
-        json.dumps({"stage": "field_weakening_tuning", "candidates": total}), flush=True
-    )
+    print(json.dumps({"stage": "field_weakening_tuning", "candidates": total}), flush=True)
 
     best_cand = None
     best_res = None
     best_s = float("inf")
 
     for i, c in enumerate(tuning, start=1):
-        r = run_candidate(
-            params, c, speed_ref_rpm, sim_time_s=0.45, load_torque_nm=load_torque_nm
-        )
+        r = run_candidate(params, c, speed_ref_rpm, sim_time_s=0.45, load_torque_nm=load_torque_nm)
         s = score(r)
         if s < best_s:
             best_s = s
@@ -319,12 +311,7 @@ def main() -> None:
 
         if r.convergent:
             out = {"candidate": asdict(c), "metrics": asdict(r)}
-            out_path = (
-                PROJECT_ROOT
-                / "data"
-                / "logs"
-                / "rated_speed_field_weakening_result.json"
-            )
+            out_path = PROJECT_ROOT / "data" / "logs" / "rated_speed_field_weakening_result.json"
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_text(json.dumps(out, indent=2), encoding="utf-8")
             print("CONVERGENCE_FOUND", flush=True)

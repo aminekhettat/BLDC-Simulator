@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - MotorModel
 - SVMGenerator
@@ -7,17 +7,18 @@ Atomic features tested in this module:
 - SimulationEngine
 - MotorDynamics
 """
-import pytest
-import numpy as np
 
+import numpy as np
+import pytest
+
+from src.control import SVMGenerator, VFController
 from src.core import (
     BLDCMotor,
-    MotorParameters,
-    SimulationEngine,
     ConstantLoad,
+    MotorParameters,
     RampLoad,
-)  # noqa: E402
-from src.control import SVMGenerator, VFController  # noqa: E402
+    SimulationEngine,
+)
 
 
 class TestMotorModel:
@@ -184,9 +185,7 @@ class TestVFController:
     @pytest.fixture
     def controller(self):
         """Create V/f controller."""
-        return VFController(
-            v_nominal=48.0, f_nominal=100.0, dc_voltage=48.0, v_startup=1.0
-        )
+        return VFController(v_nominal=48.0, f_nominal=100.0, dc_voltage=48.0, v_startup=1.0)
 
     def test_vf_initialization(self, controller):
         """Test V/f controller initializes correctly."""
@@ -311,8 +310,7 @@ class TestSimulationEngine:
 
         assert len(history["time"]) == 100
         assert all(
-            key in history
-            for key in ["currents_a", "omega", "theta", "torque", "voltages_a"]
+            key in history for key in ["currents_a", "omega", "theta", "torque", "voltages_a"]
         )
 
     def test_engine_reset(self, engine):
@@ -386,9 +384,3 @@ class TestMotorDynamics:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-
-
-
-
-
-

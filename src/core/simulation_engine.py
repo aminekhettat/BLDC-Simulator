@@ -14,20 +14,27 @@ Provides efficient real-time simulation with optimized calculations.
     Initial implementation of simulation engine
 """
 
-import numpy as np
-from typing import Optional, Dict, Any
+import warnings
 from collections import deque
-from .motor_model import BLDCMotor
-from .load_model import LoadProfile
+from typing import Any
+
+import numpy as np
+
 from src.hardware import HardwareInterface, InverterCurrentSense
-from src.utils.compute_backend import resolve_compute_backend, as_dict
+from src.utils.compute_backend import as_dict, resolve_compute_backend
+
+from .load_model import LoadProfile
+from .motor_model import BLDCMotor
 from .power_model import (
-    SupplyProfile,
     ConstantSupply,
     PowerFactorController,
+    SupplyProfile,
     compute_efficiency_metrics,
     compute_power_metrics,
 )
+
+_RK4_STABILITY_LIMIT = 2.785
+_RK4_RECOMMENDED_MARGIN = 5.0
 
 
 class SimulationEngine:
@@ -65,11 +72,11 @@ class SimulationEngine:
         load_profile: LoadProfile,
         dt: float = 0.0001,
         max_history: int = 100000,
-        supply_profile: Optional[SupplyProfile] = None,
-        pfc_controller: Optional[PowerFactorController] = None,
+        supply_profile: SupplyProfile | None = None,
+        pfc_controller: PowerFactorController | None = None,
         pfc_window_samples: int = 128,
-        hardware_interface: Optional[HardwareInterface] = None,
-        current_sense: Optional[InverterCurrentSense] = None,
+        hardware_interface: HardwareInterface | None = None,
+        current_sense: InverterCurrentSense | None = None,
         compute_backend: str = "auto",
     ):
         """
@@ -93,6 +100,7 @@ class SimulationEngine:
         self.load_profile = load_profile
         self.dt = dt
         self.max_history = max_history
+        self.supply_profile: SupplyProfile
 
         # supply profile (dc bus voltage)
         if supply_profile is None:
@@ -107,7 +115,7 @@ class SimulationEngine:
         self.hardware_interface = hardware_interface
         self.current_sense = current_sense
         self._hardware_enabled = hardware_interface is not None
-        self._hardware_state: Dict[str, Any] = {
+        self._hardware_state: dict[str, Any] = {
             "enabled": self._hardware_enabled,
             "connected": False,
             "backend": hardware_interface.name if hardware_interface else "none",
@@ -119,7 +127,7 @@ class SimulationEngine:
         self._compute_backend_state = resolve_compute_backend(compute_backend)
         self._measured_phase_currents = np.zeros(3, dtype=np.float64)
         self._last_effective_voltages = np.zeros(3, dtype=np.float64)
-        self._current_sense_state: Dict[str, Any] = {
+        self._current_sense_state: dict[str, Any] = {
             "enabled": self.current_sense is not None,
             "topology": self.current_sense.topology if self.current_sense else "none",
             "phase_voltage_drop_v": [0.0, 0.0, 0.0],
@@ -135,7 +143,7 @@ class SimulationEngine:
                 self._hardware_state["enabled"] = False
                 self._hardware_state["connected"] = False
                 self._hardware_state["last_io_error"] = str(exc)
-        self._pfc_metrics: Dict[str, float] = {
+        self._pfc_metrics: dict[str, float] = {
             "power_factor": 0.0,
             "active_power_w": 0.0,
             "apparent_power_va": 0.0,
@@ -143,7 +151,7 @@ class SimulationEngine:
             "compensation_command_var": 0.0,
             "target_pf": float(pfc_controller.target_pf) if pfc_controller else 0.0,
         }
-        self._efficiency_metrics: Dict[str, float] = {
+        self._efficiency_metrics: dict[str, float] = {
             "electrical_input_power_w": 0.0,
             "mechanical_output_power_w": 0.0,
             "regenerative_power_w": 0.0,
@@ -151,7 +159,7 @@ class SimulationEngine:
             "efficiency": 0.0,
             "inverter_total_loss_power_w": 0.0,
         }
-        self._inverter_metrics: Dict[str, float | int | bool] = {
+        self._inverter_metrics: dict[str, float | int | bool] = {
             "effective_dc_voltage": 0.0,
             "dc_link_ripple_v": 0.0,
             "dc_link_bus_current_a": 0.0,
@@ -166,7 +174,7 @@ class SimulationEngine:
             "common_mode_voltage": 0.0,
             "min_pulse_event_count": 0,
         }
-        self._control_timing_metrics: Dict[str, float] = {
+        self._control_timing_metrics: dict[str, float] = {
             "pwm_frequency_hz": 1.0 / self.dt,
             "control_period_s": self.dt,
             "calc_duration_s": 0.0,
@@ -176,6 +184,16 @@ class SimulationEngine:
             "cpu_load_avg_pct": 0.0,
             "sample_count": 0.0,
         }
+        self._numerical_stability_advisory = self._build_numerical_stability_advisory(
+            dt=self.dt,
+            pwm_frequency_hz=float(self._control_timing_metrics["pwm_frequency_hz"]),
+        )
+        if self._numerical_stability_advisory["severity"] in {"marginal", "unstable"}:
+            warnings.warn(
+                str(self._numerical_stability_advisory["message"]),
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
         # Simulation state
         self.time = 0.0
@@ -202,61 +220,39 @@ class SimulationEngine:
         self._history_input_power: deque[float] = deque(maxlen=self.max_history)
         self._history_pf: deque[float] = deque(maxlen=self.max_history)
         self._history_pfc_command: deque[float] = deque(maxlen=self.max_history)
-        self._history_mechanical_output_power: deque[float] = deque(
-            maxlen=self.max_history
-        )
+        self._history_mechanical_output_power: deque[float] = deque(maxlen=self.max_history)
         self._history_total_loss_power: deque[float] = deque(maxlen=self.max_history)
         self._history_efficiency: deque[float] = deque(maxlen=self.max_history)
-        self._history_effective_dc_voltage: deque[float] = deque(
-            maxlen=self.max_history
-        )
+        self._history_effective_dc_voltage: deque[float] = deque(maxlen=self.max_history)
         self._history_dc_link_ripple_v: deque[float] = deque(maxlen=self.max_history)
-        self._history_dc_link_bus_current_a: deque[float] = deque(
-            maxlen=self.max_history
-        )
+        self._history_dc_link_bus_current_a: deque[float] = deque(maxlen=self.max_history)
         self._history_device_loss_power: deque[float] = deque(maxlen=self.max_history)
-        self._history_conduction_loss_power: deque[float] = deque(
-            maxlen=self.max_history
-        )
-        self._history_switching_loss_power: deque[float] = deque(
-            maxlen=self.max_history
-        )
-        self._history_dead_time_loss_power: deque[float] = deque(
-            maxlen=self.max_history
-        )
+        self._history_conduction_loss_power: deque[float] = deque(maxlen=self.max_history)
+        self._history_switching_loss_power: deque[float] = deque(maxlen=self.max_history)
+        self._history_dead_time_loss_power: deque[float] = deque(maxlen=self.max_history)
         self._history_diode_loss_power: deque[float] = deque(maxlen=self.max_history)
-        self._history_inverter_total_loss_power: deque[float] = deque(
-            maxlen=self.max_history
-        )
-        self._history_inverter_junction_temp_c: deque[float] = deque(
-            maxlen=self.max_history
-        )
+        self._history_inverter_total_loss_power: deque[float] = deque(maxlen=self.max_history)
+        self._history_inverter_junction_temp_c: deque[float] = deque(maxlen=self.max_history)
         self._history_common_mode_voltage: deque[float] = deque(maxlen=self.max_history)
-        self._history_min_pulse_event_count: deque[float] = deque(
-            maxlen=self.max_history
-        )
-        self._history_control_calc_duration_s: deque[float] = deque(
-            maxlen=self.max_history
-        )
-        self._history_control_cpu_load_pct: deque[float] = deque(
-            maxlen=self.max_history
-        )
+        self._history_min_pulse_event_count: deque[float] = deque(maxlen=self.max_history)
+        self._history_control_calc_duration_s: deque[float] = deque(maxlen=self.max_history)
+        self._history_control_cpu_load_pct: deque[float] = deque(maxlen=self.max_history)
 
         # State variables cache
-        self._last_state_dict = {}
+        self._last_state_dict: dict[str, float] = {}
 
         # True physics phase-current history (parallel to measured _history_currents_*)
         self._history_currents_a_true: deque[float] = deque(maxlen=self.max_history)
         self._history_currents_b_true: deque[float] = deque(maxlen=self.max_history)
         self._history_currents_c_true: deque[float] = deque(maxlen=self.max_history)
 
-    def set_inverter_telemetry(self, telemetry: Optional[Dict[str, Any]]) -> None:
+    def set_inverter_telemetry(self, telemetry: dict[str, Any] | None) -> None:
         """Update latest inverter telemetry packet from the modulation stage."""
         if not telemetry:
             return
         self._inverter_metrics.update(dict(telemetry))
 
-    def get_inverter_state(self) -> Dict[str, float | int | bool]:
+    def get_inverter_state(self) -> dict[str, float | int | bool]:
         """Return latest inverter telemetry and runtime diagnostics."""
         return dict(self._inverter_metrics)
 
@@ -266,9 +262,13 @@ class SimulationEngine:
             raise ValueError("pwm_frequency_hz must be positive")
         self._control_timing_metrics["pwm_frequency_hz"] = float(pwm_frequency_hz)
         self._control_timing_metrics["control_period_s"] = 1.0 / float(pwm_frequency_hz)
+        self._numerical_stability_advisory = self._build_numerical_stability_advisory(
+            dt=self.dt,
+            pwm_frequency_hz=float(self._control_timing_metrics["pwm_frequency_hz"]),
+        )
 
     def record_control_timing(
-        self, calc_duration_s: float, control_period_s: Optional[float] = None
+        self, calc_duration_s: float, control_period_s: float | None = None
     ) -> None:
         """Record controller compute duration and update CPU-load estimates."""
         duration = max(float(calc_duration_s), 0.0)
@@ -299,15 +299,100 @@ class SimulationEngine:
         )
         self._control_timing_metrics["sample_count"] = count
 
-    def get_control_timing_state(self) -> Dict[str, float]:
+    def get_control_timing_state(self) -> dict[str, float]:
         """Return runtime control-timing and CPU-load telemetry."""
         return dict(self._control_timing_metrics)
+
+    def get_numerical_stability_advisory(self) -> dict[str, float | str | bool]:
+        """Return RK4 dt-stability guidance based on current motor parameters and dt.
+
+        Guidance intentionally recommends adjusting only simulation settings:
+        reducing ``dt`` and/or increasing PWM/switching frequency.
+        """
+        return dict(self._numerical_stability_advisory)
+
+    def _build_numerical_stability_advisory(
+        self, dt: float, pwm_frequency_hz: float
+    ) -> dict[str, float | str | bool]:
+        """Compute RK4 stability advisory for electrical and mechanical time scales."""
+        params = self.motor.params
+
+        phase_resistance = float(params.phase_resistance)
+        phase_inductance = float(params.phase_inductance)
+        rotor_inertia = float(params.rotor_inertia)
+        friction = float(params.friction_coefficient)
+
+        tau_e = (
+            phase_inductance / phase_resistance
+            if phase_resistance > 0.0 and phase_inductance > 0.0
+            else float("inf")
+        )
+        tau_m = rotor_inertia / friction if rotor_inertia > 0.0 and friction > 0.0 else float("inf")
+
+        dt_limit_e = _RK4_STABILITY_LIMIT * tau_e if np.isfinite(tau_e) else float("inf")
+        dt_limit_m = _RK4_STABILITY_LIMIT * tau_m if np.isfinite(tau_m) else float("inf")
+        dt_limit = min(dt_limit_e, dt_limit_m)
+
+        dt_recommended = (
+            dt_limit / _RK4_RECOMMENDED_MARGIN
+            if np.isfinite(dt_limit) and dt_limit > 0.0
+            else float("inf")
+        )
+        pwm_recommended_min_hz = (
+            1.0 / dt_recommended if np.isfinite(dt_recommended) and dt_recommended > 0.0 else 0.0
+        )
+
+        margin = dt_limit / dt if np.isfinite(dt_limit) and dt > 0.0 else float("inf")
+        if not np.isfinite(dt_limit):
+            severity = "unknown"
+            message = (
+                "RK4 stability advisory unavailable (missing positive R/L or J/b pair). "
+                "Recommended action: tune simulation dt and PWM frequency only."
+            )
+        elif dt > dt_limit:
+            severity = "unstable"
+            message = (
+                f"RK4 stability risk: dt={dt:.3e} s exceeds limit {dt_limit:.3e} s. "
+                f"Recommended action: decrease dt to <= {dt_recommended:.3e} s "
+                f"or increase PWM/switching frequency to >= {pwm_recommended_min_hz:.1f} Hz."
+            )
+        elif dt > 0.5 * dt_limit:
+            severity = "marginal"
+            message = (
+                f"RK4 stability margin is low (margin={margin:.2f}x). "
+                f"Recommended action: decrease dt toward <= {dt_recommended:.3e} s "
+                f"or increase PWM/switching frequency toward >= {pwm_recommended_min_hz:.1f} Hz."
+            )
+        else:
+            severity = "stable"
+            message = (
+                f"RK4 stability margin is healthy (margin={margin:.2f}x). "
+                "Keep dt/PWM settings as configured."
+            )
+
+        return {
+            "severity": severity,
+            "is_stable": severity in {"stable", "unknown"},
+            "dt_s": float(dt),
+            "pwm_frequency_hz": float(pwm_frequency_hz),
+            "tau_e_s": float(tau_e) if np.isfinite(tau_e) else float("inf"),
+            "tau_m_s": float(tau_m) if np.isfinite(tau_m) else float("inf"),
+            "dt_limit_e_s": float(dt_limit_e) if np.isfinite(dt_limit_e) else float("inf"),
+            "dt_limit_m_s": float(dt_limit_m) if np.isfinite(dt_limit_m) else float("inf"),
+            "dt_limit_s": float(dt_limit) if np.isfinite(dt_limit) else float("inf"),
+            "dt_recommended_s": (
+                float(dt_recommended) if np.isfinite(dt_recommended) else float("inf")
+            ),
+            "pwm_recommended_min_hz": float(pwm_recommended_min_hz),
+            "stability_margin": float(margin) if np.isfinite(margin) else float("inf"),
+            "message": message,
+        }
 
     def set_compute_backend(self, backend: str) -> None:
         """Set compute backend policy: auto, cpu, or gpu."""
         self._compute_backend_state = resolve_compute_backend(backend)
 
-    def get_compute_backend_state(self) -> Dict[str, Any]:
+    def get_compute_backend_state(self) -> dict[str, Any]:
         """Return currently selected compute backend state."""
         return as_dict(self._compute_backend_state)
 
@@ -335,10 +420,8 @@ class SimulationEngine:
         effective_voltages = np.asarray(voltages, dtype=np.float64)
 
         if self.current_sense is not None:
-            effective_voltages, phase_drop = (
-                self.current_sense.apply_shunt_voltage_drop(
-                    effective_voltages, self.motor.currents
-                )
+            effective_voltages, phase_drop = self.current_sense.apply_shunt_voltage_drop(
+                effective_voltages, self.motor.currents
             )
             self._current_sense_state["phase_voltage_drop_v"] = phase_drop.tolist()
 
@@ -348,9 +431,7 @@ class SimulationEngine:
             and self.hardware_interface.is_connected
         ):
             try:
-                self.hardware_interface.write_phase_voltages(
-                    effective_voltages, self.time
-                )
+                self.hardware_interface.write_phase_voltages(effective_voltages, self.time)
                 self._hardware_state["write_count"] += 1
 
                 feedback = self.hardware_interface.read_feedback(self.time)
@@ -380,9 +461,7 @@ class SimulationEngine:
 
         if self.current_sense is not None:
             svm_sector = self.current_sense.sector_from_voltages(effective_voltages)
-            sensed = self.current_sense.measure(
-                self.motor.currents, self.dt, svm_sector=svm_sector
-            )
+            sensed = self.current_sense.measure(self.motor.currents, self.dt, svm_sector=svm_sector)
             self._measured_phase_currents = np.asarray(
                 sensed["currents_abc_measured"], dtype=np.float64
             )
@@ -393,15 +472,11 @@ class SimulationEngine:
                     "amplifier_outputs_v": np.asarray(
                         sensed["amplifier_outputs_v"], dtype=np.float64
                     ).tolist(),
-                    "adc_saturated": np.asarray(
-                        sensed["adc_saturated"], dtype=bool
-                    ).tolist(),
+                    "adc_saturated": np.asarray(sensed["adc_saturated"], dtype=bool).tolist(),
                 }
             )
         else:
-            self._measured_phase_currents = np.asarray(
-                self.motor.currents, dtype=np.float64
-            )
+            self._measured_phase_currents = np.asarray(self.motor.currents, dtype=np.float64)
 
         # Log data if requested
         if log_data:
@@ -411,9 +486,7 @@ class SimulationEngine:
         self.time += self.dt
         self.step_count += 1
 
-    def _log_data(
-        self, voltages: np.ndarray, load_torque: float, supply_voltage: float
-    ) -> None:
+    def _log_data(self, voltages: np.ndarray, load_torque: float, supply_voltage: float) -> None:
         """
         Log simulation data to history buffers.
 
@@ -501,9 +574,7 @@ class SimulationEngine:
             dtype=np.float64,
         )
         p_motor_terminal = float(np.dot(voltages, i_abc))
-        inverter_loss = float(
-            self._inverter_metrics.get("total_inverter_loss_power_w", 0.0)
-        )
+        inverter_loss = float(self._inverter_metrics.get("total_inverter_loss_power_w", 0.0))
         p_instant = p_motor_terminal + inverter_loss
         if abs(supply_voltage) > 1e-9:
             i_in = p_instant / float(supply_voltage)
@@ -531,9 +602,7 @@ class SimulationEngine:
 
         if len(self._history_input_current) >= 8:
             w = min(self.pfc_window_samples, len(self._history_input_current))
-            recent_supply = np.array(
-                list(self._history_supply_voltage)[-w:], dtype=np.float64
-            )
+            recent_supply = np.array(list(self._history_supply_voltage)[-w:], dtype=np.float64)
             recent_input_current = np.array(
                 list(self._history_input_current)[-w:], dtype=np.float64
             )
@@ -546,9 +615,7 @@ class SimulationEngine:
             self._pfc_metrics["power_factor"] = pf_now
             self._pfc_metrics["active_power_w"] = float(metrics["active_power_w"])
             self._pfc_metrics["apparent_power_va"] = float(metrics["apparent_power_va"])
-            self._pfc_metrics["reactive_power_var"] = float(
-                metrics["reactive_power_var"]
-            )
+            self._pfc_metrics["reactive_power_var"] = float(metrics["reactive_power_var"])
 
             if self._pfc_enabled and self.pfc_controller is not None:
                 cmd_var = self.pfc_controller.update(
@@ -589,14 +656,14 @@ class SimulationEngine:
         )
         self._pfc_metrics["target_pf"] = float(target_pf)
 
-    def get_power_factor_control_state(self) -> Dict[str, float | bool]:
+    def get_power_factor_control_state(self) -> dict[str, float | bool]:
         """Return current PFC telemetry and controller state."""
         return {
             "enabled": self._pfc_enabled,
             **self._pfc_metrics,
         }
 
-    def get_efficiency_state(self) -> Dict[str, float]:
+    def get_efficiency_state(self) -> dict[str, float]:
         """Return current efficiency and loss telemetry."""
         return dict(self._efficiency_metrics)
 
@@ -621,11 +688,11 @@ class SimulationEngine:
             self.hardware_interface.disconnect()
             self._hardware_state["connected"] = False
 
-    def get_hardware_state(self) -> Dict[str, Any]:
+    def get_hardware_state(self) -> dict[str, Any]:
         """Return hardware backend execution status and diagnostics."""
         return dict(self._hardware_state)
 
-    def log_data(self, load_torque: Optional[float] = None) -> None:
+    def log_data(self, load_torque: float | None = None) -> None:
         """
         Manual data logging (for external control loops).
 
@@ -712,9 +779,7 @@ class SimulationEngine:
                 "apparent_power_va": 0.0,
                 "reactive_power_var": 0.0,
                 "compensation_command_var": 0.0,
-                "target_pf": float(self.pfc_controller.target_pf)
-                if self.pfc_controller
-                else 0.0,
+                "target_pf": float(self.pfc_controller.target_pf) if self.pfc_controller else 0.0,
             }
         )
         self._efficiency_metrics.update(
@@ -756,6 +821,10 @@ class SimulationEngine:
                 "sample_count": 0.0,
             }
         )
+        self._numerical_stability_advisory = self._build_numerical_stability_advisory(
+            dt=self.dt,
+            pwm_frequency_hz=float(self._control_timing_metrics["pwm_frequency_hz"]),
+        )
 
         if self.pfc_controller is not None:
             self.pfc_controller.reset()
@@ -769,7 +838,7 @@ class SimulationEngine:
         self.step_count = 0
         self._last_effective_voltages = np.zeros(3, dtype=np.float64)
 
-    def get_history(self) -> Dict[str, np.ndarray]:
+    def get_history(self) -> dict[str, np.ndarray]:
         """
         Get all simulation history as numpy arrays.
 
@@ -798,15 +867,9 @@ class SimulationEngine:
             "currents_a": np.array(self._history_currents_a, dtype=np.float64),
             "currents_b": np.array(self._history_currents_b, dtype=np.float64),
             "currents_c": np.array(self._history_currents_c, dtype=np.float64),
-            "currents_a_true": np.array(
-                self._history_currents_a_true, dtype=np.float64
-            ),
-            "currents_b_true": np.array(
-                self._history_currents_b_true, dtype=np.float64
-            ),
-            "currents_c_true": np.array(
-                self._history_currents_c_true, dtype=np.float64
-            ),
+            "currents_a_true": np.array(self._history_currents_a_true, dtype=np.float64),
+            "currents_b_true": np.array(self._history_currents_b_true, dtype=np.float64),
+            "currents_c_true": np.array(self._history_currents_c_true, dtype=np.float64),
             "omega": np.array(self._history_omega, dtype=np.float64),
             "theta": np.array(self._history_theta, dtype=np.float64),
             "speed": np.array(self._history_speed, dtype=np.float64),
@@ -819,12 +882,8 @@ class SimulationEngine:
             "voltages_b": np.array(self._history_voltages_b, dtype=np.float64),
             "voltages_c": np.array(self._history_voltages_c, dtype=np.float64),
             "supply_voltage": np.array(self._history_supply_voltage, dtype=np.float64),
-            "effective_dc_voltage": np.array(
-                self._history_effective_dc_voltage, dtype=np.float64
-            ),
-            "dc_link_ripple_v": np.array(
-                self._history_dc_link_ripple_v, dtype=np.float64
-            ),
+            "effective_dc_voltage": np.array(self._history_effective_dc_voltage, dtype=np.float64),
+            "dc_link_ripple_v": np.array(self._history_dc_link_ripple_v, dtype=np.float64),
             "dc_link_bus_current_a": np.array(
                 self._history_dc_link_bus_current_a, dtype=np.float64
             ),
@@ -832,49 +891,35 @@ class SimulationEngine:
             "input_power": np.array(self._history_input_power, dtype=np.float64),
             "power_factor": np.array(self._history_pf, dtype=np.float64),
             "pfc_command_var": np.array(self._history_pfc_command, dtype=np.float64),
-            "device_loss_power": np.array(
-                self._history_device_loss_power, dtype=np.float64
-            ),
+            "device_loss_power": np.array(self._history_device_loss_power, dtype=np.float64),
             "conduction_loss_power": np.array(
                 self._history_conduction_loss_power, dtype=np.float64
             ),
-            "switching_loss_power": np.array(
-                self._history_switching_loss_power, dtype=np.float64
-            ),
-            "dead_time_loss_power": np.array(
-                self._history_dead_time_loss_power, dtype=np.float64
-            ),
-            "diode_loss_power": np.array(
-                self._history_diode_loss_power, dtype=np.float64
-            ),
+            "switching_loss_power": np.array(self._history_switching_loss_power, dtype=np.float64),
+            "dead_time_loss_power": np.array(self._history_dead_time_loss_power, dtype=np.float64),
+            "diode_loss_power": np.array(self._history_diode_loss_power, dtype=np.float64),
             "inverter_total_loss_power": np.array(
                 self._history_inverter_total_loss_power, dtype=np.float64
             ),
             "inverter_junction_temp_c": np.array(
                 self._history_inverter_junction_temp_c, dtype=np.float64
             ),
-            "common_mode_voltage": np.array(
-                self._history_common_mode_voltage, dtype=np.float64
-            ),
+            "common_mode_voltage": np.array(self._history_common_mode_voltage, dtype=np.float64),
             "min_pulse_event_count": np.array(
                 self._history_min_pulse_event_count, dtype=np.float64
             ),
             "control_calc_duration_s": np.array(
                 self._history_control_calc_duration_s, dtype=np.float64
             ),
-            "control_cpu_load_pct": np.array(
-                self._history_control_cpu_load_pct, dtype=np.float64
-            ),
+            "control_cpu_load_pct": np.array(self._history_control_cpu_load_pct, dtype=np.float64),
             "mechanical_output_power": np.array(
                 self._history_mechanical_output_power, dtype=np.float64
             ),
-            "total_loss_power": np.array(
-                self._history_total_loss_power, dtype=np.float64
-            ),
+            "total_loss_power": np.array(self._history_total_loss_power, dtype=np.float64),
             "efficiency": np.array(self._history_efficiency, dtype=np.float64),
         }
 
-    def get_current_state(self) -> Dict[str, float]:
+    def get_current_state(self) -> dict[str, float]:
         """
         Get current motor state.
 
@@ -901,7 +946,7 @@ class SimulationEngine:
             return np.asarray(self._measured_phase_currents, dtype=np.float64)
         return np.asarray(self.motor.currents, dtype=np.float64)
 
-    def get_simulation_info(self) -> Dict[str, Any]:
+    def get_simulation_info(self) -> dict[str, Any]:
         """
         Get simulation metadata.
 

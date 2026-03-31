@@ -164,9 +164,7 @@ class CurrentSensorModel:
         """
         currents = np.asarray(currents, dtype=np.float64)
         if currents.shape != (self._n_channels,):
-            raise ValueError(
-                f"Expected currents shape ({self._n_channels},), got {currents.shape}"
-            )
+            raise ValueError(f"Expected currents shape ({self._n_channels},), got {currents.shape}")
         if dt <= 0:
             raise ValueError(f"dt must be positive, got {dt}")
 
@@ -181,9 +179,7 @@ class CurrentSensorModel:
         #    y[k] = (τ·y[k-1] + dt·x[k]) / (τ + dt)
         #    When τ = 0, the filter is bypassed (y[k] = x[k]).
         if self._tau > 0.0:
-            self._filter_state = (self._tau * self._filter_state + dt * v_amp) / (
-                self._tau + dt
-            )
+            self._filter_state = (self._tau * self._filter_state + dt * v_amp) / (self._tau + dt)
         else:
             self._filter_state = v_amp.copy()
 

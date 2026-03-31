@@ -19,11 +19,11 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.control import AdaptiveFOCTuner, FOCController, SVMGenerator  # noqa: E402
-from src.core.load_model import ConstantLoad  # noqa: E402
-from src.core.motor_model import BLDCMotor, MotorParameters  # noqa: E402
-from src.core.simulation_engine import SimulationEngine  # noqa: E402
-from src.utils.motor_profiles import list_motor_profiles, load_motor_profile  # noqa: E402
+from src.control import AdaptiveFOCTuner, FOCController, SVMGenerator
+from src.core.load_model import ConstantLoad
+from src.core.motor_model import BLDCMotor, MotorParameters
+from src.core.simulation_engine import SimulationEngine
+from src.utils.motor_profiles import list_motor_profiles, load_motor_profile
 
 
 def _to_motor_params(m: dict) -> MotorParameters:
@@ -277,9 +277,7 @@ def _optimize_one_profile(
     rated_speed = float(rated.get("rated_speed_rpm", 0.0))
     if rated_speed <= 0.0:
         raise ValueError(f"Profile {profile_path.name} has no rated_speed_rpm")
-    rated_current = float(
-        rated.get("rated_current_a", rated.get("rated_current_a_rms", 20.0))
-    )
+    rated_current = float(rated.get("rated_current_a", rated.get("rated_current_a_rms", 20.0)))
 
     base_motor_params = dict(profile["motor_params"])
     base_fp = _motor_params_fingerprint(base_motor_params)
@@ -290,8 +288,8 @@ def _optimize_one_profile(
     tuner = AdaptiveFOCTuner(params=params)
     base = tuner.tune(grid_size=(12 if deep else 8))
 
-    speed_candidates, current_candidates, observer_candidates = (
-        _build_search_candidates(base, deep=deep)
+    speed_candidates, current_candidates, observer_candidates = _build_search_candidates(
+        base, deep=deep
     )
 
     best_speed = speed_candidates[2]
@@ -346,10 +344,7 @@ def _optimize_one_profile(
             sim_time_s=search_time_s,
             dt=dt,
         )
-        if (
-            best_observer_result is None
-            or trial["score"] < best_observer_result["score"]
-        ):
+        if best_observer_result is None or trial["score"] < best_observer_result["score"]:
             best_observer_result = trial
             best_observer = cand
 
@@ -365,8 +360,7 @@ def _optimize_one_profile(
     )
     min_required_speed_rpm = rated_speed * max(0.0, min(1.0, min_final_speed_ratio))
     accepted = bool(
-        final_result["converged"]
-        and final_result["final_speed_rpm"] >= min_required_speed_rpm
+        final_result["converged"] and final_result["final_speed_rpm"] >= min_required_speed_rpm
     )
 
     session_payload = {
@@ -418,9 +412,7 @@ def _optimize_one_profile(
         },
         "acceptance": {
             "accepted": accepted,
-            "reason": (
-                "accepted" if accepted else "strict convergence rule not satisfied"
-            ),
+            "reason": ("accepted" if accepted else "strict convergence rule not satisfied"),
         },
     }
 
@@ -501,9 +493,7 @@ def main() -> None:
                     "profile": session["profile"]["name"],
                     "file": session["profile"]["file"],
                     "session_file": out_path.name,
-                    "accepted": bool(
-                        session.get("acceptance", {}).get("accepted", False)
-                    ),
+                    "accepted": bool(session.get("acceptance", {}).get("accepted", False)),
                     "stable": verification["stable"],
                     "converged": verification["converged"],
                     "final_speed_rpm": verification["final_speed_rpm"],
@@ -540,9 +530,7 @@ def main() -> None:
                 )
             )
 
-    summary_path = (
-        PROJECT_ROOT / "data" / "logs" / "motor_profiles_auto_tuning_summary.json"
-    )
+    summary_path = PROJECT_ROOT / "data" / "logs" / "motor_profiles_auto_tuning_summary.json"
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 

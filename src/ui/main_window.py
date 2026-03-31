@@ -12,37 +12,36 @@ Provides comprehensive GUI for:
 - Data export
 
 :author: BLDC Control Team
-:version: 0.8.1
+:version: 0.9.0
 """
 
-import sys
 import csv
-import numpy as np
-from typing import Optional
-import time
-import logging
 import json
-from threading import Lock
-from pathlib import Path
+import logging
+import sys
+import time
 from collections import deque
+from pathlib import Path
+from threading import Lock
 
+import numpy as np
+from PyQt6.QtCore import QProcess, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
     QCheckBox,
-    QLabel,
-    QMessageBox,
+    QComboBox,
     QFileDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
-    QScrollArea,
-    QFrame,
-    QComboBox,
     QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QProcess
 
 # QAccessible was removed from PyQt6.QtCore in some builds of PyQt6.
 # We still want the code to run even if accessibility support is not available.
@@ -61,59 +60,58 @@ except ImportError:  # pragma: no cover
 
     QAccessible = _DummyQAccessible
 
-from PyQt6.QtGui import (
-    QFont,
-    QDesktopServices,
-    QPixmap,
-    QPainter,
-    QColor,
-    QPen,
-    QTextDocument,
-    QCloseEvent,
-)
 from PyQt6.QtCore import QUrl
+from PyQt6.QtGui import (
+    QColor,
+    QDesktopServices,
+    QFont,
+    QPainter,
+    QPen,
+    QPixmap,
+    QTextDocument,
+)
 from PyQt6.QtPrintSupport import QPrinter
 
-from src.ui.widgets.accessible_widgets import (
-    LabeledSpinBox,
-    LabeledComboBox,
-    AccessibleButton,
-    AccessibleGroupBox,
-    AccessibleTabWidget,
-    AccessibleTableWidget,
-)
+from src.control import BaseController, FOCController, SVMGenerator, VFController
+from src.control.transforms import inverse_clarke
 from src.core import (
     BLDCMotor,
-    MotorParameters,
-    SimulationEngine,
     ConstantLoad,
+    MotorParameters,
     RampLoad,
+    SimulationEngine,
     recommend_efficiency_adjustments,
 )
-from src.control import SVMGenerator, VFController, BaseController, FOCController
-from src.control.transforms import inverse_clarke
-from src.hardware import MockDAQHardware, InverterCurrentSense, ShuntAmplifierChannel
+from src.hardware import InverterCurrentSense, MockDAQHardware, ShuntAmplifierChannel
+from src.ui.widgets.accessible_widgets import (
+    AccessibleButton,
+    AccessibleGroupBox,
+    AccessibleTableWidget,
+    AccessibleTabWidget,
+    LabeledComboBox,
+    LabeledSpinBox,
+)
 from src.utils.config import (
+    DEFAULT_LOAD_PROFILE,
     DEFAULT_MOTOR_PARAMS,
     FOC_FIELD_WEAKENING_PARAMS,
     FOC_STARTUP_PARAMS,
     MOTOR_PROFILES_DIR,
+    PLOT_STYLE,
     SIMULATION_PARAMS,
     VF_CONTROLLER_PARAMS,
-    PLOT_STYLE,
-    DEFAULT_LOAD_PROFILE,
 )
+from src.utils.data_logger import DataLogger
 from src.utils.motor_profiles import (
     list_motor_profiles,
     load_motor_profile,
     save_motor_profile,
 )
 from src.utils.speech import (
-    speak,
     is_audio_assistance_enabled,
     set_audio_assistance_enabled,
+    speak,
 )
-from src.utils.data_logger import DataLogger
 from src.visualization.visualization import SimulationPlotter
 
 logger = logging.getLogger(__name__)
@@ -175,9 +173,7 @@ class AccessibleTextBlock(QFrame):
         name_font.setBold(True)
         name_font.setPointSize(10)
         self.name_label.setFont(name_font)
-        self.name_label.setAccessibleName(
-            f"Parameter {self.index + 1}: {parameter_name}"
-        )
+        self.name_label.setAccessibleName(f"Parameter {self.index + 1}: {parameter_name}")
         layout.addWidget(self.name_label)
 
         # Value display (large, readable)
@@ -198,7 +194,7 @@ class AccessibleTextBlock(QFrame):
             f"Monitoring Block {self.index + 1} of {self.total_count}: {parameter_name}"
         )
         self.setAccessibleDescription(
-            f"{parameter_name} current value (Unit: {unit}). Navigation: Tab to next block, Shift+Tab to previous."
+            f"{parameter_name} current value (Unit: {unit}). Navigation: Tab to next block, Shift+Tab to previous."  # noqa: E501
         )
 
     def update_value(self, value: float):
@@ -206,14 +202,10 @@ class AccessibleTextBlock(QFrame):
         self.current_value = value
         formatted_value = f"{value:.4g}"
         self.value_label.setText(f"{formatted_value} {self.unit}")
-        self.value_label.setToolTip(
-            f"{self.parameter_name}: {formatted_value} {self.unit}"
-        )
+        self.value_label.setToolTip(f"{self.parameter_name}: {formatted_value} {self.unit}")
 
         # Notify screen readers of value change
-        QAccessible.updateAccessibility(
-            self.value_label, 0, QAccessible.Event.NameChange
-        )
+        QAccessible.updateAccessibility(self.value_label, 0, QAccessible.Event.NameChange)
 
     def keyPressEvent(self, event):
         """Handle keyboard navigation for accessibility."""
@@ -239,15 +231,26 @@ class SimulationThread(QThread):
     def __init__(self):
         super().__init__()
         self.running = False
-        self.engine: Optional[SimulationEngine] = None
-        self.svm: Optional[SVMGenerator] = None
+        self.engine: SimulationEngine | None = None
+        self.svm: SVMGenerator | None = None
         # controller may be VFController or FOCController or any BaseController
-        self.controller: Optional[BaseController] = None
+        self.controller: BaseController | None = None
         self.update_interval = 0.1  # Update GUI every 100ms
         self.max_duration = 0.0  # 0 = infinite
         self._latest_state_lock = Lock()
         self._latest_state: dict = {}
+        self._warning_once_keys: set[str] = set()
         # start flag will be set when set_simulation is called
+
+    def _warn_once(self, key: str, message: str, exc: Exception | None = None) -> None:
+        """Log a runtime warning only once per key to avoid flooding logs."""
+        if key in self._warning_once_keys:
+            return
+        self._warning_once_keys.add(key)
+        if exc is None:
+            logger.warning(message)
+            return
+        logger.warning("%s: %s", message, exc)
 
     def get_latest_state(self) -> dict:
         """Return the latest simulation snapshot without blocking control loop."""
@@ -260,7 +263,7 @@ class SimulationThread(QThread):
         svm: SVMGenerator,
         controller: BaseController,
         max_duration: float = 0.0,
-        pwm_frequency_hz: Optional[float] = None,
+        pwm_frequency_hz: float | None = None,
     ):
         """Assign engine, svm and controller before running thread."""
         self.engine = engine
@@ -268,9 +271,7 @@ class SimulationThread(QThread):
         self.controller = controller
         self.max_duration = max_duration
         self.svm.set_sample_time(engine.dt)
-        resolved_pwm_hz = (
-            float(pwm_frequency_hz) if pwm_frequency_hz else (1.0 / engine.dt)
-        )
+        resolved_pwm_hz = float(pwm_frequency_hz) if pwm_frequency_hz else (1.0 / engine.dt)
         self.engine.set_pwm_frequency(resolved_pwm_hz)
 
     def start_simulation(self):
@@ -283,15 +284,13 @@ class SimulationThread(QThread):
         """Stop simulation loop."""
         self.running = False
 
-    def run(self):
+    def run(self):  # noqa: C901  # TODO: extract step-dispatch logic into helper methods (16)
         """Main simulation loop."""
         if not self.engine or not self.svm or not self.controller:
             return
 
         dt = self.engine.dt
-        control_period_s = self.engine.get_control_timing_state().get(
-            "control_period_s", dt
-        )
+        control_period_s = self.engine.get_control_timing_state().get("control_period_s", dt)
         control_period_s = max(float(control_period_s), dt)
         next_control_time = self.engine.time
         last_voltages = np.zeros(3, dtype=np.float64)
@@ -301,10 +300,7 @@ class SimulationThread(QThread):
 
         while self.running:
             # Check if max duration reached (only if > 0)
-            if (
-                self.max_duration > 0
-                and (self.engine.time - sim_start_time) >= self.max_duration
-            ):
+            if self.max_duration > 0 and (self.engine.time - sim_start_time) >= self.max_duration:
                 break
 
             # update supply voltage on svm from engine
@@ -312,16 +308,24 @@ class SimulationThread(QThread):
             if self.svm:
                 try:
                     self.svm.set_dc_voltage(supply_v)
-                except AttributeError:
-                    pass
+                except AttributeError as exc:
+                    self._warn_once(
+                        "svm_set_dc_voltage_missing",
+                        "SVM object does not expose set_dc_voltage",
+                        exc,
+                    )
                 try:
                     if hasattr(self.engine, "get_controller_phase_currents"):
                         phase_currents = self.engine.get_controller_phase_currents()
                     else:
                         phase_currents = self.engine.motor.currents
                     self.svm.set_phase_currents(phase_currents)
-                except AttributeError:
-                    pass
+                except AttributeError as exc:
+                    self._warn_once(
+                        "svm_set_phase_currents_missing",
+                        "SVM object does not expose set_phase_currents",
+                        exc,
+                    )
 
             if self.engine.time >= (next_control_time - 1e-15):
                 calc_start = time.perf_counter()
@@ -333,8 +337,12 @@ class SimulationThread(QThread):
                         self.controller.set_external_phase_currents(
                             self.engine.get_controller_phase_currents()
                         )
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        self._warn_once(
+                            "foc_external_phase_currents_failed",
+                            "Failed to update FOC external phase currents",
+                            exc,
+                        )
 
                 # Get control output (could be polar or cartesian)
                 ctrl_out = self.controller.update(control_period_s)
@@ -342,14 +350,20 @@ class SimulationThread(QThread):
                 if isinstance(ctrl_out, tuple) and len(ctrl_out) == 2:
                     a, b = ctrl_out
                     # determine whether cartesian
-                    if hasattr(self.controller, "output_cartesian") and getattr(
-                        self.controller, "output_cartesian"
+                    if (
+                        hasattr(self.controller, "output_cartesian")
+                        and self.controller.output_cartesian
                     ):
                         # use cartesian modulate if available
                         try:
                             voltages = self.svm.modulate_cartesian(valpha=a, vbeta=b)
-                        except Exception:
+                        except Exception as exc:
                             # fallback to manual inverse clarke
+                            self._warn_once(
+                                "svm_modulate_cartesian_failed",
+                                "Cartesian modulation failed; falling back to inverse Clarke",
+                                exc,
+                            )
                             va, vb, vc = inverse_clarke(a, b)
                             voltages = np.array([va, vb, vc])
                     else:
@@ -430,49 +444,37 @@ class CurrentSpectrumWindow(QMainWindow):
         controls_row.addWidget(QLabel("Mag X"))
         self.mag_x_scale_combo = QComboBox()
         self.mag_x_scale_combo.addItems(["linear", "log"])
-        self.mag_x_scale_combo.currentTextChanged.connect(
-            self._on_display_options_changed
-        )
+        self.mag_x_scale_combo.currentTextChanged.connect(self._on_display_options_changed)
         controls_row.addWidget(self.mag_x_scale_combo)
 
         controls_row.addWidget(QLabel("Mag Y"))
         self.mag_y_scale_combo = QComboBox()
         self.mag_y_scale_combo.addItems(["linear", "log"])
-        self.mag_y_scale_combo.currentTextChanged.connect(
-            self._on_display_options_changed
-        )
+        self.mag_y_scale_combo.currentTextChanged.connect(self._on_display_options_changed)
         controls_row.addWidget(self.mag_y_scale_combo)
 
         controls_row.addWidget(QLabel("Phase X"))
         self.phase_x_scale_combo = QComboBox()
         self.phase_x_scale_combo.addItems(["linear", "log"])
-        self.phase_x_scale_combo.currentTextChanged.connect(
-            self._on_display_options_changed
-        )
+        self.phase_x_scale_combo.currentTextChanged.connect(self._on_display_options_changed)
         controls_row.addWidget(self.phase_x_scale_combo)
 
         controls_row.addWidget(QLabel("Phase Y"))
         self.phase_y_scale_combo = QComboBox()
         self.phase_y_scale_combo.addItems(["linear", "log"])
-        self.phase_y_scale_combo.currentTextChanged.connect(
-            self._on_display_options_changed
-        )
+        self.phase_y_scale_combo.currentTextChanged.connect(self._on_display_options_changed)
         controls_row.addWidget(self.phase_y_scale_combo)
 
         controls_row.addWidget(QLabel("Amplitude"))
         self.amplitude_mode_combo = QComboBox()
         self.amplitude_mode_combo.addItems(["linear", "dB"])
-        self.amplitude_mode_combo.currentTextChanged.connect(
-            self._on_display_options_changed
-        )
+        self.amplitude_mode_combo.currentTextChanged.connect(self._on_display_options_changed)
         controls_row.addWidget(self.amplitude_mode_combo)
 
         controls_row.addWidget(QLabel("Phase Unit"))
         self.phase_unit_combo = QComboBox()
         self.phase_unit_combo.addItems(["deg", "rad"])
-        self.phase_unit_combo.currentTextChanged.connect(
-            self._on_display_options_changed
-        )
+        self.phase_unit_combo.currentTextChanged.connect(self._on_display_options_changed)
         controls_row.addWidget(self.phase_unit_combo)
 
         btn_save_csv = AccessibleButton(
@@ -491,8 +493,8 @@ class CurrentSpectrumWindow(QMainWindow):
 
         layout.addLayout(controls_row)
 
-        from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.figure import Figure
 
         self.figure = Figure(figsize=(8, 6), dpi=90)
         self.canvas = FigureCanvas(self.figure)
@@ -572,12 +574,8 @@ class CurrentSpectrumWindow(QMainWindow):
             self.mag_y_scale_combo.setCurrentText(mag_y_value)
             self.phase_x_scale_combo.setCurrentText(phase_x_value)
             self.phase_y_scale_combo.setCurrentText(phase_y_value)
-            self.amplitude_mode_combo.setCurrentText(
-                "dB" if amp_value == "db" else "linear"
-            )
-            self.phase_unit_combo.setCurrentText(
-                "rad" if phase_unit_value == "rad" else "deg"
-            )
+            self.amplitude_mode_combo.setCurrentText("dB" if amp_value == "db" else "linear")
+            self.phase_unit_combo.setCurrentText("rad" if phase_unit_value == "rad" else "deg")
         finally:
             for ctrl in controls:
                 ctrl.blockSignals(False)
@@ -599,7 +597,7 @@ class CurrentSpectrumWindow(QMainWindow):
         self._amplitude_mode = self.amplitude_mode_combo.currentText().lower()
         self._phase_unit = self.phase_unit_combo.currentText().lower()
 
-    def _refresh_plot(self) -> None:
+    def _refresh_plot(self) -> None:  # pragma: no cover - GUI timer/rendering path
         """Compute and draw FFT from buffered samples in this window thread context."""
         sample_count = len(self._ia_samples)
         if sample_count < 16:
@@ -683,10 +681,10 @@ class CurrentSpectrumWindow(QMainWindow):
         self.canvas.draw_idle()
 
         self.summary_label.setText(
-            f"FFT window: {sample_count} samples, dominant frequency: {dominant_freq:.1f} Hz, THD: {thd:.2f}%"
+            f"FFT window: {sample_count} samples, dominant frequency: {dominant_freq:.1f} Hz, THD: {thd:.2f}%"  # noqa: E501
         )
 
-    def _save_fft_csv(self) -> None:
+    def _save_fft_csv(self) -> None:  # pragma: no cover - GUI file dialog path
         """Save latest FFT spectrum arrays to CSV."""
         if self._last_freq.size == 0:
             QMessageBox.information(self, "No FFT Data", "Run the simulation first.")
@@ -718,7 +716,7 @@ class CurrentSpectrumWindow(QMainWindow):
 
         QMessageBox.information(self, "FFT Data Saved", f"Saved: {file_path.name}")
 
-    def _save_fft_image(self) -> None:
+    def _save_fft_image(self) -> None:  # pragma: no cover - GUI file dialog path
         """Save latest FFT graphs as an image."""
         if self._last_freq.size == 0:
             QMessageBox.information(self, "No FFT Data", "Run the simulation first.")
@@ -740,7 +738,7 @@ class CurrentSpectrumWindow(QMainWindow):
         self.figure.savefig(file_path, dpi=160)
         QMessageBox.information(self, "FFT Graph Saved", f"Saved: {file_path.name}")
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(self, event) -> None:  # pragma: no cover - GUI teardown path
         self._refresh_timer.stop()
         self.closed.emit()
         super().closeEvent(event)
@@ -765,11 +763,9 @@ class BLDCMotorControlGUI(QMainWindow):
         super().__init__()
 
         APP_NAME = "BLIND SYSTEMS BLDC Simulator"
-        APP_VERSION = "0.8.1"
+        APP_VERSION = "0.9.0"
 
-        self.setWindowTitle(
-            f"{APP_NAME} - BLDC Motor Control Simulator (v{APP_VERSION})"
-        )
+        self.setWindowTitle(f"{APP_NAME} - BLDC Motor Control Simulator (v{APP_VERSION})")
         self.setGeometry(100, 100, 1500, 950)
 
         # Accessibility
@@ -780,30 +776,31 @@ class BLDCMotorControlGUI(QMainWindow):
         )
 
         # Simulation components
-        self.motor: Optional[BLDCMotor] = None
-        self.engine: Optional[SimulationEngine] = None
-        self.svm: Optional[SVMGenerator] = None
-        self.controller: Optional[VFController] = None
-        self.sim_thread: Optional[SimulationThread] = None
+        self.motor: BLDCMotor | None = None
+        self.engine: SimulationEngine | None = None
+        self.svm: SVMGenerator | None = None
+        self.controller: VFController | None = None
+        self.sim_thread: SimulationThread | None = None
         self.logger = DataLogger()
 
         # Calibration process state
-        self.calib_process: Optional[QProcess] = None
-        self.calib_output_path: Optional[Path] = None
+        self.calib_process: QProcess | None = None
+        self.calib_output_path: Path | None = None
 
         # UI state
         self.is_running = False
+        self._last_stability_severity_announced: str | None = None
 
         # Speed curve history for live plotting
         self.speed_history_time = []
         self.speed_history_rpm = []
 
         # Optional FFT analysis window for measured currents.
-        self.current_fft_window: Optional[CurrentSpectrumWindow] = None
+        self.current_fft_window: CurrentSpectrumWindow | None = None
 
         # Process lifecycle tracking (prevent simultaneous simulation/calibration)
         self._task_lock = Lock()  # Protects concurrent access to task state
-        self._running_task_name: Optional[str] = None  # "simulation" or "calibration"
+        self._running_task_name: str | None = None  # "simulation" or "calibration"
 
         # Create UI
         self._create_ui()
@@ -857,17 +854,13 @@ class BLDCMotorControlGUI(QMainWindow):
         self.btn_start.clicked.connect(self._start_simulation)
         button_layout.addWidget(self.btn_start)
 
-        self.btn_stop = AccessibleButton(
-            "Stop Simulation (F6)", "Stop running simulation"
-        )
+        self.btn_stop = AccessibleButton("Stop Simulation (F6)", "Stop running simulation")
         self.btn_stop.setShortcut("F6")
         self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self._stop_simulation)
         button_layout.addWidget(self.btn_stop)
 
-        self.btn_reset = AccessibleButton(
-            "Reset (F7)", "Reset simulation to initial state"
-        )
+        self.btn_reset = AccessibleButton("Reset (F7)", "Reset simulation to initial state")
         self.btn_reset.setShortcut("F7")
         self.btn_reset.clicked.connect(self._reset_simulation)
         button_layout.addWidget(self.btn_reset)
@@ -885,9 +878,7 @@ class BLDCMotorControlGUI(QMainWindow):
         main_layout.addLayout(left_layout, 3)
 
         # Right column: permanent info panel
-        info_group = AccessibleGroupBox(
-            "Quick Info", "Persistent simulation parameters and units"
-        )
+        info_group = AccessibleGroupBox("Quick Info", "Persistent simulation parameters and units")
         info_layout = QVBoxLayout()
 
         # dt and time constants
@@ -902,6 +893,12 @@ class BLDCMotorControlGUI(QMainWindow):
         self.lbl_tau_m = QLabel("Mechanical time constant (J/b): -- s")
         self.lbl_tau_m.setAccessibleName("Mechanical time constant")
         info_layout.addWidget(self.lbl_tau_m)
+
+        self.lbl_stability = QLabel("RK4 stability advisory: --")
+        self.lbl_stability.setWordWrap(True)
+        self.lbl_stability.setAccessibleName("RK4 stability advisory")
+        self.lbl_stability.setStyleSheet("color: #455A64;")
+        info_layout.addWidget(self.lbl_stability)
 
         # Parameter units summary
         self.lbl_param_units = QLabel()
@@ -924,6 +921,8 @@ class BLDCMotorControlGUI(QMainWindow):
         self.status_bar_dt = QLabel("dt: -- s")
         self.status_bar_tau_e = QLabel("τ_e: -- s")
         self.status_bar_tau_m = QLabel("τ_m: -- s")
+        self.status_bar_stability = QLabel("RK4: --")
+        self.status_bar_stability.setStyleSheet("color: #455A64;")
         self.status_bar_state = QLabel("State: Ready")
         self.status_bar_time_remaining = QLabel("Remaining: -- s")
         self.status_bar_cpu_load = QLabel("CPU: -- %")
@@ -945,6 +944,8 @@ class BLDCMotorControlGUI(QMainWindow):
         self.statusBar().addWidget(self.status_bar_tau_e)
         self.statusBar().addWidget(QLabel("|"))  # Separator
         self.statusBar().addWidget(self.status_bar_tau_m)
+        self.statusBar().addWidget(QLabel("|"))  # Separator
+        self.statusBar().addWidget(self.status_bar_stability)
 
     def _create_menu_bar(self):
         """Create application menu bar with File, Option, and Help menus."""
@@ -1010,18 +1011,14 @@ class BLDCMotorControlGUI(QMainWindow):
         self.builtin_motor_menu.clear()
         profile_paths = list_motor_profiles(MOTOR_PROFILES_DIR)
         if not profile_paths:
-            empty_action = self.builtin_motor_menu.addAction(
-                "No built-in profiles found"
-            )
+            empty_action = self.builtin_motor_menu.addAction("No built-in profiles found")
             empty_action.setEnabled(False)
             return
 
         for profile_path in profile_paths:
             action = self.builtin_motor_menu.addAction(profile_path.stem)
             action.triggered.connect(
-                lambda checked=False, p=profile_path: (
-                    self._load_motor_profile_from_path(p)
-                )
+                lambda checked=False, p=profile_path: self._load_motor_profile_from_path(p)
             )
 
     def _collect_current_motor_parameters(self) -> dict:
@@ -1079,9 +1076,7 @@ class BLDCMotorControlGUI(QMainWindow):
             )
             speak("Motor parameters imported successfully.")
         except Exception as exc:
-            QMessageBox.critical(
-                self, "Import Error", f"Failed to import profile: {exc}"
-            )
+            QMessageBox.critical(self, "Import Error", f"Failed to import profile: {exc}")
 
     def _save_motor_parameters(self):
         """Save current motor parameters to a JSON profile file."""
@@ -1153,13 +1148,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
     def _open_html_help(self):
         """Open generated Sphinx HTML documentation index."""
-        html_index = (
-            Path(__file__).resolve().parents[2]
-            / "docs"
-            / "_build"
-            / "html"
-            / "index.html"
-        )
+        html_index = Path(__file__).resolve().parents[2] / "docs" / "_build" / "html" / "index.html"
         if not html_index.exists():
             QMessageBox.warning(
                 self,
@@ -1182,14 +1171,14 @@ class BLDCMotorControlGUI(QMainWindow):
 
         html = (
             "<h1>BLIND SYSTEMS BLDC Simulator - User Manual</h1>"
-            "<p><b>Version:</b> 0.8.1</p>"
+            "<p><b>Version:</b> 0.9.0</p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<h2>1. Getting Started</h2>"
             "<p>Configure motor, load and controller parameters, then start simulation.</p>"
             "<h2>2. Accessibility</h2>"
             "<p>Use Option -> Audio Assistance Enabled to toggle speech output.</p>"
             "<h2>3. Running and Monitoring</h2>"
-            "<p>Start: F5, Stop: F6, Reset: F7. Monitor speed, torque, convergence and CPU load metrics.</p>"
+            "<p>Start: F5, Stop: F6, Reset: F7. Monitor speed, torque, convergence and CPU load metrics.</p>"  # noqa: E501
             "<h2>4. Data Export</h2>"
             "<p>Use File -> Export Simulation Data or Ctrl+S.</p>"
             "<h2>5. Help</h2>"
@@ -1242,6 +1231,7 @@ class BLDCMotorControlGUI(QMainWindow):
             tau_m = None
 
         pwm_hz = 1.0 / dt_val if dt_val > 0.0 else 0.0
+        stability = self._build_dt_pwm_stability_advisory(dt_val, motor_params, pwm_hz)
         msg = f"Simulation time step (dt): {dt_val} s\n"
         msg += f"PWM frequency: {pwm_hz:.1f} Hz\n"
         if tau_e is not None:
@@ -1252,8 +1242,117 @@ class BLDCMotorControlGUI(QMainWindow):
             msg += f"Mechanical time constant (J/b): {tau_m:.6f} s\n"
         else:
             msg += "Mechanical time constant (J/b): n/a\n"
+        msg += f"RK4 advisory: {stability['severity']}\n"
+        msg += f"Recommended dt <= {stability['dt_recommended_s']:.3e} s\n"
+        msg += f"Recommended PWM >= {stability['pwm_recommended_min_hz']:.1f} Hz\n"
+        msg += "Recommended action: adjust dt or PWM frequency (motor parameters are fixed).\n"
+        msg += str(stability["message"])
 
         return msg
+
+    def _build_dt_pwm_stability_advisory(
+        self, dt_s: float, motor_params: MotorParameters, pwm_hz: float
+    ) -> dict[str, float | str]:
+        """Compute RK4 dt/PWM advisory for current motor constants.
+
+        User-facing guidance is restricted to simulation settings: dt and PWM frequency.
+        """
+        rk4_limit = 2.785
+        recommended_margin = 5.0
+
+        try:
+            tau_e = float(motor_params.phase_inductance) / float(motor_params.phase_resistance)
+        except Exception:
+            tau_e = float("inf")
+        try:
+            tau_m = float(motor_params.rotor_inertia) / float(motor_params.friction_coefficient)
+        except Exception:
+            tau_m = float("inf")
+
+        dt_limit_e = rk4_limit * tau_e if np.isfinite(tau_e) else float("inf")
+        dt_limit_m = rk4_limit * tau_m if np.isfinite(tau_m) else float("inf")
+        dt_limit = min(dt_limit_e, dt_limit_m)
+
+        if np.isfinite(dt_limit) and dt_limit > 0.0:
+            dt_recommended = dt_limit / recommended_margin
+            pwm_recommended_min_hz = 1.0 / dt_recommended
+            margin = dt_limit / dt_s if dt_s > 0.0 else float("inf")
+            if dt_s > dt_limit:
+                severity = "unstable"
+            elif dt_s > 0.5 * dt_limit:
+                severity = "marginal"
+            else:
+                severity = "stable"
+        else:
+            dt_recommended = float("inf")
+            pwm_recommended_min_hz = 0.0
+            margin = float("inf")
+            severity = "unknown"
+
+        if severity == "unstable":
+            message = (
+                f"dt={dt_s:.3e} s exceeds RK4 limit {dt_limit:.3e} s. "
+                f"Decrease dt to <= {dt_recommended:.3e} s or raise PWM to >= "
+                f"{pwm_recommended_min_hz:.1f} Hz."
+            )
+        elif severity == "marginal":
+            message = (
+                f"RK4 margin is low ({margin:.2f}x). Decrease dt toward <= "
+                f"{dt_recommended:.3e} s or raise PWM toward >= {pwm_recommended_min_hz:.1f} Hz."
+            )
+        elif severity == "stable":
+            message = f"RK4 margin is healthy ({margin:.2f}x)."
+        else:
+            message = "RK4 advisory unavailable due to missing positive R/L or J/b pair."
+
+        return {
+            "severity": severity,
+            "dt_limit_s": float(dt_limit) if np.isfinite(dt_limit) else float("inf"),
+            "dt_recommended_s": float(dt_recommended)
+            if np.isfinite(dt_recommended)
+            else float("inf"),
+            "pwm_recommended_min_hz": float(pwm_recommended_min_hz),
+            "stability_margin": float(margin) if np.isfinite(margin) else float("inf"),
+            "message": message,
+            "pwm_hz": float(pwm_hz),
+        }
+
+    def _announce_stability_advisory_if_needed(
+        self,
+        severity: str,
+        dt_recommended_s: float,
+        pwm_recommended_min_hz: float,
+        margin: float,
+    ) -> None:
+        """Speak RK4 advisory changes when audio assistance is enabled.
+
+        Announcements are edge-triggered by severity transitions to avoid
+        repeating speech every UI refresh.
+        """
+        if not is_audio_assistance_enabled():
+            return
+
+        if severity == self._last_stability_severity_announced:
+            return
+
+        self._last_stability_severity_announced = severity
+        if severity == "unstable":
+            speak(
+                "Warning. RK4 stability is unstable. "
+                f"Decrease time step to at most {dt_recommended_s:.2e} seconds, "
+                f"or increase PWM frequency to at least {pwm_recommended_min_hz:.0f} hertz."
+            )
+        elif severity == "marginal":
+            speak(
+                "Caution. RK4 stability margin is low. "
+                f"Current margin is {margin:.1f} times. "
+                f"Consider decreasing time step to {dt_recommended_s:.2e} seconds, "
+                f"or increasing PWM frequency to {pwm_recommended_min_hz:.0f} hertz."
+            )
+        elif severity == "stable":
+            speak("RK4 stability is now healthy.")
+        else:
+            speak("RK4 stability advisory is currently unavailable.")
 
     def _collect_simulation_configuration(self) -> dict:
         """Collect complete simulation configuration from current UI state."""
@@ -1323,9 +1422,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 "align_duration_s": float(self.vf_align_time.value()),
                 "align_voltage_v": float(self.vf_align_voltage.value()),
                 "align_angle_deg": float(self.vf_align_angle.value()),
-                "ramp_initial_frequency_hz": float(
-                    self.vf_ramp_initial_frequency.value()
-                ),
+                "ramp_initial_frequency_hz": float(self.vf_ramp_initial_frequency.value()),
             },
             "foc_controller": {
                 "transform": self.foc_transform.currentText(),
@@ -1359,51 +1456,34 @@ class BLDCMotorControlGUI(QMainWindow):
                     "smo_boundary": float(self.foc_smo_boundary.value()),
                 },
                 "startup_sequence": {
-                    "enabled": self.foc_startup_sequence_mode.currentText()
-                    == "Enabled",
+                    "enabled": self.foc_startup_sequence_mode.currentText() == "Enabled",
                     "align_duration_s": float(self.foc_align_time.value()),
                     "align_current_a": float(self.foc_align_current.value()),
                     "align_angle_deg": float(self.foc_align_angle.value()),
-                    "open_loop_initial_speed_rpm": float(
-                        self.foc_open_loop_initial_speed.value()
-                    ),
-                    "open_loop_target_speed_rpm": float(
-                        self.foc_open_loop_target_speed.value()
-                    ),
-                    "open_loop_ramp_time_s": float(
-                        self.foc_open_loop_ramp_time.value()
-                    ),
+                    "open_loop_initial_speed_rpm": float(self.foc_open_loop_initial_speed.value()),
+                    "open_loop_target_speed_rpm": float(self.foc_open_loop_target_speed.value()),
+                    "open_loop_ramp_time_s": float(self.foc_open_loop_ramp_time.value()),
                     "open_loop_id_ref_a": float(self.foc_open_loop_id_ref.value()),
                     "open_loop_iq_ref_a": float(self.foc_open_loop_iq_ref.value()),
                 },
                 "startup_transition": {
-                    "enabled": self.foc_startup_transition_mode.currentText()
-                    == "Enabled",
+                    "enabled": self.foc_startup_transition_mode.currentText() == "Enabled",
                     "initial_mode": self.foc_startup_initial_observer.currentText(),
                     "min_speed_rpm": float(self.foc_startup_min_speed.value()),
                     "min_elapsed_s": float(self.foc_startup_min_time.value()),
                     "min_emf_v": float(self.foc_startup_min_emf.value()),
                     "min_confidence": float(self.foc_startup_min_confidence.value()),
-                    "confidence_hold_s": float(
-                        self.foc_startup_confidence_hold.value()
-                    ),
-                    "confidence_hysteresis": float(
-                        self.foc_startup_confidence_hysteresis.value()
-                    ),
-                    "fallback_enabled": self.foc_startup_fallback_mode.currentText()
-                    == "Enabled",
+                    "confidence_hold_s": float(self.foc_startup_confidence_hold.value()),
+                    "confidence_hysteresis": float(self.foc_startup_confidence_hysteresis.value()),
+                    "fallback_enabled": self.foc_startup_fallback_mode.currentText() == "Enabled",
                     "fallback_hold_s": float(self.foc_startup_fallback_hold.value()),
                 },
                 "field_weakening": {
                     "enabled": self.foc_field_weakening_mode.currentText() == "Enabled",
-                    "start_speed_rpm": float(
-                        self.foc_field_weakening_start_speed.value()
-                    ),
+                    "start_speed_rpm": float(self.foc_field_weakening_start_speed.value()),
                     "gain": float(self.foc_field_weakening_gain.value()),
                     "max_negative_id_a": float(self.foc_field_weakening_max_id.value()),
-                    "headroom_target_v": float(
-                        self.foc_field_weakening_headroom_target.value()
-                    ),
+                    "headroom_target_v": float(self.foc_field_weakening_headroom_target.value()),
                 },
             },
             "pfc": {
@@ -1436,9 +1516,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 "shunt_resistance_ohm": float(self.current_sense_r_shunt.value()),
                 "nominal_gain": float(self.current_sense_nominal_gain.value()),
                 "nominal_offset_v": float(self.current_sense_nominal_offset.value()),
-                "fft_window_samples": int(
-                    self.current_sense_fft_window_samples.value()
-                ),
+                "fft_window_samples": int(self.current_sense_fft_window_samples.value()),
                 "fft_show_grid": bool(self.current_sense_fft_show_grid.isChecked()),
                 "fft_mag_x_scale": self.current_sense_fft_mag_x_scale.currentText(),
                 "fft_mag_y_scale": self.current_sense_fft_mag_y_scale.currentText(),
@@ -1487,7 +1565,7 @@ class BLDCMotorControlGUI(QMainWindow):
     def _show_about(self):
         """Show about dialog."""
         about_text = (
-            "<h2>BLIND SYSTEMS BLDC Simulator v0.8.1</h2>"
+            "<h2>BLIND SYSTEMS BLDC Simulator v0.9.0</h2>"
             "<p><b>Advanced BLDC Motor Control Simulator</b></p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<p><b>Copyright:</b> 2026 BLIND SYSTEMS</p>"
@@ -1508,9 +1586,7 @@ class BLDCMotorControlGUI(QMainWindow):
         if logo_path is not None:
             pix = QPixmap(str(logo_path))
             if not pix.isNull():
-                msg.setIconPixmap(
-                    pix.scaled(220, 80, Qt.AspectRatioMode.KeepAspectRatio)
-                )
+                msg.setIconPixmap(pix.scaled(220, 80, Qt.AspectRatioMode.KeepAspectRatio))
         else:
             # Fallback synthetic logo if no file is present yet.
             pix = QPixmap(240, 70)
@@ -1531,7 +1607,7 @@ class BLDCMotorControlGUI(QMainWindow):
         guide_text = (
             "<h3>Quick Start Guide - BLIND SYSTEMS BLDC Simulator</h3>"
             "<p><b>1. Configure Motor Parameters:</b></p>"
-            "<ul><li>Set nominal voltage, resistance, inductance, pole pairs, Back-EMF constant</li></ul>"
+            "<ul><li>Set nominal voltage, resistance, inductance, pole pairs, Back-EMF constant</li></ul>"  # noqa: E501
             "<p><b>2. Set Load Profile:</b></p>"
             "<ul><li>Choose load type (Constant, Ramp, Inertial) and configure parameters</li></ul>"
             "<p><b>3. Setup Supply Profile (Optional):</b></p>"
@@ -1568,7 +1644,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=1,
             decimals=1,
             suffix=" V",
-            description="Motor nominal DC voltage. Typical: 24-48V for hobby, 48-400V for industrial.",
+            description="Motor nominal DC voltage. Typical: 24-48V for hobby, 48-400V for industrial.",  # noqa: E501
         )
         group_layout.addWidget(self.param_voltage)
 
@@ -1684,14 +1760,14 @@ class BLDCMotorControlGUI(QMainWindow):
         self.param_model_type = LabeledComboBox(
             "Motor Model",
             items=["scalar", "dq"],
-            description="Select motor model type. 'scalar' for 3-phase model, 'dq' for d-q axis model.",
+            description="Select motor model type. 'scalar' for 3-phase model, 'dq' for d-q axis model.",  # noqa: E501
         )
         group_layout.addWidget(self.param_model_type)
 
         self.param_emf_shape = LabeledComboBox(
             "Back-EMF Shape",
             items=["trapezoidal", "sinusoidal"],
-            description="Select back-EMF waveform shape. 'trapezoidal' for BLDC, 'sinusoidal' for PMSM.",
+            description="Select back-EMF waveform shape. 'trapezoidal' for BLDC, 'sinusoidal' for PMSM.",  # noqa: E501
         )
         group_layout.addWidget(self.param_emf_shape)
 
@@ -1707,9 +1783,7 @@ class BLDCMotorControlGUI(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout()
 
-        group = AccessibleGroupBox(
-            "Load Profile", "Define mechanical load applied to motor shaft."
-        )
+        group = AccessibleGroupBox("Load Profile", "Define mechanical load applied to motor shaft.")
         group_layout = QVBoxLayout()
 
         self.load_type = LabeledComboBox(
@@ -1791,7 +1865,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.supply_type = LabeledComboBox(
             "Profile Type",
             items=["Constant", "Ramp"],
-            description="Select supply voltage profile type. Variable/custom profiles not implemented yet.",
+            description="Select supply voltage profile type. Variable/custom profiles not implemented yet.",  # noqa: E501
         )
         self.supply_type.currentTextChanged.connect(self._on_supply_type_changed)
         group_layout.addWidget(self.supply_type)
@@ -1882,7 +1956,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.5,
             decimals=1,
             suffix=" s",
-            description="Simulation runtime in seconds. Set to 0 for infinite/continuous simulation.",
+            description="Simulation runtime in seconds. Set to 0 for infinite/continuous simulation.",  # noqa: E501
         )
         duration_layout.addWidget(self.sim_duration)
 
@@ -1974,12 +2048,10 @@ class BLDCMotorControlGUI(QMainWindow):
         self.vf_startup_sequence_mode = LabeledComboBox(
             "Startup Sequence",
             items=["Disabled", "Enabled"],
-            description="Apply a standard V/f startup with rotor alignment, open-loop ramp, then steady V/f operation.",
+            description="Apply a standard V/f startup with rotor alignment, open-loop ramp, then steady V/f operation.",  # noqa: E501
         )
         self.vf_startup_sequence_mode.setCurrentText(
-            "Enabled"
-            if VF_CONTROLLER_PARAMS["startup_sequence_enabled"]
-            else "Disabled"
+            "Enabled" if VF_CONTROLLER_PARAMS["startup_sequence_enabled"] else "Disabled"
         )
         self.vf_group_layout.addWidget(self.vf_startup_sequence_mode)
 
@@ -2057,7 +2129,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.foc_current_feedback_source = LabeledComboBox(
             "Current Feedback Source",
             items=["Motor True Currents", "Reconstructed (Shunt)"],
-            description="Select whether FOC current loops use true model currents or reconstructed shunt measurements.",
+            description="Select whether FOC current loops use true model currents or reconstructed shunt measurements.",  # noqa: E501
         )
         self.foc_group_layout.addWidget(self.foc_current_feedback_source)
 
@@ -2100,7 +2172,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.foc_field_weakening_mode = LabeledComboBox(
             "Field Weakening",
             items=["Disabled", "Enabled"],
-            description="Independent field-weakening feature toggle. When enabled, additional negative d-axis current is injected above the configured speed threshold.",
+            description="Independent field-weakening feature toggle. When enabled, additional negative d-axis current is injected above the configured speed threshold.",  # noqa: E501
         )
         self.foc_field_weakening_mode.setCurrentText(
             "Enabled" if FOC_FIELD_WEAKENING_PARAMS["enabled"] else "Disabled"
@@ -2115,7 +2187,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=50.0,
             decimals=1,
             suffix=" RPM",
-            description="Speed threshold above which field weakening begins injecting negative d-axis current.",
+            description="Speed threshold above which field weakening begins injecting negative d-axis current.",  # noqa: E501
         )
         self.foc_group_layout.addWidget(self.foc_field_weakening_start_speed)
 
@@ -2139,7 +2211,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.1,
             decimals=2,
             suffix=" A",
-            description="Maximum additional negative d-axis current magnitude injected by field weakening.",
+            description="Maximum additional negative d-axis current magnitude injected by field weakening.",  # noqa: E501
         )
         self.foc_group_layout.addWidget(self.foc_field_weakening_max_id)
 
@@ -2151,14 +2223,14 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.05,
             decimals=3,
             suffix=" V",
-            description="Desired dq voltage reserve maintained by FW. Lower values maximize speed range; higher values preserve control margin.",
+            description="Desired dq voltage reserve maintained by FW. Lower values maximize speed range; higher values preserve control margin.",  # noqa: E501
         )
         self.foc_group_layout.addWidget(self.foc_field_weakening_headroom_target)
 
         self.foc_speed_loop_mode = LabeledComboBox(
             "Speed Loop Mode",
             items=["Legacy iq mapping", "Cascaded PI"],
-            description="Legacy keeps previous iq mapping behavior. Cascaded PI enables speed-loop to iq generation.",
+            description="Legacy keeps previous iq mapping behavior. Cascaded PI enables speed-loop to iq generation.",  # noqa: E501
         )
         self.foc_group_layout.addWidget(self.foc_speed_loop_mode)
 
@@ -2263,7 +2335,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.foc_angle_observer_mode = LabeledComboBox(
             "Angle Observer",
             items=["Measured", "PLL", "SMO"],
-            description="Select rotor electrical angle source: direct model angle, PLL on back-EMF, or sliding-mode observer variant.",
+            description="Select rotor electrical angle source: direct model angle, PLL on back-EMF, or sliding-mode observer variant.",  # noqa: E501
         )
         self.foc_group_layout.addWidget(self.foc_angle_observer_mode)
 
@@ -2330,7 +2402,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.foc_startup_sequence_mode = LabeledComboBox(
             "Startup Sequence",
             items=["Disabled", "Enabled"],
-            description="Apply a standard FOC startup: align rotor, use open-loop ramp if sensorless, then hand off to closed-loop observer control.",
+            description="Apply a standard FOC startup: align rotor, use open-loop ramp if sensorless, then hand off to closed-loop observer control.",  # noqa: E501
         )
         self.foc_startup_sequence_mode.setCurrentText(
             "Enabled" if FOC_STARTUP_PARAMS["startup_sequence_enabled"] else "Disabled"
@@ -2436,7 +2508,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.foc_startup_transition_mode = LabeledComboBox(
             "Observer Startup Transition",
             items=["Disabled", "Enabled"],
-            description="Automatic observer takeover criteria used after the forced open-loop ramp or for legacy observer-only startup mode.",
+            description="Automatic observer takeover criteria used after the forced open-loop ramp or for legacy observer-only startup mode.",  # noqa: E501
         )
         self.foc_group_layout.addWidget(self.foc_startup_transition_mode)
 
@@ -2538,15 +2610,11 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.foc_group_layout.addWidget(self.foc_startup_fallback_hold)
 
-        btn_auto_d = AccessibleButton(
-            "Auto-tune d-axis", "Auto-tune d-axis PI controller"
-        )
+        btn_auto_d = AccessibleButton("Auto-tune d-axis", "Auto-tune d-axis PI controller")
         btn_auto_d.clicked.connect(lambda: self._auto_tune_axis("d"))
         self.foc_group_layout.addWidget(btn_auto_d)
 
-        btn_auto_q = AccessibleButton(
-            "Auto-tune q-axis", "Auto-tune q-axis PI controller"
-        )
+        btn_auto_q = AccessibleButton("Auto-tune q-axis", "Auto-tune q-axis PI controller")
         btn_auto_q.clicked.connect(lambda: self._auto_tune_axis("q"))
         self.foc_group_layout.addWidget(btn_auto_q)
 
@@ -2629,7 +2697,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.001,
             decimals=4,
             suffix=" Ohm",
-            description="Effective inverter conduction path resistance used for current-dependent voltage drop.",
+            description="Effective inverter conduction path resistance used for current-dependent voltage drop.",  # noqa: E501
         )
         inverter_layout.addWidget(self.inverter_conduction_resistance)
 
@@ -2641,7 +2709,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=500.0,
             decimals=1,
             suffix=" Hz",
-            description="PWM switching frequency; also sets control update period for FOC and V/f loops.",
+            description="PWM switching frequency; also sets control update period for FOC and V/f loops.",  # noqa: E501
         )
         inverter_layout.addWidget(self.inverter_switching_frequency)
 
@@ -2653,7 +2721,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.001,
             decimals=4,
             suffix=" V/A/kHz",
-            description="Voltage-loss coefficient per ampere and kHz for switching-dependent drop modeling.",
+            description="Voltage-loss coefficient per ampere and kHz for switching-dependent drop modeling.",  # noqa: E501
         )
         inverter_layout.addWidget(self.inverter_switching_loss_coeff)
 
@@ -2665,7 +2733,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.01,
             decimals=3,
             suffix=" V",
-            description="Additional freewheel diode drop when current polarity opposes commanded phase voltage.",
+            description="Additional freewheel diode drop when current polarity opposes commanded phase voltage.",  # noqa: E501
         )
         inverter_layout.addWidget(self.inverter_diode_drop)
 
@@ -2689,7 +2757,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.001,
             decimals=4,
             suffix=" pu",
-            description="Commands smaller than this fraction of half-bus voltage are suppressed to emulate minimum PWM on-time.",
+            description="Commands smaller than this fraction of half-bus voltage are suppressed to emulate minimum PWM on-time.",  # noqa: E501
         )
         inverter_layout.addWidget(self.inverter_min_pulse_fraction)
 
@@ -2713,7 +2781,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.001,
             decimals=4,
             suffix=" Ohm",
-            description="Source resistance that recharges the DC-link capacitor in the ripple model.",
+            description="Source resistance that recharges the DC-link capacitor in the ripple model.",  # noqa: E501
         )
         inverter_layout.addWidget(self.inverter_dc_link_source_resistance)
 
@@ -3074,15 +3142,13 @@ class BLDCMotorControlGUI(QMainWindow):
             self.current_sense_fft_phase_unit,
         ):
             combo.currentTextChanged.connect(self._apply_fft_display_settings)
-        self.current_sense_fft_show_grid.stateChanged.connect(
-            self._apply_fft_display_settings
-        )
+        self.current_sense_fft_show_grid.stateChanged.connect(self._apply_fft_display_settings)
 
         bridge_title = QLabel("Live Inverter Bridge / Shunt Topology")
         current_sense_layout.addWidget(bridge_title)
 
-        from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.figure import Figure
 
         self.bridge_figure = Figure(figsize=(6.4, 2.8), dpi=90)
         self.bridge_canvas = FigureCanvas(self.bridge_figure)
@@ -3268,7 +3334,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.hardware_group = AccessibleGroupBox(
             "Communication Interface",
-            "Optional communication backend settings (for example CAN/LIN style I/O). Disable to run pure software simulation.",
+            "Optional communication backend settings (for example CAN/LIN style I/O). Disable to run pure software simulation.",  # noqa: E501
         )
         hardware_layout = QVBoxLayout()
 
@@ -3291,7 +3357,7 @@ class BLDCMotorControlGUI(QMainWindow):
             step=0.001,
             decimals=4,
             suffix=" V",
-            description="Standard deviation of Gaussian feedback voltage noise for the Mock DAQ backend.",
+            description="Standard deviation of Gaussian feedback voltage noise for the Mock DAQ backend.",  # noqa: E501
         )
         hardware_layout.addWidget(self.hardware_noise_std)
 
@@ -3323,7 +3389,7 @@ class BLDCMotorControlGUI(QMainWindow):
         # Navigation instructions for accessibility
         instructions = QLabel(
             "📋 Monitoring Tab: Real-time motor values on the left, Speed profile on the right.\n"
-            "Navigate with Tab key. In the monitoring list, use arrow keys or Tab+Shift to navigate values."
+            "Navigate with Tab key. In the monitoring list, use arrow keys or Tab+Shift to navigate values."  # noqa: E501
         )
         instructions.setWordWrap(True)
         instructions.setAccessibleName("Navigation Instructions")
@@ -3332,7 +3398,7 @@ class BLDCMotorControlGUI(QMainWindow):
         # Status group with more comprehensive monitoring
         group = AccessibleGroupBox(
             "Real-Time Monitoring",
-            "Current motor state and performance metrics. Use arrow keys to navigate through values.",
+            "Current motor state and performance metrics. Use arrow keys to navigate through values.",  # noqa: E501
         )
         group_layout = QHBoxLayout()
 
@@ -3466,8 +3532,8 @@ class BLDCMotorControlGUI(QMainWindow):
         group_layout.addWidget(scroll, 1)
 
         # Right side: Speed curve display (using matplotlib)
-        from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.figure import Figure
 
         self.speed_figure = Figure(figsize=(5, 4), dpi=80)
         self.speed_canvas = FigureCanvas(self.speed_figure)
@@ -3494,14 +3560,12 @@ class BLDCMotorControlGUI(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout()
 
-        group = AccessibleGroupBox(
-            "Visualization", "Generate plots of simulation results."
-        )
+        group = AccessibleGroupBox("Visualization", "Generate plots of simulation results.")
         group_layout = QVBoxLayout()
 
         info = QLabel(
             "Plots are generated from recorded simulation data.\n"
-            "Run simulation first, then select plot type or custom variables to generate visualization."
+            "Run simulation first, then select plot type or custom variables to generate visualization."  # noqa: E501
         )
         info.setWordWrap(True)
         group_layout.addWidget(info)
@@ -3549,13 +3613,11 @@ class BLDCMotorControlGUI(QMainWindow):
         # custom variable selector
         self.plot_var_list = AccessibleTableWidget(
             "Variable Selection",
-            "Select variables to plot. Use arrow keys to navigate, Space or Enter to select/deselect items.",
+            "Select variables to plot. Use arrow keys to navigate, Space or Enter to select/deselect items.",  # noqa: E501
         )
         self.plot_var_list.setColumnCount(1)
         self.plot_var_list.setHorizontalHeaderLabels(["Variable"])
-        self.plot_var_list.setSelectionBehavior(
-            QTableWidget.SelectionBehavior.SelectRows
-        )
+        self.plot_var_list.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.plot_var_list.setSelectionMode(QTableWidget.SelectionMode.MultiSelection)
         # will populate when simulation ends / when plotting
         group_layout.addWidget(self.plot_var_list)
@@ -3605,7 +3667,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         btn_plot_measured_vs_true = AccessibleButton(
             "Plot Measured vs True Currents",
-            "Overlay measured and true physics phase currents with per-phase RMS error (requires current sensing enabled)",
+            "Overlay measured and true physics phase currents with per-phase RMS error (requires current sensing enabled)",  # noqa: E501
         )
         btn_plot_measured_vs_true.clicked.connect(self._plot_measured_vs_true)
         button_layout.addWidget(btn_plot_measured_vs_true)
@@ -3655,9 +3717,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.calib_profile_combo.setAccessibleDescription(
             "Select motor profile JSON for field-weakening loaded-point calibration"
         )
-        self.calib_profile_combo.currentTextChanged.connect(
-            self._on_calib_profile_changed
-        )
+        self.calib_profile_combo.currentTextChanged.connect(self._on_calib_profile_changed)
         row1.addWidget(self.calib_profile_combo, 1)
         pg_layout.addLayout(row1)
 
@@ -3750,11 +3810,7 @@ class BLDCMotorControlGUI(QMainWindow):
         stem = Path(profile_name).stem
         session_dir = MOTOR_PROFILES_DIR.parent / "tuning_sessions" / "until_converged"
         session_path = session_dir / f"{stem}_until_converged.json"
-        out_path = (
-            MOTOR_PROFILES_DIR.parent
-            / "logs"
-            / f"calibration_{stem}_fw_loaded_point.json"
-        )
+        out_path = MOTOR_PROFILES_DIR.parent / "logs" / f"calibration_{stem}_fw_loaded_point.json"
         exists_tag = "" if session_path.exists() else " ⚠ not found"
         self.calib_session_label.setText(f"Session: {session_path.name}{exists_tag}")
         self.calib_output_label.setText(f"Output: {out_path.name}")
@@ -3774,25 +3830,17 @@ class BLDCMotorControlGUI(QMainWindow):
 
         profile_name = self.calib_profile_combo.currentText()
         if not profile_name or profile_name == "(no profiles found)":
-            QMessageBox.warning(
-                self, "No Profile", "Please select a valid motor profile first."
-            )
+            QMessageBox.warning(self, "No Profile", "Please select a valid motor profile first.")
             return
 
         profile_path = MOTOR_PROFILES_DIR / profile_name
         stem = profile_path.stem
         session_dir = MOTOR_PROFILES_DIR.parent / "tuning_sessions" / "until_converged"
         session_path = session_dir / f"{stem}_until_converged.json"
-        out_path = (
-            MOTOR_PROFILES_DIR.parent
-            / "logs"
-            / f"calibration_{stem}_fw_loaded_point.json"
-        )
+        out_path = MOTOR_PROFILES_DIR.parent / "logs" / f"calibration_{stem}_fw_loaded_point.json"
 
         if not profile_path.exists():
-            QMessageBox.critical(
-                self, "Missing Profile", f"Profile not found:\n{profile_path}"
-            )
+            QMessageBox.critical(self, "Missing Profile", f"Profile not found:\n{profile_path}")
             return
 
         if not session_path.exists():
@@ -3809,9 +3857,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Locate the calibration script relative to this file
         script_path = (
-            Path(__file__).resolve().parents[2]
-            / "examples"
-            / "calibrate_fw_loaded_point.py"
+            Path(__file__).resolve().parents[2] / "examples" / "calibrate_fw_loaded_point.py"
         )
 
         self.calib_log.clear()
@@ -3821,9 +3867,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.btn_stop_calib.setEnabled(True)
 
         self.calib_process = QProcess(self)
-        self.calib_process.setProcessChannelMode(
-            QProcess.ProcessChannelMode.MergedChannels
-        )
+        self.calib_process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.calib_process.readyReadStandardOutput.connect(self._on_calib_output)
         self.calib_process.finished.connect(self._on_calib_finished)
         self.calib_process.start(
@@ -3873,7 +3917,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self._mark_task_finished("calibration")
         speak("Calibration stopped.")
 
-    def _on_calib_output(self) -> None:
+    def _on_calib_output(self) -> None:  # noqa: C901  # TODO: extract per-line parsing helpers (12)
         """Append captured stdout from calibration process to the progress log."""
         raw = bytes(self.calib_process.readAllStandardOutput())
         text = raw.decode("utf-8", errors="replace")
@@ -3950,9 +3994,7 @@ class BLDCMotorControlGUI(QMainWindow):
                     10000,
                 )
             except Exception as exc:
-                self.calib_result_status.setText(
-                    f"Status: Error reading results \u2014 {exc}"
-                )
+                self.calib_result_status.setText(f"Status: Error reading results \u2014 {exc}")
                 speak("Calibration finished but results could not be read.")
         else:
             self.calib_result_status.setText(f"Status: Failed (exit {exit_code})")
@@ -3990,10 +4032,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 self.update_timer.stop()
             if hasattr(self, "plot_timer"):
                 self.plot_timer.stop()
-            if (
-                hasattr(self, "current_fft_window")
-                and self.current_fft_window is not None
-            ):
+            if hasattr(self, "current_fft_window") and self.current_fft_window is not None:
                 self.current_fft_window.close()
                 self.current_fft_window = None
 
@@ -4045,10 +4084,10 @@ class BLDCMotorControlGUI(QMainWindow):
         self.motor = BLDCMotor(params, dt=pwm_period_s)
         # If Ld/Lq provided in UI, update params
         try:
-            params.ld = float(getattr(self, "param_ld", None).value())
-            params.lq = float(getattr(self, "param_lq", None).value())
-        except Exception:
-            pass
+            params.ld = float(self.param_ld.value())
+            params.lq = float(self.param_lq.value())
+        except Exception as exc:
+            logger.warning("Unable to read Ld/Lq values from UI widgets: %s", exc)
 
         # Create load profile
         load_type = self.load_type.currentText()
@@ -4184,8 +4223,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 enable_speed_loop=speed_loop_enabled,
             )
             self.controller.set_current_feedback_mode(
-                self.foc_current_feedback_source.currentText()
-                == "Reconstructed (Shunt)"
+                self.foc_current_feedback_source.currentText() == "Reconstructed (Shunt)"
             )
             # set references
             self.controller.set_current_references(
@@ -4218,9 +4256,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 enable_d=self.foc_decouple_d_mode.currentText() == "Enabled",
                 enable_q=self.foc_decouple_q_mode.currentText() == "Enabled",
             )
-            self.controller.set_angle_observer(
-                self.foc_angle_observer_mode.currentText()
-            )
+            self.controller.set_angle_observer(self.foc_angle_observer_mode.currentText())
             self.controller.set_pll_gains(
                 kp=self.foc_pll_kp.value(),
                 ki=self.foc_pll_ki.value(),
@@ -4250,8 +4286,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 min_confidence=self.foc_startup_min_confidence.value(),
                 confidence_hold_s=self.foc_startup_confidence_hold.value(),
                 confidence_hysteresis=self.foc_startup_confidence_hysteresis.value(),
-                fallback_enabled=self.foc_startup_fallback_mode.currentText()
-                == "Enabled",
+                fallback_enabled=self.foc_startup_fallback_mode.currentText() == "Enabled",
                 fallback_hold_s=self.foc_startup_fallback_hold.value(),
             )
 
@@ -4260,7 +4295,7 @@ class BLDCMotorControlGUI(QMainWindow):
         with self._task_lock:
             return self._running_task_name is not None
 
-    def _get_running_task_name(self) -> Optional[str]:
+    def _get_running_task_name(self) -> str | None:
         """Return the name of the currently running task, or None."""
         with self._task_lock:
             return self._running_task_name
@@ -4303,13 +4338,12 @@ class BLDCMotorControlGUI(QMainWindow):
             process.stop_simulation()
             if process.wait(timeout=timeout_graceful_ms):
                 return True
-            else:
-                print(
-                    f"Warning: {process_type} did not finish gracefully within {timeout_graceful_ms}ms"
-                )
-                return False
+            print(
+                f"Warning: {process_type} did not finish gracefully within {timeout_graceful_ms}ms"
+            )
+            return False
 
-        elif hasattr(process, "state"):  # QProcess
+        if hasattr(process, "state"):  # QProcess
             if process.state() == QProcess.ProcessState.NotRunning:
                 return True
 
@@ -4343,8 +4377,7 @@ class BLDCMotorControlGUI(QMainWindow):
         reply = QMessageBox.warning(
             self,
             "Another Process Running",
-            f"{running.capitalize()} is currently running.\n\n"
-            f"Stop it and start {new_task_name}?",
+            f"{running.capitalize()} is currently running.\n\nStop it and start {new_task_name}?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
             QMessageBox.StandardButton.Cancel,
         )
@@ -4457,25 +4490,21 @@ class BLDCMotorControlGUI(QMainWindow):
         self.controller.auto_tune_pi(axis=axis)
         QMessageBox.information(self, "Info", f"Auto-tuned {axis}-axis PI parameters.")
 
-    def _update_monitoring(self, state: dict):
+    def _update_monitoring(self, state: dict):  # noqa: C901  # TODO: split into sub-updaters per panel (22)
         """Update monitoring display with real-time values and speed curve."""
         speed_val = state.get("speed_rpm", 0)
         time_val = state.get("time", 0)
 
         # Pull advanced controller telemetry when FOC is active.
         ctrl_state = {}
-        pfc_state = (
-            state.get("pfc", {}) if isinstance(state.get("pfc", {}), dict) else {}
-        )
+        pfc_state = state.get("pfc", {}) if isinstance(state.get("pfc", {}), dict) else {}
         efficiency_state = (
             state.get("efficiency_metrics", {})
             if isinstance(state.get("efficiency_metrics", {}), dict)
             else {}
         )
         inverter_state = (
-            state.get("inverter", {})
-            if isinstance(state.get("inverter", {}), dict)
-            else {}
+            state.get("inverter", {}) if isinstance(state.get("inverter", {}), dict) else {}
         )
         control_timing_state = (
             state.get("control_timing", {})
@@ -4483,9 +4512,7 @@ class BLDCMotorControlGUI(QMainWindow):
             else {}
         )
         hardware_state = (
-            state.get("hardware", {})
-            if isinstance(state.get("hardware", {}), dict)
-            else {}
+            state.get("hardware", {}) if isinstance(state.get("hardware", {}), dict) else {}
         )
         if not pfc_state and self.engine is not None:
             pfc_state = self.engine.get_power_factor_control_state()
@@ -4512,9 +4539,7 @@ class BLDCMotorControlGUI(QMainWindow):
         target_3 = max(float(self.mcu_target_clock_3_mhz.value()), 1e-9)
 
         def _mcu_load_pct(target_clock_mhz: float) -> float:
-            scaled_duration = (
-                calc_duration_s * slowdown * (ref_clock / target_clock_mhz)
-            )
+            scaled_duration = calc_duration_s * slowdown * (ref_clock / target_clock_mhz)
             return 100.0 * scaled_duration / control_period_s
 
         mcu_load_1 = _mcu_load_pct(target_1)
@@ -4543,9 +4568,7 @@ class BLDCMotorControlGUI(QMainWindow):
         backend_name = str(hardware_state.get("backend", "none")).lower()
         backend_code_map = {"none": 0.0, "mock-daq": 1.0}
         hardware_backend_code = backend_code_map.get(backend_name, 2.0)
-        hardware_io_error_flag = (
-            1.0 if str(hardware_state.get("last_io_error", "")) else 0.0
-        )
+        hardware_io_error_flag = 1.0 if str(hardware_state.get("last_io_error", "")) else 0.0
 
         # Update accessible text blocks with new values
         if hasattr(self, "status_blocks"):
@@ -4565,9 +4588,7 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["iq_ref"].update_value(
                 ctrl_state.get("iq_ref_command", ctrl_state.get("iq_ref", 0.0))
             )
-            self.status_blocks["speed_error"].update_value(
-                ctrl_state.get("speed_error", 0.0)
-            )
+            self.status_blocks["speed_error"].update_value(ctrl_state.get("speed_error", 0.0))
             self.status_blocks["v_d_ff"].update_value(ctrl_state.get("v_d_ff", 0.0))
             self.status_blocks["v_q_ff"].update_value(ctrl_state.get("v_q_ff", 0.0))
             self.status_blocks["speed_loop_enabled"].update_value(
@@ -4583,9 +4604,7 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["theta_electrical"].update_value(
                 ctrl_state.get("theta_electrical", 0.0)
             )
-            self.status_blocks["theta_meas_emf"].update_value(
-                ctrl_state.get("theta_meas_emf", 0.0)
-            )
+            self.status_blocks["theta_meas_emf"].update_value(ctrl_state.get("theta_meas_emf", 0.0))
             self.status_blocks["theta_error_pll"].update_value(
                 ctrl_state.get("theta_error_pll", 0.0)
             )
@@ -4613,14 +4632,10 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["observer_confidence_trend"].update_value(
                 ctrl_state.get("observer_confidence_trend", 0.0)
             )
-            self.status_blocks[
-                "observer_confidence_above_threshold_time_s"
-            ].update_value(
+            self.status_blocks["observer_confidence_above_threshold_time_s"].update_value(
                 ctrl_state.get("observer_confidence_above_threshold_time_s", 0.0)
             )
-            self.status_blocks[
-                "observer_confidence_below_threshold_time_s"
-            ].update_value(
+            self.status_blocks["observer_confidence_below_threshold_time_s"].update_value(
                 ctrl_state.get("observer_confidence_below_threshold_time_s", 0.0)
             )
             self.status_blocks["observer_confidence_crossings_up"].update_value(
@@ -4660,9 +4675,7 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["pfc_enabled"].update_value(
                 1.0 if pfc_state.get("enabled", False) else 0.0
             )
-            self.status_blocks["pfc_target_pf"].update_value(
-                float(pfc_state.get("target_pf", 0.0))
-            )
+            self.status_blocks["pfc_target_pf"].update_value(float(pfc_state.get("target_pf", 0.0)))
             self.status_blocks["pfc_power_factor"].update_value(
                 float(pfc_state.get("power_factor", 0.0))
             )
@@ -4720,30 +4733,22 @@ class BLDCMotorControlGUI(QMainWindow):
             self.status_blocks["hardware_connected"].update_value(
                 1.0 if hardware_state.get("connected", False) else 0.0
             )
-            self.status_blocks["hardware_backend_code"].update_value(
-                hardware_backend_code
-            )
+            self.status_blocks["hardware_backend_code"].update_value(hardware_backend_code)
             self.status_blocks["hardware_write_count"].update_value(
                 float(hardware_state.get("write_count", 0.0))
             )
             self.status_blocks["hardware_read_count"].update_value(
                 float(hardware_state.get("read_count", 0.0))
             )
-            self.status_blocks["hardware_io_error_flag"].update_value(
-                hardware_io_error_flag
-            )
+            self.status_blocks["hardware_io_error_flag"].update_value(hardware_io_error_flag)
             self.status_blocks["time"].update_value(time_val)
         else:
             # Fallback for backward compatibility with old label-based system
-            self.status_labels["speed_rpm"].setText(
-                f"⚡ Rotor Speed: {speed_val:.2f} RPM"
-            )
+            self.status_labels["speed_rpm"].setText(f"⚡ Rotor Speed: {speed_val:.2f} RPM")
             self.status_labels["omega"].setText(
                 f"Angular Velocity: {state.get('omega', 0):.4f} rad/s"
             )
-            self.status_labels["theta"].setText(
-                f"Rotor Position: {state.get('theta', 0):.4f} rad"
-            )
+            self.status_labels["theta"].setText(f"Rotor Position: {state.get('theta', 0):.4f} rad")
             self.status_labels["currents_a"].setText(
                 f"Phase A Current: {state.get('currents_a', 0):.3f} A"
             )
@@ -4817,7 +4822,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 f"Confidence from Speed: {ctrl_state.get('observer_confidence_speed', 0.0):.3f}"
             )
             self.status_labels["observer_confidence_coherence"].setText(
-                f"Confidence from Coherence: {ctrl_state.get('observer_confidence_coherence', 0.0):.3f}"
+                f"Confidence from Coherence: {ctrl_state.get('observer_confidence_coherence', 0.0):.3f}"  # noqa: E501
             )
             self.status_labels["observer_confidence_ema"].setText(
                 f"Confidence EMA: {ctrl_state.get('observer_confidence_ema', 0.0):.3f}"
@@ -4826,16 +4831,16 @@ class BLDCMotorControlGUI(QMainWindow):
                 f"Confidence Trend: {ctrl_state.get('observer_confidence_trend', 0.0):.4f}"
             )
             self.status_labels["observer_confidence_above_threshold_time_s"].setText(
-                f"Confidence Above Threshold Time: {ctrl_state.get('observer_confidence_above_threshold_time_s', 0.0):.3f} s"
+                f"Confidence Above Threshold Time: {ctrl_state.get('observer_confidence_above_threshold_time_s', 0.0):.3f} s"  # noqa: E501
             )
             self.status_labels["observer_confidence_below_threshold_time_s"].setText(
-                f"Confidence Below Threshold Time: {ctrl_state.get('observer_confidence_below_threshold_time_s', 0.0):.3f} s"
+                f"Confidence Below Threshold Time: {ctrl_state.get('observer_confidence_below_threshold_time_s', 0.0):.3f} s"  # noqa: E501
             )
             self.status_labels["observer_confidence_crossings_up"].setText(
-                f"Confidence Crossings Up: {int(ctrl_state.get('observer_confidence_crossings_up', 0))}"
+                f"Confidence Crossings Up: {int(ctrl_state.get('observer_confidence_crossings_up', 0))}"  # noqa: E501
             )
             self.status_labels["observer_confidence_crossings_down"].setText(
-                f"Confidence Crossings Down: {int(ctrl_state.get('observer_confidence_crossings_down', 0))}"
+                f"Confidence Crossings Down: {int(ctrl_state.get('observer_confidence_crossings_down', 0))}"  # noqa: E501
             )
             self.status_labels["startup_handoff_count"].setText(
                 f"Startup Handoff Count: {int(ctrl_state.get('startup_handoff_count', 0))}"
@@ -4844,28 +4849,28 @@ class BLDCMotorControlGUI(QMainWindow):
                 f"Last Handoff Time: {ctrl_state.get('startup_last_handoff_time_s', 0.0):.3f} s"
             )
             self.status_labels["startup_last_handoff_confidence"].setText(
-                f"Last Handoff Confidence: {ctrl_state.get('startup_last_handoff_confidence', 0.0):.3f}"
+                f"Last Handoff Confidence: {ctrl_state.get('startup_last_handoff_confidence', 0.0):.3f}"  # noqa: E501
             )
             self.status_labels["startup_handoff_confidence_peak"].setText(
-                f"Handoff Confidence Peak: {ctrl_state.get('startup_handoff_confidence_peak', 0.0):.3f}"
+                f"Handoff Confidence Peak: {ctrl_state.get('startup_handoff_confidence_peak', 0.0):.3f}"  # noqa: E501
             )
             self.status_labels["startup_handoff_quality"].setText(
                 f"Handoff Quality KPI: {ctrl_state.get('startup_handoff_quality', 0.0):.3f}"
             )
             self.status_labels["startup_handoff_stability_ratio"].setText(
-                f"Handoff Stability Ratio: {ctrl_state.get('startup_handoff_stability_ratio', 1.0):.3f}"
+                f"Handoff Stability Ratio: {ctrl_state.get('startup_handoff_stability_ratio', 1.0):.3f}"  # noqa: E501
             )
             self.status_labels["efficiency"].setText(
                 f"System Efficiency: {efficiency_state.get('efficiency', 0.0):.3f}"
             )
             self.status_labels["mechanical_output_power_w"].setText(
-                f"Mechanical Output Power: {efficiency_state.get('mechanical_output_power_w', 0.0):.3f} W"
+                f"Mechanical Output Power: {efficiency_state.get('mechanical_output_power_w', 0.0):.3f} W"  # noqa: E501
             )
             self.status_labels["total_loss_power_w"].setText(
                 f"Estimated Total Loss: {efficiency_state.get('total_loss_power_w', 0.0):.3f} W"
             )
             self.status_labels["effective_dc_voltage"].setText(
-                f"Effective DC-Link Voltage: {inverter_state.get('effective_dc_voltage', 0.0):.3f} V"
+                f"Effective DC-Link Voltage: {inverter_state.get('effective_dc_voltage', 0.0):.3f} V"  # noqa: E501
             )
             self.status_labels["dc_link_ripple_v"].setText(
                 f"DC-Link Ripple: {inverter_state.get('dc_link_ripple_v', 0.0):.3f} V"
@@ -4874,7 +4879,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 f"DC-Link Bus Current: {inverter_state.get('dc_link_bus_current_a', 0.0):.3f} A"
             )
             self.status_labels["inverter_total_loss_power_w"].setText(
-                f"Inverter Total Loss: {inverter_state.get('total_inverter_loss_power_w', 0.0):.3f} W"
+                f"Inverter Total Loss: {inverter_state.get('total_inverter_loss_power_w', 0.0):.3f} W"  # noqa: E501
             )
             self.status_labels["junction_temperature_c"].setText(
                 f"Inverter Junction Temp: {inverter_state.get('junction_temperature_c', 0.0):.3f} C"
@@ -4883,13 +4888,13 @@ class BLDCMotorControlGUI(QMainWindow):
                 f"Common-Mode Voltage: {inverter_state.get('common_mode_voltage', 0.0):.3f} V"
             )
             self.status_labels["control_calc_duration_us"].setText(
-                f"Control Calc Duration: {1e6 * float(control_timing_state.get('calc_duration_s', 0.0)):.3f} us"
+                f"Control Calc Duration: {1e6 * float(control_timing_state.get('calc_duration_s', 0.0)):.3f} us"  # noqa: E501
             )
             self.status_labels["control_cpu_load_pct"].setText(
                 f"Control CPU Load: {float(control_timing_state.get('cpu_load_pct', 0.0)):.3f} %"
             )
             self.status_labels["control_cpu_load_avg_pct"].setText(
-                f"Control CPU Load Avg: {float(control_timing_state.get('cpu_load_avg_pct', 0.0)):.3f} %"
+                f"Control CPU Load Avg: {float(control_timing_state.get('cpu_load_avg_pct', 0.0)):.3f} %"  # noqa: E501
             )
             self.status_labels["mcu_load_target_1_pct"].setText(
                 f"MCU Load @ Target 1: {mcu_load_1:.3f} %"
@@ -4925,11 +4930,9 @@ class BLDCMotorControlGUI(QMainWindow):
                 try:
                     full_text = lbl.text()
                     lbl.setToolTip(full_text)
-                    QAccessible.updateAccessibility(
-                        lbl, 0, QAccessible.Event.ValueChange
-                    )
-                except Exception:
-                    pass
+                    QAccessible.updateAccessibility(lbl, 0, QAccessible.Event.ValueChange)
+                except Exception as exc:
+                    logger.debug("Accessibility update skipped for status label: %s", exc)
 
         # Update permanent info panel values
         try:
@@ -4960,37 +4963,75 @@ class BLDCMotorControlGUI(QMainWindow):
             )
 
             # update Ld/Lq display
-            ld_val = (
-                getattr(self, "param_ld", None).value()
-                if getattr(self, "param_ld", None)
-                else motor_params.ld
-            )
-            lq_val = (
-                getattr(self, "param_lq", None).value()
-                if getattr(self, "param_lq", None)
-                else motor_params.lq
-            )
+            ld_val = self.param_ld.value()
+            lq_val = self.param_lq.value()
             self.lbl_ld_lq.setText(f"Ld: {ld_val:.6f} H, Lq: {lq_val:.6f} H")
 
             # Update parameter units summary
             units_html = (
                 "<b>Parameters (units):</b><br>"
                 + "Nominal Voltage (V), Phase Resistance (Ω), Phase Inductance (H),<br>"
-                + "Back-EMF (V·s/rad), Torque Constant (N·m/A), Inertia (kg·m²), Friction (N·m·s/rad),<br>"
+                + "Back-EMF (V·s/rad), Torque Constant (N·m/A), Inertia (kg·m²), Friction (N·m·s/rad),<br>"  # noqa: E501
                 + "Poles (count), Ld (H), Lq (H)"
             )
             self.lbl_param_units.setText(units_html)
 
             # Update status bar with simulation parameters
             self.status_bar_dt.setText(f"dt: {dt_val} s")
-            self.status_bar_tau_e.setText(
-                f"τ_e: {tau_e if tau_e is not None else '--'} s"
+            self.status_bar_tau_e.setText(f"τ_e: {tau_e if tau_e is not None else '--'} s")
+            self.status_bar_tau_m.setText(f"τ_m: {tau_m if tau_m is not None else '--'} s")
+            if self.engine:
+                stability = self.engine.get_numerical_stability_advisory()
+            else:
+                pwm_hz = 1.0 / dt_val if dt_val > 0.0 else 0.0
+                stability = self._build_dt_pwm_stability_advisory(dt_val, motor_params, pwm_hz)
+
+            severity = str(stability.get("severity", "unknown"))
+            margin = float(stability.get("stability_margin", float("inf")))
+            dt_recommended_s = float(stability.get("dt_recommended_s", float("inf")))
+            pwm_recommended_hz = float(stability.get("pwm_recommended_min_hz", 0.0))
+
+            self.lbl_stability.setText(
+                "RK4 stability advisory: "
+                + str(stability.get("message", "n/a"))
+                + " Recommended action: adjust dt or PWM frequency only."
             )
-            self.status_bar_tau_m.setText(
-                f"τ_m: {tau_m if tau_m is not None else '--'} s"
+            if np.isfinite(dt_recommended_s):
+                self.status_bar_stability.setText(
+                    f"RK4: {severity} | margin={margin:.2f}x | dt<= {dt_recommended_s:.2e}s | PWM>= {pwm_recommended_hz:.1f}Hz"  # noqa: E501
+                )
+            else:
+                self.status_bar_stability.setText(f"RK4: {severity}")
+
+            # Keep advisory content discoverable by tooltips and screen readers.
+            self.lbl_stability.setToolTip(self.lbl_stability.text())
+            self.status_bar_stability.setToolTip(self.status_bar_stability.text())
+            self.lbl_stability.setAccessibleDescription(self.lbl_stability.text())
+            self.status_bar_stability.setAccessibleName(f"RK4 stability status: {severity}")
+            self.status_bar_stability.setAccessibleDescription(self.status_bar_stability.text())
+            QAccessible.updateAccessibility(self.lbl_stability, 0, QAccessible.Event.ValueChange)
+            QAccessible.updateAccessibility(
+                self.status_bar_stability, 0, QAccessible.Event.ValueChange
             )
-        except Exception:
-            pass
+
+            if severity == "unstable":
+                severity_color = "#C62828"
+            elif severity == "marginal":
+                severity_color = "#EF6C00"
+            elif severity == "stable":
+                severity_color = "#2E7D32"
+            else:
+                severity_color = "#455A64"
+            self.lbl_stability.setStyleSheet(f"color: {severity_color};")
+            self.status_bar_stability.setStyleSheet(f"color: {severity_color};")
+            self._announce_stability_advisory_if_needed(
+                severity=severity,
+                dt_recommended_s=dt_recommended_s,
+                pwm_recommended_min_hz=pwm_recommended_hz,
+                margin=margin,
+            )
+        except Exception as exc:
+            logger.debug("Permanent info panel update skipped: %s", exc)
 
         # Update speed curve
         self.speed_history_time.append(time_val)
@@ -5071,14 +5112,10 @@ class BLDCMotorControlGUI(QMainWindow):
         """Draw a live inverter bridge view and highlight selected shunt topology."""
         if not hasattr(self, "bridge_ax"):
             return
-        from matplotlib.patches import Rectangle, Circle
+        from matplotlib.patches import Circle, Rectangle
 
         topology = self.current_sense_topology.currentText()
-        meas = (
-            snapshot.get("current_measurement", {})
-            if isinstance(snapshot, dict)
-            else {}
-        )
+        meas = snapshot.get("current_measurement", {}) if isinstance(snapshot, dict) else {}
         if isinstance(meas, dict) and meas.get("enabled", False):
             topology = str(meas.get("topology", topology))
 
@@ -5102,9 +5139,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Draw a shared low-side source bus used by all three legs.
         low_side_bus_y = 0.10
-        ax.plot(
-            [0.2, 2.8], [low_side_bus_y, low_side_bus_y], color="#455A64", linewidth=2.0
-        )
+        ax.plot([0.2, 2.8], [low_side_bus_y, low_side_bus_y], color="#455A64", linewidth=2.0)
 
         for idx in range(3):
             x = idx + 0.2
@@ -5112,12 +5147,8 @@ class BLDCMotorControlGUI(QMainWindow):
             color_lo = "#CFD8DC" if upper_on[idx] else "#2E7D32"
             ax.add_patch(Rectangle((x, 0.58), 0.6, 0.28, color=color_hi, ec="#263238"))
             ax.add_patch(Rectangle((x, 0.14), 0.6, 0.28, color=color_lo, ec="#263238"))
-            ax.text(
-                x + 0.3, 0.90, f"{labels[idx]}U", ha="center", va="center", fontsize=8
-            )
-            ax.text(
-                x + 0.3, 0.49, f"{labels[idx]}L", ha="center", va="center", fontsize=8
-            )
+            ax.text(x + 0.3, 0.90, f"{labels[idx]}U", ha="center", va="center", fontsize=8)
+            ax.text(x + 0.3, 0.49, f"{labels[idx]}L", ha="center", va="center", fontsize=8)
 
             # Connect each low-side switch source to the shared return bus.
             ax.plot(
@@ -5128,9 +5159,7 @@ class BLDCMotorControlGUI(QMainWindow):
             )
 
             if topology != "single" and shunt_map[idx]:
-                ax.add_patch(
-                    Circle((x + 0.3, 0.05), 0.05, color="#F57C00", ec="#E65100")
-                )
+                ax.add_patch(Circle((x + 0.3, 0.05), 0.05, color="#F57C00", ec="#E65100"))
                 ax.text(x + 0.3, 0.01, "shunt", ha="center", va="top", fontsize=7)
 
         if topology == "single":
@@ -5158,9 +5187,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
             # Ground connection and symbol.
             gnd_y = 0.0
-            ax.plot(
-                [1.5, 1.5], [shunt_y0, gnd_y + 0.015], color="#455A64", linewidth=1.6
-            )
+            ax.plot([1.5, 1.5], [shunt_y0, gnd_y + 0.015], color="#455A64", linewidth=1.6)
             ax.plot(
                 [1.42, 1.58],
                 [gnd_y + 0.015, gnd_y + 0.015],
@@ -5203,7 +5230,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.bridge_figure.tight_layout()
         self.bridge_canvas.draw_idle()
 
-    def _build_current_sense_model(self) -> Optional[InverterCurrentSense]:
+    def _build_current_sense_model(self) -> InverterCurrentSense | None:
         """Create topology-aware current sense model from GUI settings."""
         if not hasattr(self, "current_sense_enable"):
             return None
@@ -5255,17 +5282,11 @@ class BLDCMotorControlGUI(QMainWindow):
             self.current_sense_actual_offset_c.value(),
         ]
         for idx in range(sense.n_shunts):
-            sense.set_actual_channel(
-                idx, gain=actual_gains[idx], offset_v=actual_offsets[idx]
-            )
+            sense.set_actual_channel(idx, gain=actual_gains[idx], offset_v=actual_offsets[idx])
 
     def _update_current_sense_status(self, snapshot: dict) -> None:
         """Update current sensing status and narrate measurement quality metrics."""
-        meas = (
-            snapshot.get("current_measurement", {})
-            if isinstance(snapshot, dict)
-            else {}
-        )
+        meas = snapshot.get("current_measurement", {}) if isinstance(snapshot, dict) else {}
         if not isinstance(meas, dict) or not meas.get("enabled", False):
             self.current_sense_status_label.setText(
                 "Current sensing disabled. Enable to expose measured-vs-true current telemetry."
@@ -5274,18 +5295,10 @@ class BLDCMotorControlGUI(QMainWindow):
 
         topology = meas.get("topology", "unknown")
         sat = meas.get("adc_saturated", [])
-        saturated_count = (
-            int(sum(1 for item in sat if bool(item))) if isinstance(sat, list) else 0
-        )
+        saturated_count = int(sum(1 for item in sat if bool(item))) if isinstance(sat, list) else 0
         drop = meas.get("phase_voltage_drop_v", [0.0, 0.0, 0.0])
-        drop_arr = (
-            np.asarray(drop, dtype=np.float64)
-            if isinstance(drop, list)
-            else np.zeros(3)
-        )
-        drop_rms = (
-            float(np.sqrt(np.mean(np.square(drop_arr)))) if drop_arr.size else 0.0
-        )
+        drop_arr = np.asarray(drop, dtype=np.float64) if isinstance(drop, list) else np.zeros(3)
+        drop_rms = float(np.sqrt(np.mean(np.square(drop_arr)))) if drop_arr.size else 0.0
 
         # Compute per-phase instantaneous measurement error if true currents available
         err_text = ""
@@ -5333,9 +5346,7 @@ class BLDCMotorControlGUI(QMainWindow):
                 if saturated_count > 0
                 else "No ADC saturation."
             )
-            speak(
-                f"Current sensing active. Topology: {topology}. " + sat_msg + err_speech
-            )
+            speak(f"Current sensing active. Topology: {topology}. " + sat_msg + err_speech)
 
     def _open_current_fft_window(self) -> None:
         """Open or focus the asynchronous current FFT analysis window."""
@@ -5371,14 +5382,10 @@ class BLDCMotorControlGUI(QMainWindow):
                 duration = self.sim_duration.value()  # Get max duration from UI
                 if duration > 0:
                     remaining = max(0.0, duration - current_time)
-                    self.status_bar_time_remaining.setText(
-                        f"Remaining: {remaining:.1f}s"
-                    )
+                    self.status_bar_time_remaining.setText(f"Remaining: {remaining:.1f}s")
                 else:
                     # Infinite duration
-                    self.status_bar_time_remaining.setText(
-                        f"Elapsed: {current_time:.1f}s"
-                    )
+                    self.status_bar_time_remaining.setText(f"Elapsed: {current_time:.1f}s")
             else:
                 self.status_bar_time_remaining.setText("Remaining: -- s")
 
@@ -5403,9 +5410,9 @@ class BLDCMotorControlGUI(QMainWindow):
             else:
                 self.status_bar_backend.setText("Backend: --")
 
-        except Exception as e:
-            # Silently fail to avoid disrupting GUI updates
-            pass
+        except Exception as exc:
+            # Keep GUI updates resilient, but do not swallow diagnostics.
+            logger.debug("Monitoring panel update skipped due to runtime issue: %s", exc)
 
     def _on_simulation_finished(self):
         """Handle simulation thread completion."""
@@ -5454,8 +5461,8 @@ class BLDCMotorControlGUI(QMainWindow):
                 )
                 speak("Data exported successfully.")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export data: {str(e)}")
-                logger.error(f"Export failed: {str(e)}")
+                QMessageBox.critical(self, "Error", f"Failed to export data: {e!s}")
+                logger.error(f"Export failed: {e!s}")
 
     def _plot_3phase(self):
         """Generate 3-phase plot."""
@@ -5464,20 +5471,14 @@ class BLDCMotorControlGUI(QMainWindow):
             return
 
         history = self.engine.get_history()
-        grid_on = (
-            getattr(self, "plot_grid_checkbox", None)
-            and self.plot_grid_checkbox.isChecked()
-        )
-        grid_spacing = (
-            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
-        )
+        grid_on = getattr(self, "plot_grid_checkbox", None) and self.plot_grid_checkbox.isChecked()
+        grid_spacing = getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
         minor_grid = (
             getattr(self, "plot_minor_grid_checkbox", None)
             and self.plot_minor_grid_checkbox.isChecked()
         )
         grid_spacing_y = (
-            getattr(self, "plot_grid_spacing_y", None)
-            and self.plot_grid_spacing_y.value()
+            getattr(self, "plot_grid_spacing_y", None) and self.plot_grid_spacing_y.value()
         )
         figure = SimulationPlotter.create_3phase_plot(
             history,
@@ -5496,20 +5497,14 @@ class BLDCMotorControlGUI(QMainWindow):
             return
 
         history = self.engine.get_history()
-        grid_on = (
-            getattr(self, "plot_grid_checkbox", None)
-            and self.plot_grid_checkbox.isChecked()
-        )
-        grid_spacing = (
-            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
-        )
+        grid_on = getattr(self, "plot_grid_checkbox", None) and self.plot_grid_checkbox.isChecked()
+        grid_spacing = getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
         minor_grid = (
             getattr(self, "plot_minor_grid_checkbox", None)
             and self.plot_minor_grid_checkbox.isChecked()
         )
         grid_spacing_y = (
-            getattr(self, "plot_grid_spacing_y", None)
-            and self.plot_grid_spacing_y.value()
+            getattr(self, "plot_grid_spacing_y", None) and self.plot_grid_spacing_y.value()
         )
         figure = SimulationPlotter.create_current_plot(
             history,
@@ -5528,20 +5523,14 @@ class BLDCMotorControlGUI(QMainWindow):
             return
 
         history = self.engine.get_history()
-        grid_on = (
-            getattr(self, "plot_grid_checkbox", None)
-            and self.plot_grid_checkbox.isChecked()
-        )
-        grid_spacing = (
-            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
-        )
+        grid_on = getattr(self, "plot_grid_checkbox", None) and self.plot_grid_checkbox.isChecked()
+        grid_spacing = getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
         minor_grid = (
             getattr(self, "plot_minor_grid_checkbox", None)
             and self.plot_minor_grid_checkbox.isChecked()
         )
         grid_spacing_y = (
-            getattr(self, "plot_grid_spacing_y", None)
-            and self.plot_grid_spacing_y.value()
+            getattr(self, "plot_grid_spacing_y", None) and self.plot_grid_spacing_y.value()
         )
         figure = SimulationPlotter.create_pfc_analysis_plot(
             history,
@@ -5560,20 +5549,14 @@ class BLDCMotorControlGUI(QMainWindow):
             return
 
         history = self.engine.get_history()
-        grid_on = (
-            getattr(self, "plot_grid_checkbox", None)
-            and self.plot_grid_checkbox.isChecked()
-        )
-        grid_spacing = (
-            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
-        )
+        grid_on = getattr(self, "plot_grid_checkbox", None) and self.plot_grid_checkbox.isChecked()
+        grid_spacing = getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
         minor_grid = (
             getattr(self, "plot_minor_grid_checkbox", None)
             and self.plot_minor_grid_checkbox.isChecked()
         )
         grid_spacing_y = (
-            getattr(self, "plot_grid_spacing_y", None)
-            and self.plot_grid_spacing_y.value()
+            getattr(self, "plot_grid_spacing_y", None) and self.plot_grid_spacing_y.value()
         )
         figure = SimulationPlotter.create_efficiency_analysis_plot(
             history,
@@ -5592,20 +5575,14 @@ class BLDCMotorControlGUI(QMainWindow):
             return
 
         history = self.engine.get_history()
-        grid_on = (
-            getattr(self, "plot_grid_checkbox", None)
-            and self.plot_grid_checkbox.isChecked()
-        )
-        grid_spacing = (
-            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
-        )
+        grid_on = getattr(self, "plot_grid_checkbox", None) and self.plot_grid_checkbox.isChecked()
+        grid_spacing = getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
         minor_grid = (
             getattr(self, "plot_minor_grid_checkbox", None)
             and self.plot_minor_grid_checkbox.isChecked()
         )
         grid_spacing_y = (
-            getattr(self, "plot_grid_spacing_y", None)
-            and self.plot_grid_spacing_y.value()
+            getattr(self, "plot_grid_spacing_y", None) and self.plot_grid_spacing_y.value()
         )
         figure = SimulationPlotter.create_inverter_analysis_plot(
             history,
@@ -5625,20 +5602,14 @@ class BLDCMotorControlGUI(QMainWindow):
 
         history = self.engine.get_history()
         has_true = "currents_a_true" in history and len(history["currents_a_true"]) > 0
-        grid_on = (
-            getattr(self, "plot_grid_checkbox", None)
-            and self.plot_grid_checkbox.isChecked()
-        )
-        grid_spacing = (
-            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
-        )
+        grid_on = getattr(self, "plot_grid_checkbox", None) and self.plot_grid_checkbox.isChecked()
+        grid_spacing = getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
         minor_grid = (
             getattr(self, "plot_minor_grid_checkbox", None)
             and self.plot_minor_grid_checkbox.isChecked()
         )
         grid_spacing_y = (
-            getattr(self, "plot_grid_spacing_y", None)
-            and self.plot_grid_spacing_y.value()
+            getattr(self, "plot_grid_spacing_y", None) and self.plot_grid_spacing_y.value()
         )
         figure = SimulationPlotter.create_measured_vs_true_current_plot(
             history,
@@ -5715,20 +5686,14 @@ class BLDCMotorControlGUI(QMainWindow):
         if not selected:
             QMessageBox.warning(self, "Warning", "No variables selected for plotting.")
             return
-        grid_on = (
-            getattr(self, "plot_grid_checkbox", None)
-            and self.plot_grid_checkbox.isChecked()
-        )
-        grid_spacing = (
-            getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
-        )
+        grid_on = getattr(self, "plot_grid_checkbox", None) and self.plot_grid_checkbox.isChecked()
+        grid_spacing = getattr(self, "plot_grid_spacing", None) and self.plot_grid_spacing.value()
         minor_grid = (
             getattr(self, "plot_minor_grid_checkbox", None)
             and self.plot_minor_grid_checkbox.isChecked()
         )
         grid_spacing_y = (
-            getattr(self, "plot_grid_spacing_y", None)
-            and self.plot_grid_spacing_y.value()
+            getattr(self, "plot_grid_spacing_y", None) and self.plot_grid_spacing_y.value()
         )
         figure = SimulationPlotter.create_multi_axis_plot(
             history,

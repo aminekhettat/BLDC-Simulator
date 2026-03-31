@@ -5,8 +5,20 @@ on:
     branches:
       - main
       - master
+    paths-ignore:
+      - docs/_build/**
+      - data/logs/**
+      - "**/__pycache__/**"
   pull_request:
+    paths-ignore:
+      - docs/_build/**
+      - data/logs/**
+      - "**/__pycache__/**"
   workflow_dispatch:
+
+concurrency:
+  group: coverage-campaign-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   full-coverage:
@@ -31,8 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          pip install -r requirements-dev.txt
 
       - name: Run full test campaign with coverage
         run: |

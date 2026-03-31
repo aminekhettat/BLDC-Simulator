@@ -4,14 +4,14 @@ Runs a simple simulation using FOCController with constant current
 references and a variable supply profile to illustrate dynamic behavior.
 """
 
+from src.control import FOCController, SVMGenerator
 from src.core import (
     BLDCMotor,
     MotorParameters,
-    SimulationEngine,
     RampLoad,
     RampSupply,
+    SimulationEngine,
 )
-from src.control import SVMGenerator, FOCController
 
 # create motor and parameters
 params = MotorParameters(

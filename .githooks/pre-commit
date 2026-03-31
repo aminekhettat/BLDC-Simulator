@@ -2,63 +2,216 @@
 import os
 import subprocess
 import sys
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+DOC_PATHS = (
+	"README.md",
+	"CONTRIBUTING.md",
+	"QUICKSTART.md",
+	"docs/",
+)
+
+CODE_PATH_HINTS = (
+	"src/",
+	"tests/",
+	"examples/",
+	"main.py",
+	".github/workflows/",
+	"ruff.toml",
+	"mypy.ini",
+	"bandit.yaml",
+	"requirements.txt",
+	"requirements-dev.txt",
+)
 
 
 def run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
-		return subprocess.run(cmd, check=check, text=True, capture_output=True)
+	return subprocess.run(
+		cmd,
+		check=check,
+		text=True,
+		capture_output=True,
+		cwd=str(PROJECT_ROOT),
+	)
+
+
+def _print_failure(step: str, result: subprocess.CompletedProcess) -> None:
+	if result.stdout:
+		print(result.stdout.strip(), file=sys.stderr)
+	if result.stderr:
+		print(result.stderr.strip(), file=sys.stderr)
+	print(f"pre-commit: {step} failed.", file=sys.stderr)
+
+
+def _get_staged_files() -> list[str]:
+	staged = run(
+		["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
+		check=False,
+	)
+	if staged.returncode != 0:
+		return []
+	return [line.strip().replace("\\", "/") for line in staged.stdout.splitlines() if line.strip()]
+
+
+def _requires_documentation_update(staged_files: list[str]) -> bool:
+	return any(
+		any(path.startswith(hint) or path == hint for hint in CODE_PATH_HINTS)
+		for path in staged_files
+	)
+
+
+def _has_documentation_update(staged_files: list[str]) -> bool:
+	return any(
+		any(path.startswith(doc) or path == doc for doc in DOC_PATHS)
+		for path in staged_files
+	)
+
+
+def _enforce_doc_update_policy() -> int:
+	if os.environ.get("SKIP_DOC_POLICY_CHECK", "0") == "1":
+		return 0
+
+	staged_files = _get_staged_files()
+	if not staged_files:
+		return 0
+
+	if _requires_documentation_update(staged_files) and not _has_documentation_update(staged_files):
+		print(
+			"pre-commit: mandatory documentation rule violated. "
+			"Code/config changes require updated documentation files in this commit.",
+			file=sys.stderr,
+		)
+		print("Required doc paths include: README.md, CONTRIBUTING.md, QUICKSTART.md, docs/", file=sys.stderr)
+		return 1
+	return 0
+
+
+def _run_step(step: str, cmd: list[str]) -> int:
+	result = run(cmd, check=False)
+	if result.returncode != 0:
+		_print_failure(step, result)
+		return result.returncode
+	return 0
+
+
+def run_mandatory_gates() -> int:
+	if os.environ.get("SKIP_MANDATORY_GATES", "0") == "1":
+		return 0
+
+	doc_status = _enforce_doc_update_policy()
+	if doc_status != 0:
+		return doc_status
+
+	# 1) Ensure quality rules are green (ruff/mypy/bandit hooks).
+	probe = run([sys.executable, "-m", "pre_commit", "--version"], check=False)
+	if probe.returncode != 0:
+		print(
+			"pre-commit: python -m pre_commit is not available. "
+			"Install dev tools with 'pip install -r requirements-dev.txt'.",
+			file=sys.stderr,
+		)
+		return probe.returncode or 1
+
+	quality_status = _run_step(
+		"quality checks",
+		[sys.executable, "-m", "pre_commit", "run", "--all-files"],
+	)
+	if quality_status != 0:
+		return quality_status
+
+	# 2) Regenerate Sphinx HTML docs and fail if build breaks.
+	sphinx_status = _run_step(
+		"Sphinx HTML build",
+		[sys.executable, "-m", "sphinx", "-b", "html", "docs", "docs/_build/html"],
+	)
+	if sphinx_status != 0:
+		return sphinx_status
+
+	# 3) Ensure tests pass with enforced 100% src coverage.
+	coverage_status = _run_step(
+		"tests + 100% coverage",
+		[
+			sys.executable,
+			"-m",
+			"pytest",
+			"tests/",
+			"--cov=src",
+			"--cov-report=term-missing:skip-covered",
+			"--cov-report=xml:data/logs/coverage.xml",
+			"--cov-fail-under=100",
+			"-q",
+		],
+	)
+	if coverage_status != 0:
+		return coverage_status
+
+	# 4) Ensure dependency vulnerabilities are clean (CI-equivalent security gate).
+	audit_status = _run_step(
+		"dependency vulnerability audit",
+		[sys.executable, "-m", "pip_audit", "-r", "requirements.txt"],
+	)
+	if audit_status != 0:
+		return audit_status
+
+	print("pre-commit: mandatory quality, docs, tests, and coverage gates passed.")
+	return 0
+
 
 
 def main() -> int:
-		merge_probe = run(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"], check=False)
-		if merge_probe.returncode == 0:
-				return 0
-
-		if os.environ.get("SKIP_AUTO_BUMP", "0") == "1":
-				return 0
-
-		if not os.path.exists(".bumpversion.cfg"):
-				return 0
-
-		bump_cmd = [
-				sys.executable,
-				"-m",
-				"bumpversion",
-				"--allow-dirty",
-				"--no-commit",
-				"--no-tag",
-		]
-		if os.environ.get("BUMP_HOOK_DRY_RUN", "0") == "1":
-				bump_cmd.append("--dry-run")
-		bump_cmd.append("patch")
-
-		bump = run(bump_cmd, check=False)
-		if bump.returncode != 0:
-				if bump.stdout:
-						print(bump.stdout.strip(), file=sys.stderr)
-				if bump.stderr:
-						print(bump.stderr.strip(), file=sys.stderr)
-				print("pre-commit: version bump failed.", file=sys.stderr)
-				return bump.returncode
-
-		if os.environ.get("BUMP_HOOK_DRY_RUN", "0") == "1":
-				return 0
-
-		run(
-				[
-						"git",
-						"add",
-						".bumpversion.cfg",
-						"main.py",
-						"src/__init__.py",
-						"src/ui/main_window.py",
-						"docs/conf.py",
-						"README.md",
-				],
-				check=False,
-		)
-		print("pre-commit: version bumped automatically.")
+	merge_probe = run(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"], check=False)
+	if merge_probe.returncode == 0:
 		return 0
+
+	gates_status = run_mandatory_gates()
+	if gates_status != 0:
+		return gates_status
+
+	if os.environ.get("SKIP_AUTO_BUMP", "0") == "1":
+		return 0
+
+	if not os.path.exists(".bumpversion.cfg"):
+		return 0
+
+	bump_cmd = [
+		sys.executable,
+		"-m",
+		"bumpversion",
+		"--allow-dirty",
+		"--no-commit",
+		"--no-tag",
+	]
+	if os.environ.get("BUMP_HOOK_DRY_RUN", "0") == "1":
+		bump_cmd.append("--dry-run")
+	bump_cmd.append("patch")
+
+	bump = run(bump_cmd, check=False)
+	if bump.returncode != 0:
+		_print_failure("version bump", bump)
+		return bump.returncode
+
+	if os.environ.get("BUMP_HOOK_DRY_RUN", "0") == "1":
+		return 0
+
+	run(
+		[
+			"git",
+			"add",
+			".bumpversion.cfg",
+			"main.py",
+			"src/__init__.py",
+			"src/ui/main_window.py",
+			"docs/conf.py",
+			"README.md",
+		],
+		check=False,
+	)
+	print("pre-commit: version bumped automatically.")
+	return 0
 
 
 if __name__ == "__main__":
-		raise SystemExit(main())
+    raise SystemExit(main())

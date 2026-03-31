@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>src.control.transforms &mdash; BLDC Motor Control 0.8.0 documentation</title>
+  <title>src.control.transforms &mdash; BLDC Motor Control 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=486e5634"></script>
+      <script src="../../../_static/documentation_options.js?v=ec16d22d"></script>
       <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -103,12 +103,11 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span>
 
 
 <div class="viewcode-block" id="clarke_transform">
 <a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.clarke_transform">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">clarke_transform</span><span class="p">(</span><span class="n">va</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vc</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">clarke_transform</span><span class="p">(</span><span class="n">va</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vc</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Clarke transform (three-phase to stationary two-axis alpha-beta)</span>
 <span class="sd">    assuming va + vb + vc = 0.</span>
@@ -126,7 +125,7 @@
 
 <div class="viewcode-block" id="inverse_clarke">
 <a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.inverse_clarke">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">inverse_clarke</span><span class="p">(</span><span class="n">v_alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">inverse_clarke</span><span class="p">(</span><span class="n">v_alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Inverse Clarke transform (alpha-beta to three-phase)</span>
 
@@ -143,7 +142,7 @@
 
 <div class="viewcode-block" id="park_transform">
 <a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.park_transform">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">park_transform</span><span class="p">(</span><span class="n">v_alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">park_transform</span><span class="p">(</span><span class="n">v_alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Park transform (alpha-beta to rotating d-q frame).</span>
 
@@ -162,7 +161,7 @@
 
 <div class="viewcode-block" id="inverse_park">
 <a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.inverse_park">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">inverse_park</span><span class="p">(</span><span class="n">v_d</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_q</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">inverse_park</span><span class="p">(</span><span class="n">v_d</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">v_q</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Inverse Park transform (d-q to alpha-beta frame).</span>
 
@@ -181,7 +180,7 @@
 
 <div class="viewcode-block" id="concordia_transform">
 <a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.concordia_transform">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">concordia_transform</span><span class="p">(</span><span class="n">va</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vc</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">concordia_transform</span><span class="p">(</span><span class="n">va</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vb</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vc</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Concordia (also called symmetrical component) transform which is</span>
 <span class="sd">    formally equivalent to Clark but keeps factor of 2/3 scaling.  Useful</span>
@@ -200,7 +199,7 @@
 
 <div class="viewcode-block" id="inverse_concordia">
 <a class="viewcode-back" href="../../../api/generated/src.control.transforms.html#src.control.transforms.inverse_concordia">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">inverse_concordia</span><span class="p">(</span><span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">inverse_concordia</span><span class="p">(</span><span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Inverse Concordia transform (alpha-beta back to three-phase).</span>
 

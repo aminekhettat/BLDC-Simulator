@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - mock hardware backend wires into simulation step
 - hardware io failure falls back to simulation path
@@ -10,14 +10,19 @@ Atomic features tested in this module:
 """
 
 import math
+
 import numpy as np
 import pytest
 
 from src.core.load_model import ConstantLoad
 from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.simulation_engine import SimulationEngine
-from src.hardware import HardwareInterface, MockDAQHardware
-from src.hardware import InverterCurrentSense, ShuntAmplifierChannel
+from src.hardware import (
+    HardwareInterface,
+    InverterCurrentSense,
+    MockDAQHardware,
+    ShuntAmplifierChannel,
+)
 
 
 class FailingHardware(HardwareInterface):
@@ -157,15 +162,13 @@ class TestNonIdealTripleShuntMeasurementError:
             engine.step(voltages)
         hist = engine.get_history()
         # With 5% gain error, measured ≠ true
-        assert not np.allclose(
-            hist["currents_a"], hist["currents_a_true"], atol=1e-6
-        ), "Gain error should produce non-zero measurement offset"
+        assert not np.allclose(hist["currents_a"], hist["currents_a_true"], atol=1e-6), (
+            "Gain error should produce non-zero measurement offset"
+        )
 
     def test_true_history_unaffected_by_sense_model(self):
         """True history must always reflect motor ODE regardless of sense model."""
-        engine_no_sense = _make_engine_with_sense(
-            "triple", [_ideal_channel() for _ in range(3)]
-        )
+        engine_no_sense = _make_engine_with_sense("triple", [_ideal_channel() for _ in range(3)])
         engine_err = _make_engine_with_sense(
             "triple", [_error_channel(gain_error=0.20) for _ in range(3)]
         )
@@ -176,9 +179,7 @@ class TestNonIdealTripleShuntMeasurementError:
         h_ideal = engine_no_sense.get_history()
         h_err = engine_err.get_history()
         # True histories from two engines driven identically must match
-        np.testing.assert_allclose(
-            h_ideal["currents_a_true"], h_err["currents_a_true"], atol=1e-9
-        )
+        np.testing.assert_allclose(h_ideal["currents_a_true"], h_err["currents_a_true"], atol=1e-9)
         # Measured histories MUST diverge due to gain error
         assert not np.allclose(h_ideal["currents_a"], h_err["currents_a"], atol=1e-6)
 

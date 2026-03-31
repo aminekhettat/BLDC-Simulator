@@ -8,10 +8,10 @@ Phase-1 research-grade workflow:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, TypedDict
+from typing import Any, TypedDict, cast
 
 import numpy as np
 
@@ -58,7 +58,7 @@ class ThresholdRow(TypedDict):
 
 # Conservative defaults intended to prevent severe regressions while avoiding
 # fragile failures from small numeric drift across environments.
-DEFAULT_STARTUP_TRANSITION_THRESHOLDS: Dict[str, Dict[str, float]] = {
+DEFAULT_STARTUP_TRANSITION_THRESHOLDS: dict[str, dict[str, float]] = {
     "startup_handoff_count": {"fail_min": 1.0, "warn_min": 1.0},
     "startup_fallback_event_count": {"fail_min": 1.0, "warn_min": 1.0},
     "startup_last_handoff_confidence": {"fail_min": 0.10, "warn_min": 0.20},
@@ -86,9 +86,9 @@ class Scenario:
     duration_s: float
     speed_ref_hz: float
     load_kind: str
-    load_params: Dict[str, float]
+    load_params: dict[str, float]
     supply_kind: str
-    supply_params: Dict[str, float]
+    supply_params: dict[str, float]
 
 
 @dataclass(frozen=True)
@@ -102,12 +102,13 @@ class FOCScenario:
     iq_ref_a: float
     use_concordia: bool
     load_kind: str
-    load_params: Dict[str, float]
+    load_params: dict[str, float]
     supply_kind: str
-    supply_params: Dict[str, float]
+    supply_params: dict[str, float]
 
 
 def _default_motor() -> BLDCMotor:
+    dt = cast(float, SIMULATION_PARAMS["dt"])
     params = MotorParameters(
         nominal_voltage=DEFAULT_MOTOR_PARAMS["nominal_voltage"],
         phase_resistance=DEFAULT_MOTOR_PARAMS["phase_resistance"],
@@ -116,13 +117,13 @@ def _default_motor() -> BLDCMotor:
         torque_constant=DEFAULT_MOTOR_PARAMS["torque_constant"],
         rotor_inertia=DEFAULT_MOTOR_PARAMS["rotor_inertia"],
         friction_coefficient=DEFAULT_MOTOR_PARAMS["friction_coefficient"],
-        num_poles=DEFAULT_MOTOR_PARAMS["num_poles"],
-        poles_pairs=DEFAULT_MOTOR_PARAMS["poles_pairs"],
+        num_poles=int(DEFAULT_MOTOR_PARAMS["num_poles"]),
+        poles_pairs=int(DEFAULT_MOTOR_PARAMS["poles_pairs"]),
     )
-    return BLDCMotor(parameters=params, dt=SIMULATION_PARAMS["dt"])
+    return BLDCMotor(parameters=params, dt=dt)
 
 
-def _make_load(kind: str, params: Dict[str, float]):
+def _make_load(kind: str, params: dict[str, float]):
     if kind == "constant":
         return ConstantLoad(torque=float(params["torque"]))
     if kind == "ramp":
@@ -134,7 +135,7 @@ def _make_load(kind: str, params: Dict[str, float]):
     raise ValueError(f"Unsupported load kind: {kind}")
 
 
-def _make_supply(kind: str, params: Dict[str, float]):
+def _make_supply(kind: str, params: dict[str, float]):
     if kind == "constant":
         return ConstantSupply(voltage=float(params["voltage"]))
     if kind == "ramp":
@@ -146,7 +147,7 @@ def _make_supply(kind: str, params: Dict[str, float]):
     raise ValueError(f"Unsupported supply kind: {kind}")
 
 
-def _compute_kpis(history: Dict[str, np.ndarray]) -> Dict[str, float]:
+def _compute_kpis(history: dict[str, np.ndarray]) -> dict[str, float]:
     speed = history["speed"]
     currents = np.vstack(
         [
@@ -185,30 +186,33 @@ def _compute_kpis(history: Dict[str, np.ndarray]) -> Dict[str, float]:
     }
 
 
-def run_scenario(s: Scenario) -> Dict[str, float]:
+def run_scenario(s: Scenario) -> dict[str, float]:
     """Run a deterministic V/f scenario and return computed KPIs."""
     motor = _default_motor()
     load = _make_load(s.load_kind, s.load_params)
     supply = _make_supply(s.supply_kind, s.supply_params)
 
+    dt = cast(float, SIMULATION_PARAMS["dt"])
+    max_history = cast(int, SIMULATION_PARAMS["max_history"])
+    dc_voltage = cast(float, SIMULATION_PARAMS["dc_voltage"])
     engine = SimulationEngine(
         motor=motor,
         load_profile=load,
-        dt=SIMULATION_PARAMS["dt"],
-        max_history=SIMULATION_PARAMS["max_history"],
+        dt=dt,
+        max_history=max_history,
         supply_profile=supply,
     )
 
     controller = VFController(
         v_nominal=DEFAULT_MOTOR_PARAMS["nominal_voltage"],
         f_nominal=100.0,
-        dc_voltage=s.supply_params.get("voltage", SIMULATION_PARAMS["dc_voltage"]),
+        dc_voltage=float(s.supply_params.get("voltage", dc_voltage)),
         v_startup=1.0,
     )
     controller.set_frequency_slew_rate(50.0)
     controller.set_speed_reference(s.speed_ref_hz)
 
-    svm = SVMGenerator(dc_voltage=SIMULATION_PARAMS["dc_voltage"])
+    svm = SVMGenerator(dc_voltage=dc_voltage)
 
     num_steps = int(s.duration_s / engine.dt)
     for _ in range(num_steps):
@@ -220,7 +224,7 @@ def run_scenario(s: Scenario) -> Dict[str, float]:
     return _compute_kpis(engine.get_history())
 
 
-def reference_scenarios() -> List[Scenario]:
+def reference_scenarios() -> list[Scenario]:
     """Return the fixed scenario set used for baseline regression checks."""
     return [
         Scenario(
@@ -262,22 +266,25 @@ def reference_scenarios() -> List[Scenario]:
     ]
 
 
-def run_reference_suite() -> Dict[str, Dict[str, float]]:
+def run_reference_suite() -> dict[str, dict[str, float]]:
     """Run all reference scenarios and return KPI dictionary keyed by scenario name."""
     return {scenario.name: run_scenario(scenario) for scenario in reference_scenarios()}
 
 
-def run_foc_scenario(s: FOCScenario) -> Dict[str, float]:
+def run_foc_scenario(s: FOCScenario) -> dict[str, float]:
     """Run a deterministic FOC scenario and return computed KPIs."""
     motor = _default_motor()
     load = _make_load(s.load_kind, s.load_params)
     supply = _make_supply(s.supply_kind, s.supply_params)
 
+    dt = cast(float, SIMULATION_PARAMS["dt"])
+    max_history = cast(int, SIMULATION_PARAMS["max_history"])
+    dc_voltage = cast(float, SIMULATION_PARAMS["dc_voltage"])
     engine = SimulationEngine(
         motor=motor,
         load_profile=load,
-        dt=SIMULATION_PARAMS["dt"],
-        max_history=SIMULATION_PARAMS["max_history"],
+        dt=dt,
+        max_history=max_history,
         supply_profile=supply,
     )
 
@@ -289,7 +296,7 @@ def run_foc_scenario(s: FOCScenario) -> Dict[str, float]:
     controller.set_current_references(id_ref=s.id_ref_a, iq_ref=s.iq_ref_a)
     controller.set_speed_reference(s.speed_ref_rpm)
 
-    svm = SVMGenerator(dc_voltage=SIMULATION_PARAMS["dc_voltage"])
+    svm = SVMGenerator(dc_voltage=dc_voltage)
 
     num_steps = int(s.duration_s / engine.dt)
     for _ in range(num_steps):
@@ -301,7 +308,7 @@ def run_foc_scenario(s: FOCScenario) -> Dict[str, float]:
     return _compute_kpis(engine.get_history())
 
 
-def reference_foc_scenarios() -> List[FOCScenario]:
+def reference_foc_scenarios() -> list[FOCScenario]:
     """Return the fixed FOC scenario set used for baseline regression checks."""
     return [
         FOCScenario(
@@ -343,15 +350,12 @@ def reference_foc_scenarios() -> List[FOCScenario]:
     ]
 
 
-def run_foc_reference_suite() -> Dict[str, Dict[str, float]]:
+def run_foc_reference_suite() -> dict[str, dict[str, float]]:
     """Run all FOC reference scenarios and return KPI dictionary keyed by scenario name."""
-    return {
-        scenario.name: run_foc_scenario(scenario)
-        for scenario in reference_foc_scenarios()
-    }
+    return {scenario.name: run_foc_scenario(scenario) for scenario in reference_foc_scenarios()}
 
 
-def run_foc_startup_transition_diagnostics() -> Dict[str, float]:
+def run_foc_startup_transition_diagnostics() -> dict[str, float]:
     """Run a deterministic startup-transition exercise and return reliability KPIs.
 
     This is used for CI/report artifacts so transition quality and stability
@@ -404,13 +408,11 @@ def run_foc_startup_transition_diagnostics() -> Dict[str, float]:
     return {k: float(s[k]) for k in keys}
 
 
-def save_baseline(
-    output_path: Path, tolerances: Dict[str, Dict[str, float]] | None = None
-) -> Path:
+def save_baseline(output_path: Path, tolerances: dict[str, dict[str, float]] | None = None) -> Path:
     """Run suite and persist a baseline JSON file."""
     results = run_reference_suite()
 
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "schema_version": BASELINE_SCHEMA_VERSION,
         "sim_dt": SIMULATION_PARAMS["dt"],
         "scenarios": results,
@@ -424,12 +426,12 @@ def save_baseline(
 
 
 def save_foc_baseline(
-    output_path: Path, tolerances: Dict[str, Dict[str, float]] | None = None
+    output_path: Path, tolerances: dict[str, dict[str, float]] | None = None
 ) -> Path:
     """Run FOC suite and persist a baseline JSON file."""
     results = run_foc_reference_suite()
 
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "schema_version": BASELINE_SCHEMA_VERSION,
         "sim_dt": SIMULATION_PARAMS["dt"],
         "scenarios": results,
@@ -442,14 +444,14 @@ def save_foc_baseline(
     return output_path
 
 
-def load_baseline(path: Path) -> Dict[str, Any]:
+def load_baseline(path: Path) -> dict[str, Any]:
     """Load baseline JSON file."""
-    return json.loads(path.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
 
 def build_drift_report(
-    current: Dict[str, Dict[str, float]], baseline_payload: Dict[str, Any]
-) -> List[DriftRow]:
+    current: dict[str, dict[str, float]], baseline_payload: dict[str, Any]
+) -> list[DriftRow]:
     """Build row-wise KPI drift report against baseline.
 
     Status values:
@@ -457,7 +459,7 @@ def build_drift_report(
     - fail: drift exceeds configured tolerance
     - missing: scenario or KPI not found in current run
     """
-    rows: List[DriftRow] = []
+    rows: list[DriftRow] = []
 
     baseline = baseline_payload.get("scenarios", {})
     tolerances = baseline_payload.get("tolerances", {})
@@ -528,7 +530,7 @@ def build_drift_report(
     return rows
 
 
-def format_drift_report(rows: List[DriftRow], failed_only: bool = False) -> str:
+def format_drift_report(rows: list[DriftRow], failed_only: bool = False) -> str:
     """Format drift rows into a compact text table for logs and test errors."""
     if failed_only:
         rows = [r for r in rows if r["status"] in ("fail", "missing")]
@@ -541,23 +543,21 @@ def format_drift_report(rows: List[DriftRow], failed_only: bool = False) -> str:
         "-" * 92,
     ]
     for r in rows:
-        delta_pct_str = (
-            f"{r['delta_pct']:.2f}" if np.isfinite(r["delta_pct"]) else "inf"
-        )
+        delta_pct_str = f"{r['delta_pct']:.2f}" if np.isfinite(r["delta_pct"]) else "inf"
         lines.append(
             f"{r['scenario']} | {r['kpi']} | {r['expected']:.6g} | {r['actual']:.6g} | "
-            f"{r['delta_abs']:.6g} | {delta_pct_str} | {r['tolerance_pct'] * 100:.2f} | {r['status']}"
+            f"{r['delta_abs']:.6g} | {delta_pct_str} | {r['tolerance_pct'] * 100:.2f} | {r['status']}"  # noqa: E501
         )
 
     return "\n".join(lines)
 
 
 def compare_to_baseline(
-    current: Dict[str, Dict[str, float]],
-    baseline_payload: Dict[str, Any],
-) -> List[str]:
+    current: dict[str, dict[str, float]],
+    baseline_payload: dict[str, Any],
+) -> list[str]:
     """Compare current KPI set to baseline payload and return violation messages."""
-    failures: List[str] = []
+    failures: list[str] = []
 
     rows = build_drift_report(current=current, baseline_payload=baseline_payload)
 
@@ -578,8 +578,8 @@ def compare_to_baseline(
 
 
 def _threshold_bounds(
-    threshold_spec: Dict[str, float] | None,
-) -> Tuple[float | None, float | None, float | None, float | None]:
+    threshold_spec: dict[str, float] | None,
+) -> tuple[float | None, float | None, float | None, float | None]:
     spec = threshold_spec or {}
     return (
         float(spec["warn_min"]) if "warn_min" in spec else None,
@@ -590,27 +590,27 @@ def _threshold_bounds(
 
 
 def evaluate_startup_transition_thresholds(
-    diagnostics: Dict[str, float],
-    thresholds: Dict[str, Dict[str, float]] | None = None,
-) -> List[ThresholdRow]:
+    diagnostics: dict[str, float],
+    thresholds: dict[str, dict[str, float]] | None = None,
+) -> list[ThresholdRow]:
     """Evaluate startup-transition diagnostics against warn/fail thresholds."""
     spec = thresholds or DEFAULT_STARTUP_TRANSITION_THRESHOLDS
-    rows: List[ThresholdRow] = []
+    rows: list[ThresholdRow] = []
 
     for kpi in sorted(spec.keys()):
         actual = float(diagnostics.get(kpi, float("nan")))
         warn_min, warn_max, fail_min, fail_max = _threshold_bounds(spec.get(kpi))
 
         status = "pass"
-        if not np.isfinite(actual):
+        if (
+            not np.isfinite(actual)
+            or (fail_min is not None and actual < fail_min)
+            or (fail_max is not None and actual > fail_max)
+        ):
             status = "fail"
-        elif fail_min is not None and actual < fail_min:
-            status = "fail"
-        elif fail_max is not None and actual > fail_max:
-            status = "fail"
-        elif warn_min is not None and actual < warn_min:
-            status = "warn"
-        elif warn_max is not None and actual > warn_max:
+        elif (warn_min is not None and actual < warn_min) or (
+            warn_max is not None and actual > warn_max
+        ):
             status = "warn"
 
         rows.append(
@@ -628,7 +628,7 @@ def evaluate_startup_transition_thresholds(
     return rows
 
 
-def format_startup_threshold_report(rows: List[ThresholdRow]) -> str:
+def format_startup_threshold_report(rows: list[ThresholdRow]) -> str:
     """Format startup threshold rows as a compact text table."""
     if not rows:
         return "No threshold rows to report."

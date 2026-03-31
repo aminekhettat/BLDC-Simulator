@@ -19,12 +19,12 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.control import AdaptiveFOCTuner, FOCController, SVMGenerator  # noqa: E402
-from src.control.transforms import clarke_transform, park_transform  # noqa: E402
-from src.core.load_model import ConstantLoad  # noqa: E402
-from src.core.motor_model import BLDCMotor, MotorParameters  # noqa: E402
-from src.core.simulation_engine import SimulationEngine  # noqa: E402
-from src.utils.motor_profiles import (  # noqa: E402
+from src.control import AdaptiveFOCTuner, FOCController, SVMGenerator
+from src.control.transforms import clarke_transform, park_transform
+from src.core.load_model import ConstantLoad
+from src.core.motor_model import BLDCMotor, MotorParameters
+from src.core.simulation_engine import SimulationEngine
+from src.utils.motor_profiles import (
     list_motor_profiles,
     load_motor_profile,
 )
@@ -167,9 +167,7 @@ def _build_two_stage_analytic_candidates(
     mech_omega_target = abs(float(target_speed_rpm)) * (2.0 * np.pi / 60.0)
     elec_omega_target = mech_omega_target * max(float(params.poles_pairs), 1.0)
 
-    current_bw_base = float(
-        np.clip(max(1500.0, 6.0 * elec_omega_target), 1500.0, 12000.0)
-    )
+    current_bw_base = float(np.clip(max(1500.0, 6.0 * elec_omega_target), 1500.0, 12000.0))
     speed_wn_base = float(np.clip(max(10.0, 0.10 * mech_omega_target), 10.0, 140.0))
 
     current_designs: list[tuple[float, float, float]] = []
@@ -199,9 +197,7 @@ def _build_two_stage_analytic_candidates(
             analysis = tuner.analyze_speed_loop(speed_kp, speed_ki)
             margin = analysis["margin"]
             if bool(analysis["controllable"]) and bool(analysis["observable"]):
-                score = float(
-                    margin.phase_margin_deg + min(margin.gain_margin_db, 40.0)
-                )
+                score = float(margin.phase_margin_deg + min(margin.gain_margin_db, 40.0))
                 speed_designs.append((speed_kp, speed_ki, score))
     if not speed_designs:
         speed_kp, speed_ki = _synthesize_speed_pi(params, speed_wn_base, 1.0)
@@ -229,9 +225,7 @@ def _build_two_stage_analytic_candidates(
                                 current_pi=(float(current_kp), float(current_ki)),
                                 iq_limit_a=max(
                                     5.0,
-                                    min(
-                                        rated_current_a * iq_mult, 2.0 * rated_current_a
-                                    ),
+                                    min(rated_current_a * iq_mult, 2.0 * rated_current_a),
                                 ),
                                 startup={
                                     "align_duration_s": 0.0,
@@ -242,8 +236,7 @@ def _build_two_stage_analytic_candidates(
                                     ),
                                     "open_loop_target_speed_rpm": float(startup_target),
                                     "open_loop_ramp_time_s": 0.20,
-                                    "open_loop_iq_ref_a": rated_current_a
-                                    * startup_iq_mult,
+                                    "open_loop_iq_ref_a": rated_current_a * startup_iq_mult,
                                 },
                             )
                         )
@@ -264,9 +257,7 @@ def _build_current_stage_candidates(
     mech_omega_target = abs(float(target_speed_rpm)) * (2.0 * np.pi / 60.0)
     elec_omega_target = mech_omega_target * max(float(params.poles_pairs), 1.0)
 
-    current_bw_base = float(
-        np.clip(max(1200.0, 5.0 * elec_omega_target), 1200.0, 10000.0)
-    )
+    current_bw_base = float(np.clip(max(1200.0, 5.0 * elec_omega_target), 1200.0, 10000.0))
     speed_wn_base = float(np.clip(max(8.0, 0.08 * mech_omega_target), 8.0, 100.0))
 
     current_designs: list[tuple[float, float, float]] = []
@@ -301,9 +292,7 @@ def _build_current_stage_candidates(
                             max(1.0e-4, seed_speed_pi[1] * 1.2),
                         ),
                         current_pi=(float(current_kp), float(current_ki)),
-                        iq_limit_a=max(
-                            5.0, min(rated_current_a * iq_mult, 2.0 * rated_current_a)
-                        ),
+                        iq_limit_a=max(5.0, min(rated_current_a * iq_mult, 2.0 * rated_current_a)),
                         startup={
                             "align_duration_s": 0.0,
                             "align_current_a": rated_current_a * 0.08,
@@ -346,9 +335,7 @@ def _build_speed_stage_candidates(
             analysis = tuner.analyze_speed_loop(speed_kp, speed_ki)
             margin = analysis["margin"]
             if bool(analysis["controllable"]) and bool(analysis["observable"]):
-                score = float(
-                    margin.phase_margin_deg + min(margin.gain_margin_db, 40.0)
-                )
+                score = float(margin.phase_margin_deg + min(margin.gain_margin_db, 40.0))
                 speed_designs.append((speed_kp, speed_ki, score))
     if not speed_designs:
         speed_kp, speed_ki = _synthesize_speed_pi(params, speed_wn_base, 1.0)
@@ -444,9 +431,7 @@ def _evaluate_no_fw_feasibility(
 
     margin_v = float(v_phase_limit - v_required)
     feasible = bool(margin_v >= 0.0)
-    hardware_voltage_ok = bool(
-        float(params.nominal_voltage) >= max(rated_voltage_v, 1.0)
-    )
+    hardware_voltage_ok = bool(float(params.nominal_voltage) >= max(rated_voltage_v, 1.0))
     omega_mech_max = float(v_phase_limit / max(ke, 1.0e-9))
     max_no_fw_speed_rpm = float(omega_mech_max * (60.0 / (2.0 * np.pi)))
 
@@ -585,8 +570,7 @@ def _build_theory_candidates(
                                         ),
                                         "open_loop_target_speed_rpm": startup_target,
                                         "open_loop_ramp_time_s": float(ramp),
-                                        "open_loop_iq_ref_a": rated_current_a
-                                        * start_iq_m,
+                                        "open_loop_iq_ref_a": rated_current_a * start_iq_m,
                                     }
                                     out.append(
                                         Candidate(
@@ -645,9 +629,7 @@ def _run_trial(
 
     controller = FOCController(motor=motor, enable_speed_loop=True)
     controller.set_cascaded_speed_loop(True, iq_limit_a=candidate.iq_limit_a)
-    controller.set_speed_pi_gains(
-        kp=candidate.speed_pi[0], ki=candidate.speed_pi[1], kaw=0.05
-    )
+    controller.set_speed_pi_gains(kp=candidate.speed_pi[0], ki=candidate.speed_pi[1], kaw=0.05)
     controller.set_current_pi_gains(
         d_kp=candidate.current_pi[0],
         d_ki=candidate.current_pi[1],
@@ -677,9 +659,7 @@ def _run_trial(
         max(1.0e-4, seed_current_pi[0] * 1.5),
         max(1.0e-4, seed_current_pi[1] * 1.5),
     )
-    controller.set_speed_pi_gains(
-        kp=pre_tune_speed_pi[0], ki=pre_tune_speed_pi[1], kaw=0.05
-    )
+    controller.set_speed_pi_gains(kp=pre_tune_speed_pi[0], ki=pre_tune_speed_pi[1], kaw=0.05)
     controller.set_current_pi_gains(
         d_kp=pre_tune_current_pi[0],
         d_ki=pre_tune_current_pi[1],
@@ -692,9 +672,7 @@ def _run_trial(
     pre_tune_steady_band_rpm = max(
         40.0, 0.20 * pre_tune_entry_speed_rpm
     )  # 20% of target → fires on transient rising edge
-    pre_tune_ref_ramp_s = float(
-        np.clip(0.35 * pre_tune_entry_speed_rpm / 1000.0, 0.20, 1.20)
-    )
+    pre_tune_ref_ramp_s = float(np.clip(0.35 * pre_tune_entry_speed_rpm / 1000.0, 0.20, 1.20))
     pre_tune_iq_limit_a = float(
         np.clip(
             max(20.0, 1.25 * float(candidate.startup["open_loop_iq_ref_a"])),
@@ -760,33 +738,23 @@ def _run_trial(
             sim_t = float((k + 1) * dt)
 
             if not tuning_started:
-                pre_tune_ref_signed_rpm = float(
-                    np.sign(rated_speed_rpm) * pre_tune_entry_speed_rpm
-                )
+                pre_tune_ref_signed_rpm = float(np.sign(rated_speed_rpm) * pre_tune_entry_speed_rpm)
                 pre_tune_ref_cmd_rpm = float(
                     np.clip(
-                        pre_tune_ref_signed_rpm
-                        * (sim_t / max(pre_tune_ref_ramp_s, dt)),
+                        pre_tune_ref_signed_rpm * (sim_t / max(pre_tune_ref_ramp_s, dt)),
                         -abs(pre_tune_ref_signed_rpm),
                         abs(pre_tune_ref_signed_rpm),
                     )
                 )
                 controller.set_speed_reference(pre_tune_ref_cmd_rpm)
-                ema_alpha = dt / (
-                    0.10 + dt
-                )  # τ=0.10 s: gate fires at ~0.45 s for 400 RPM target
-                speed_ema_abs_rpm = (
-                    1.0 - ema_alpha
-                ) * speed_ema_abs_rpm + ema_alpha * abs(motor.speed_rpm)
-                max_abs_speed_seen_rpm = max(
-                    max_abs_speed_seen_rpm, abs(motor.speed_rpm)
+                ema_alpha = dt / (0.10 + dt)  # τ=0.10 s: gate fires at ~0.45 s for 400 RPM target
+                speed_ema_abs_rpm = (1.0 - ema_alpha) * speed_ema_abs_rpm + ema_alpha * abs(
+                    motor.speed_rpm
                 )
+                max_abs_speed_seen_rpm = max(max_abs_speed_seen_rpm, abs(motor.speed_rpm))
                 controller.vdq_limit = base_vdq_limit
 
-                if (
-                    abs(speed_ema_abs_rpm - pre_tune_entry_speed_rpm)
-                    <= pre_tune_steady_band_rpm
-                ):
+                if abs(speed_ema_abs_rpm - pre_tune_entry_speed_rpm) <= pre_tune_steady_band_rpm:
                     tuning_started = True
                     tuning_start_time_s = sim_t
                     controller._enter_startup_phase("closed_loop")
@@ -805,9 +773,7 @@ def _run_trial(
                         kaw=0.2,
                     )
                     tuning_gains_restored = True
-                    controller.set_cascaded_speed_loop(
-                        True, iq_limit_a=candidate.iq_limit_a
-                    )
+                    controller.set_cascaded_speed_loop(True, iq_limit_a=candidate.iq_limit_a)
                     controller.set_speed_reference(rated_speed_rpm)
                     controller.vdq_limit = base_vdq_limit
                     controller.pi_speed["integral"] = 0.0
@@ -823,9 +789,7 @@ def _run_trial(
                         q_ki=candidate_current_pi[1],
                         kaw=0.2,
                     )
-                    controller.set_cascaded_speed_loop(
-                        True, iq_limit_a=candidate.iq_limit_a
-                    )
+                    controller.set_cascaded_speed_loop(True, iq_limit_a=candidate.iq_limit_a)
                     tuning_gains_restored = True
                 controller.set_speed_reference(rated_speed_rpm)
                 controller.vdq_limit = base_vdq_limit
@@ -915,9 +879,7 @@ def _run_trial(
             "full_converged": False,
             "score": 1.0e9,
             "final_speed_rpm": float(motor.speed_rpm),
-            "final_speed_ratio": float(
-                motor.speed_rpm / max(abs(float(rated_speed_rpm)), 1.0e-9)
-            ),
+            "final_speed_ratio": float(motor.speed_rpm / max(abs(float(rated_speed_rpm)), 1.0e-9)),
             "reason": "stopped_before_min_observation_window",
         }
 
@@ -945,9 +907,7 @@ def _run_trial(
     # before computing FOC angle quality — mean|id| would count harmonic ripple as flux error.
     tail_id_dc = float(
         np.nan_to_num(
-            np.mean(
-                np.array(orthogonality_error_deg_samples[-tail:], dtype=np.float64)
-            ),
+            np.mean(np.array(orthogonality_error_deg_samples[-tail:], dtype=np.float64)),
             nan=0.0,
         )
     )
@@ -958,9 +918,7 @@ def _run_trial(
         )
     )
     tail_id_abs_mean_a = abs(tail_id_dc)
-    _flux_angle = float(
-        np.degrees(np.arctan2(abs(tail_iq_dc), abs(tail_id_dc) + 1e-12))
-    )
+    _flux_angle = float(np.degrees(np.arctan2(abs(tail_iq_dc), abs(tail_id_dc) + 1e-12)))
     tail_orthogonality_error_deg = float(abs(90.0 - _flux_angle))
 
     # At very low load, iq approaches zero and id/iq angle becomes numerically fragile.
@@ -990,9 +948,7 @@ def _run_trial(
     full_converged = bool(converged and final_ratio >= (1.0 - tolerance_ratio))
 
     orthogonality_norm = min(
-        0.0
-        if abs(tail_iq_dc) < iq_quality_floor_a
-        else tail_orthogonality_error_deg / 2.0,
+        0.0 if abs(tail_iq_dc) < iq_quality_floor_a else tail_orthogonality_error_deg / 2.0,
         5.0,
     )
     id_efficiency_norm = min(
@@ -1039,9 +995,7 @@ def _run_trial(
         "requested_min_sim_time_s": float(sim_time_s),
         "requested_max_sim_time_s": float(effective_max_sim_time_s),
         "band_rpm": float(band),
-        "tuning_start_time_s": None
-        if tuning_start_time_s is None
-        else float(tuning_start_time_s),
+        "tuning_start_time_s": None if tuning_start_time_s is None else float(tuning_start_time_s),
         "pre_tune_target_speed_rpm": float(pre_tune_entry_speed_rpm),
         "pre_tune_steady_band_rpm": float(pre_tune_steady_band_rpm),
     }
@@ -1103,9 +1057,7 @@ def _build_neighbors(base: Candidate) -> list[Candidate]:
                     "open_loop_ramp_time_s": float(
                         max(0.01, base.startup["open_loop_ramp_time_s"] * mf)
                     ),
-                    "open_loop_iq_ref_a": float(
-                        base.startup["open_loop_iq_ref_a"] * mf
-                    ),
+                    "open_loop_iq_ref_a": float(base.startup["open_loop_iq_ref_a"] * mf),
                 },
             )
         )
@@ -1130,13 +1082,9 @@ def tune_one_profile_until_converged(
     rated_speed = float(rated.get("rated_speed_rpm", 0.0))
     if rated_speed <= 0.0:
         raise ValueError(f"Missing rated_speed_rpm in {profile_path.name}")
-    rated_current = float(
-        rated.get("rated_current_a", rated.get("rated_current_a_rms", 20.0))
-    )
+    rated_current = float(rated.get("rated_current_a", rated.get("rated_current_a_rms", 20.0)))
     rated_voltage = float(
-        rated.get(
-            "rated_voltage_v", profile["motor_params"].get("nominal_voltage", 0.0)
-        )
+        rated.get("rated_voltage_v", profile["motor_params"].get("nominal_voltage", 0.0))
     )
 
     base_motor_params = dict(profile["motor_params"])
@@ -1255,13 +1203,11 @@ def tune_one_profile_until_converged(
         min(speed_stage_budget, max(1, _remaining_trials(current_stage_budget))),
     )
 
-    current_candidates, seed_speed_pi, seed_current_pi = (
-        _build_current_stage_candidates(
-            params=params,
-            target_speed_rpm=effective_target_speed_rpm,
-            rated_current_a=rated_current,
-            max_candidates=max(current_stage_budget, 1),
-        )
+    current_candidates, seed_speed_pi, seed_current_pi = _build_current_stage_candidates(
+        params=params,
+        target_speed_rpm=effective_target_speed_rpm,
+        rated_current_a=rated_current,
+        max_candidates=max(current_stage_budget, 1),
     )
 
     best_trial = None
@@ -1299,9 +1245,7 @@ def tune_one_profile_until_converged(
                 },
                 "iq_limit_a": float(cand.iq_limit_a),
                 "startup": {
-                    "open_loop_iq_ref_a": float(
-                        cand.startup.get("open_loop_iq_ref_a", 0.0)
-                    ),
+                    "open_loop_iq_ref_a": float(cand.startup.get("open_loop_iq_ref_a", 0.0)),
                     "open_loop_target_speed_rpm": float(
                         cand.startup.get("open_loop_target_speed_rpm", 0.0)
                     ),
@@ -1312,14 +1256,10 @@ def tune_one_profile_until_converged(
                     "full_converged": bool(trial_result.get("full_converged", False)),
                     "score": float(trial_result.get("score", 1.0e9)),
                     "final_speed_rpm": float(trial_result.get("final_speed_rpm", 0.0)),
-                    "final_speed_ratio": float(
-                        trial_result.get("final_speed_ratio", 0.0)
-                    ),
+                    "final_speed_ratio": float(trial_result.get("final_speed_ratio", 0.0)),
                     "reason": trial_result.get("reason"),
                     "tuning_start_time_s": trial_result.get("tuning_start_time_s"),
-                    "pre_tune_target_speed_rpm": trial_result.get(
-                        "pre_tune_target_speed_rpm"
-                    ),
+                    "pre_tune_target_speed_rpm": trial_result.get("pre_tune_target_speed_rpm"),
                 },
             }
         )
@@ -1469,9 +1409,7 @@ def tune_one_profile_until_converged(
 
     # Local refinement around the best speed candidate while keeping current PI fixed.
     if best_candidate is not None and not bool(best_trial.get("full_converged", False)):
-        for cand in _build_speed_neighbors(
-            best_candidate, rated_current_a=rated_current
-        ):
+        for cand in _build_speed_neighbors(best_candidate, rated_current_a=rated_current):
             if not _can_run_more_trials(tested):
                 break
             trial = _run_trial(
@@ -1650,9 +1588,7 @@ def tune_one_profile_until_converged(
         },
         "acceptance": {
             "accepted": accepted,
-            "reason": "full convergence achieved"
-            if accepted
-            else "full convergence not achieved",
+            "reason": "full convergence achieved" if accepted else "full convergence not achieved",
         },
     }
 
@@ -1779,9 +1715,7 @@ def main() -> None:
                     "profile": session["profile"]["name"],
                     "file": session["profile"]["file"],
                     "session_file": session_path.name,
-                    "accepted": bool(
-                        session.get("acceptance", {}).get("accepted", False)
-                    ),
+                    "accepted": bool(session.get("acceptance", {}).get("accepted", False)),
                     "full_converged": bool(v.get("full_converged", False)),
                     "final_speed_rpm": float(v.get("final_speed_rpm", 0.0)),
                     "final_speed_ratio": float(v.get("final_speed_ratio", 0.0)),
@@ -1793,9 +1727,7 @@ def main() -> None:
                 json.dumps(
                     {
                         "profile": session["profile"]["name"],
-                        "accepted": bool(
-                            session.get("acceptance", {}).get("accepted", False)
-                        ),
+                        "accepted": bool(session.get("acceptance", {}).get("accepted", False)),
                         "full_converged": bool(v.get("full_converged", False)),
                         "final_speed_ratio": float(v["final_speed_ratio"]),
                         "tested_trials": int(session["results"]["tested_trials"]),
@@ -1821,9 +1753,7 @@ def main() -> None:
                 )
             )
 
-    summary_path = (
-        PROJECT_ROOT / "data" / "logs" / "motor_profiles_until_converged_summary.json"
-    )
+    summary_path = PROJECT_ROOT / "data" / "logs" / "motor_profiles_until_converged_summary.json"
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 

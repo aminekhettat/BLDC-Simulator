@@ -13,17 +13,19 @@ transforms and running in either polar or Cartesian output modes.
     Initial FOC implementation with PI regulators and auto-tune stub
 """
 
-from typing import Dict, Optional, Tuple
+import logging
+
 import numpy as np
+
+from src.core.motor_model import BLDCMotor
+
 from .base_controller import BaseController
 from .transforms import (
     clarke_transform,
-    park_transform,
-    inverse_park,
     concordia_transform,
+    inverse_park,
+    park_transform,
 )
-from src.core.motor_model import BLDCMotor
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +48,14 @@ def _pi_update(state: dict, error: float, dt: float) -> float:
     kp = state["kp"]
     ki = state["ki"]
     state["integral"] += error * dt
-    return kp * error + ki * state["integral"]
+    return float(kp * error + ki * state["integral"])
 
 
 def _pi_update_anti_windup(
-    state: Dict[str, float],
+    state: dict[str, float],
     error: float,
     dt: float,
-    limit: Optional[float] = None,
+    limit: float | None = None,
 ) -> float:
     """PI update with optional back-calculation anti-windup and output limiting."""
     kp = state["kp"]
@@ -205,6 +207,24 @@ class FOCController(BaseController):
         self.startup_open_loop_angle = 0.0
         self.id_ref_command = 0.0
         self.iq_ref_command = 0.0
+
+        # ── Multi-rate speed loop ──────────────────────────────────────────────
+        # On a real single-shunt FOC MCU (e.g. Fpwm = 20 kHz):
+        #   • Clarke/Park + current PI + observer : every PWM period  (50 µs)
+        #   • Speed PI                            : every N periods  (~10 ms → N≈200)
+        #
+        # speed_loop_divider = 1 → legacy behaviour: speed PI runs every step.
+        # speed_loop_divider = N → speed PI runs every N current-loop steps;
+        #   effective dt for the speed integrator = N × current dt.
+        self.speed_loop_divider: int = 1
+        self._speed_loop_counter: int = 0
+        self._last_iq_speed_ref: float = 0.0
+        # FW integrator update divider — defaults to speed_loop_divider.
+        # In a real MCU the FW block runs in the same slow ISR as the speed PI
+        # (both at ~100 Hz).  Use configure_mcu_timing() to set both together.
+        self.fw_loop_divider: int = 1
+        self._fw_loop_counter: int = 0
+        # ──────────────────────────────────────────────────────────────────────
 
         # Optional field-weakening scheduler (independent feature toggle).
         self.field_weakening_enabled = False
@@ -359,9 +379,7 @@ class FOCController(BaseController):
             self.startup_open_loop_angle = self.startup_align_angle
         elif phase == "open_loop":
             self.angle_observer_mode = "OpenLoop"
-            measured_theta = (self.motor.theta * self.motor.params.poles_pairs) % (
-                2 * np.pi
-            )
+            measured_theta = (self.motor.theta * self.motor.params.poles_pairs) % (2 * np.pi)
             self.startup_open_loop_angle = measured_theta
             self.startup_open_loop_speed_rpm = self.startup_open_loop_initial_speed_rpm
             self.startup_elapsed_s = 0.0
@@ -388,11 +406,9 @@ class FOCController(BaseController):
         else:
             self._enter_startup_phase("open_loop")
 
-    def _update_target_observer_theta(self, dt: float) -> Tuple[float, float, float]:
+    def _update_target_observer_theta(self, dt: float) -> tuple[float, float, float]:
         """Update target observer states and return measured/target angles."""
-        theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (
-            2 * np.pi
-        )
+        theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (2 * np.pi)
 
         emf_a, emf_b, emf_c = self.motor.back_emf
         if self.use_concordia:
@@ -411,13 +427,11 @@ class FOCController(BaseController):
             self.theta_error_pll = err
             self.theta_error_smo = 0.0
             self.pll["integral"] += err * dt
-            omega_correction = (
-                self.pll["kp"] * err + self.pll["ki"] * self.pll["integral"]
-            )
+            omega_correction = self.pll["kp"] * err + self.pll["ki"] * self.pll["integral"]
             omega_base = self.motor.omega * self.motor.params.poles_pairs
-            self.theta_est_pll = (
-                self.theta_est_pll + (omega_base + omega_correction) * dt
-            ) % (2 * np.pi)
+            self.theta_est_pll = (self.theta_est_pll + (omega_base + omega_correction) * dt) % (
+                2 * np.pi
+            )
             theta_target = self.theta_est_pll
         elif self.observer_target_mode == "SMO":
             err = _wrap_angle(self.theta_meas_emf - self.theta_est_smo)
@@ -426,25 +440,18 @@ class FOCController(BaseController):
             boundary = self.smo["boundary"]
             slide = float(np.tanh(err / boundary))
             omega_target = (
-                self.motor.omega * self.motor.params.poles_pairs
-                + self.smo["k_slide"] * slide
+                self.motor.omega * self.motor.params.poles_pairs + self.smo["k_slide"] * slide
             )
             alpha = self.smo["lpf_alpha"]
-            self.smo["omega_est"] = (1.0 - alpha) * self.smo[
-                "omega_est"
-            ] + alpha * omega_target
-            self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (
-                2 * np.pi
-            )
+            self.smo["omega_est"] = (1.0 - alpha) * self.smo["omega_est"] + alpha * omega_target
+            self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (2 * np.pi)
             theta_target = self.theta_est_smo
         else:
             self.theta_error_pll = 0.0
             self.theta_error_smo = 0.0
             theta_target = theta_measured
 
-        speed_norm = min(
-            abs(self.motor.speed_rpm) / max(self.startup_min_speed_rpm, 1e-9), 1.0
-        )
+        speed_norm = min(abs(self.motor.speed_rpm) / max(self.startup_min_speed_rpm, 1e-9), 1.0)
         emf_norm = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
         phase_err = abs(_wrap_angle(self.theta_meas_emf - theta_target))
         coherence = 1.0 - min(phase_err / np.pi, 1.0)
@@ -484,9 +491,7 @@ class FOCController(BaseController):
         self.theta_sensorless_raw = theta_target
         return theta_measured, theta_target, emf_mag
 
-    def _apply_sensorless_blend(
-        self, theta_measured: float, theta_target: float
-    ) -> float:
+    def _apply_sensorless_blend(self, theta_measured: float, theta_target: float) -> float:
         """Blend measured and observer angles for low-speed robustness."""
         if self.observer_target_mode == "Measured":
             self.sensorless_blend_weight = 0.0
@@ -508,9 +513,7 @@ class FOCController(BaseController):
         self.sensorless_blend_weight = float(w_speed * w_conf)
         return _blend_angles(theta_measured, theta_target, self.sensorless_blend_weight)
 
-    def _evaluate_sensorless_handoff(
-        self, dt: float, emf_mag: float, confidence: float
-    ) -> bool:
+    def _evaluate_sensorless_handoff(self, dt: float, emf_mag: float, confidence: float) -> bool:
         """Evaluate when it is safe to leave forced open-loop startup."""
         self.startup_elapsed_s += dt
 
@@ -526,13 +529,9 @@ class FOCController(BaseController):
         else:
             self.startup_confidence_elapsed_s = 0.0
 
-        adaptive_ready = (
-            self.startup_confidence_elapsed_s >= self.startup_confidence_hold_s
-        )
+        adaptive_ready = self.startup_confidence_elapsed_s >= self.startup_confidence_hold_s
         self.startup_ready_to_switch = bool(static_ready and adaptive_ready)
-        self.startup_handoff_confidence_peak = max(
-            self.startup_handoff_confidence_peak, confidence
-        )
+        self.startup_handoff_confidence_peak = max(self.startup_handoff_confidence_peak, confidence)
         return self.startup_transition_enabled and self.startup_ready_to_switch
 
     def _record_sensorless_handoff(self, confidence: float, emf_mag: float) -> None:
@@ -540,15 +539,10 @@ class FOCController(BaseController):
         speed_mag = abs(self.motor.speed_rpm)
         speed_score = min(speed_mag / max(self.startup_min_speed_rpm, 1e-9), 1.0)
         emf_score = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
-        time_score = min(
-            self.startup_elapsed_s / max(self.startup_min_elapsed_s, 1e-9), 1.0
-        )
+        time_score = min(self.startup_elapsed_s / max(self.startup_min_elapsed_s, 1e-9), 1.0)
         self.startup_handoff_quality = float(
             np.clip(
-                0.5 * confidence
-                + 0.2 * speed_score
-                + 0.2 * emf_score
-                + 0.1 * time_score,
+                0.5 * confidence + 0.2 * speed_score + 0.2 * emf_score + 0.1 * time_score,
                 0.0,
                 1.0,
             )
@@ -567,9 +561,7 @@ class FOCController(BaseController):
         if not self.startup_fallback_enabled:
             return False
 
-        conf_lo = max(
-            0.0, self.startup_min_confidence - self.startup_confidence_hysteresis
-        )
+        conf_lo = max(0.0, self.startup_min_confidence - self.startup_confidence_hysteresis)
         speed_release = self.startup_min_speed_rpm * 0.9
         emf_release = self.startup_min_emf_v * 0.9
         degraded = (
@@ -591,13 +583,9 @@ class FOCController(BaseController):
         self.startup_elapsed_s = 0.0
         self.startup_confidence_elapsed_s = 0.0
         self.startup_fallback_event_count += 1
-        total_transitions = (
-            self.startup_handoff_count + self.startup_fallback_event_count
-        )
+        total_transitions = self.startup_handoff_count + self.startup_fallback_event_count
         self.startup_handoff_stability_ratio = (
-            self.startup_handoff_count / total_transitions
-            if total_transitions > 0
-            else 1.0
+            self.startup_handoff_count / total_transitions if total_transitions > 0 else 1.0
         )
         return True
 
@@ -645,9 +633,9 @@ class FOCController(BaseController):
                 * (2 * np.pi)
                 * self.motor.params.poles_pairs
             )
-            self.startup_open_loop_angle = (
-                self.startup_open_loop_angle + omega_elec * dt
-            ) % (2 * np.pi)
+            self.startup_open_loop_angle = (self.startup_open_loop_angle + omega_elec * dt) % (
+                2 * np.pi
+            )
 
             if self._evaluate_sensorless_handoff(dt, emf_mag, self.observer_confidence):
                 self._record_sensorless_handoff(self.observer_confidence, emf_mag)
@@ -665,16 +653,48 @@ class FOCController(BaseController):
             return self.startup_open_loop_angle
         return self._apply_sensorless_blend(theta_measured, theta_target)
 
-    def _get_active_references(self, dt: float) -> Tuple[float, float]:
-        """Return d/q references after applying startup phase overrides."""
+    def _get_active_references(self, dt: float) -> tuple[float, float]:
+        """Return d/q references after applying startup phase overrides.
+
+        Multi-rate speed loop
+        ~~~~~~~~~~~~~~~~~~~~~
+        The speed PI is executed only every ``speed_loop_divider`` calls,
+        matching the real MCU timing model where:
+
+        * Current PI + Clarke/Park + observer → every PWM period (e.g. 50 µs)
+        * Speed PI → every N periods (e.g. N=200 → 10 ms at 20 kHz)
+
+        Between speed-PI executions the last Iq reference is held, exactly as a
+        real interrupt-driven implementation would do with a slow-loop flag.
+        The effective integration step for the speed PI is ``N × dt`` so gains
+        tuned with ``speed_loop_divider=1`` remain valid; only the update
+        cadence changes.
+        """
         id_ref = self.id_ref + self.field_weakening_id_injection_a
 
         if self.enable_speed_loop:
             speed_ref_rad_s = (self.speed_ref / 60.0) * (2 * np.pi)
             self.speed_error = speed_ref_rad_s - self.motor.omega
-            iq_ref = _pi_update_anti_windup(
-                self.pi_speed, self.speed_error, dt, limit=self.iq_limit_a
-            )
+
+            if self.speed_loop_divider <= 1:
+                # Legacy / high-fidelity mode: speed PI every current step.
+                self._last_iq_speed_ref = _pi_update_anti_windup(
+                    self.pi_speed, self.speed_error, dt, limit=self.iq_limit_a
+                )
+            else:
+                # Multi-rate: only integrate the speed PI every N steps.
+                # Hold _last_iq_speed_ref in between (ZOH, same as real MCU).
+                self._speed_loop_counter += 1
+                if self._speed_loop_counter >= self.speed_loop_divider:
+                    self._speed_loop_counter = 0
+                    dt_speed = dt * float(self.speed_loop_divider)
+                    self._last_iq_speed_ref = _pi_update_anti_windup(
+                        self.pi_speed,
+                        self.speed_error,
+                        dt_speed,
+                        limit=self.iq_limit_a,
+                    )
+            iq_ref = self._last_iq_speed_ref
         else:
             iq_ref = (self.speed_ref / 60.0) * (2 * np.pi) * self.pi_q["kp"]
             self.speed_error = 0.0
@@ -688,9 +708,7 @@ class FOCController(BaseController):
             return self.startup_open_loop_id_ref_a, self.startup_open_loop_iq_ref_a
         return id_ref, iq_ref
 
-    def _resolve_observer_mode(
-        self, dt: float, emf_mag: float, confidence: float
-    ) -> str:
+    def _resolve_observer_mode(self, dt: float, emf_mag: float, confidence: float) -> str:
         """Resolve active observer mode considering startup transition logic."""
         if not self.startup_transition_enabled:
             self.startup_transition_done = True
@@ -712,9 +730,7 @@ class FOCController(BaseController):
         else:
             self.startup_confidence_elapsed_s = 0.0
 
-        adaptive_ready = (
-            self.startup_confidence_elapsed_s >= self.startup_confidence_hold_s
-        )
+        adaptive_ready = self.startup_confidence_elapsed_s >= self.startup_confidence_hold_s
         self.startup_ready_to_switch = bool(static_ready and adaptive_ready)
 
         if not self.startup_transition_done:
@@ -725,15 +741,10 @@ class FOCController(BaseController):
         if not self.startup_transition_done and self.startup_ready_to_switch:
             speed_score = min(speed_mag / max(self.startup_min_speed_rpm, 1e-9), 1.0)
             emf_score = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
-            time_score = min(
-                self.startup_elapsed_s / max(self.startup_min_elapsed_s, 1e-9), 1.0
-            )
+            time_score = min(self.startup_elapsed_s / max(self.startup_min_elapsed_s, 1e-9), 1.0)
             self.startup_handoff_quality = float(
                 np.clip(
-                    0.5 * confidence
-                    + 0.2 * speed_score
-                    + 0.2 * emf_score
-                    + 0.1 * time_score,
+                    0.5 * confidence + 0.2 * speed_score + 0.2 * emf_score + 0.1 * time_score,
                     0.0,
                     1.0,
                 )
@@ -747,11 +758,7 @@ class FOCController(BaseController):
         if self.startup_transition_done and self.startup_fallback_enabled:
             speed_release = self.startup_min_speed_rpm * 0.9
             emf_release = self.startup_min_emf_v * 0.9
-            degraded = (
-                confidence <= conf_lo
-                or speed_mag < speed_release
-                or emf_mag < emf_release
-            )
+            degraded = confidence <= conf_lo or speed_mag < speed_release or emf_mag < emf_release
             if degraded:
                 self.startup_fallback_elapsed_s += dt
             else:
@@ -764,23 +771,15 @@ class FOCController(BaseController):
                 self.startup_confidence_elapsed_s = 0.0
                 self.startup_fallback_elapsed_s = 0.0
                 self.startup_fallback_event_count += 1
-                total_transitions = (
-                    self.startup_handoff_count + self.startup_fallback_event_count
-                )
+                total_transitions = self.startup_handoff_count + self.startup_fallback_event_count
                 self.startup_handoff_stability_ratio = (
-                    self.startup_handoff_count / total_transitions
-                    if total_transitions > 0
-                    else 1.0
+                    self.startup_handoff_count / total_transitions if total_transitions > 0 else 1.0
                 )
                 return self.startup_initial_mode
 
-        total_transitions = (
-            self.startup_handoff_count + self.startup_fallback_event_count
-        )
+        total_transitions = self.startup_handoff_count + self.startup_fallback_event_count
         self.startup_handoff_stability_ratio = (
-            self.startup_handoff_count / total_transitions
-            if total_transitions > 0
-            else 1.0
+            self.startup_handoff_count / total_transitions if total_transitions > 0 else 1.0
         )
 
         if self.startup_transition_done:
@@ -822,11 +821,9 @@ class FOCController(BaseController):
         self.sensorless_blend_min_speed_rpm = float(min_speed_rpm)
         self.sensorless_blend_min_confidence = float(min_confidence)
 
-    def _estimate_theta_electrical(self, dt: float) -> float:
+    def _estimate_theta_electrical(self, dt: float) -> float:  # noqa: C901  # TODO: extract observer-mode branches (11)
         """Estimate electrical angle from selected observer mode."""
-        theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (
-            2 * np.pi
-        )
+        theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (2 * np.pi)
 
         emf_a, emf_b, emf_c = self.motor.back_emf
         if self.use_concordia:
@@ -840,9 +837,7 @@ class FOCController(BaseController):
         if abs(emf_alpha) + abs(emf_beta) > 1e-12:
             self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
 
-        speed_norm = min(
-            abs(self.motor.speed_rpm) / max(self.startup_min_speed_rpm, 1e-9), 1.0
-        )
+        speed_norm = min(abs(self.motor.speed_rpm) / max(self.startup_min_speed_rpm, 1e-9), 1.0)
         emf_norm = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
 
         if self.observer_target_mode == "PLL":
@@ -905,13 +900,11 @@ class FOCController(BaseController):
             err = _wrap_angle(self.theta_meas_emf - self.theta_est_pll)
             self.theta_error_pll = err
             self.pll["integral"] += err * dt
-            omega_correction = (
-                self.pll["kp"] * err + self.pll["ki"] * self.pll["integral"]
-            )
+            omega_correction = self.pll["kp"] * err + self.pll["ki"] * self.pll["integral"]
             omega_base = self.motor.omega * self.motor.params.poles_pairs
-            self.theta_est_pll = (
-                self.theta_est_pll + (omega_base + omega_correction) * dt
-            ) % (2 * np.pi)
+            self.theta_est_pll = (self.theta_est_pll + (omega_base + omega_correction) * dt) % (
+                2 * np.pi
+            )
             theta_obs = self.theta_est_pll
         else:
             # Sliding-mode-inspired observer variant.
@@ -920,16 +913,11 @@ class FOCController(BaseController):
             boundary = self.smo["boundary"]
             slide = float(np.tanh(err / boundary))
             omega_target = (
-                self.motor.omega * self.motor.params.poles_pairs
-                + self.smo["k_slide"] * slide
+                self.motor.omega * self.motor.params.poles_pairs + self.smo["k_slide"] * slide
             )
             alpha = self.smo["lpf_alpha"]
-            self.smo["omega_est"] = (1.0 - alpha) * self.smo[
-                "omega_est"
-            ] + alpha * omega_target
-            self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (
-                2 * np.pi
-            )
+            self.smo["omega_est"] = (1.0 - alpha) * self.smo["omega_est"] + alpha * omega_target
+            self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (2 * np.pi)
             theta_obs = self.theta_est_smo
 
         self.theta_sensorless_raw = theta_obs
@@ -950,9 +938,7 @@ class FOCController(BaseController):
         self.sensorless_blend_weight = float(w_speed * w_conf)
         return _blend_angles(theta_measured, theta_obs, self.sensorless_blend_weight)
 
-    def set_cascaded_speed_loop(
-        self, enabled: bool, iq_limit_a: Optional[float] = None
-    ) -> None:
+    def set_cascaded_speed_loop(self, enabled: bool, iq_limit_a: float | None = None) -> None:
         """Enable/disable cascaded speed->iq loop and optionally set iq clamp."""
         self.enable_speed_loop = enabled
         if iq_limit_a is not None:
@@ -963,6 +949,158 @@ class FOCController(BaseController):
         self.pi_speed["kp"] = float(kp)
         self.pi_speed["ki"] = float(ki)
         self.pi_speed["kaw"] = float(kaw)
+
+    def set_speed_loop_divider(self, divider: int) -> None:
+        """Configure multi-rate speed loop decimation.
+
+        Matches real MCU timing where the current loop (Clarke/Park + d/q PI)
+        runs every PWM interrupt while the speed PI runs at a lower rate:
+
+        .. code-block:: text
+
+            Real MCU example (Fpwm = 20 kHz, Ts = 50 µs):
+              Current PI + observer : every Ts        →  50 µs
+              Speed PI              : every 200 × Ts  →  10 ms
+
+        Parameters
+        ----------
+        divider : int
+            Number of current-loop steps between successive speed-PI updates.
+
+            * ``1``   — legacy/high-rate mode: speed PI executes every step
+                        (same rate as current PI). Default, backward-compatible.
+            * ``200`` — speed PI at 1/200 of current-loop rate (10 ms at 20 kHz).
+            * Any positive integer is accepted.
+
+        Notes
+        -----
+        Between speed-PI firings the last Iq reference is held (zero-order hold),
+        exactly as a real interrupt-driven implementation does.
+        The effective integration step passed to the speed-PI integrator is
+        ``divider × dt``, so d/q PI gains tuned at ``divider=1`` remain valid.
+        """
+        if divider < 1:
+            raise ValueError("speed_loop_divider must be >= 1")
+        self.speed_loop_divider = int(divider)
+        self._speed_loop_counter = 0
+
+    def set_fw_loop_divider(self, divider: int) -> None:
+        """Configure multi-rate field-weakening integrator decimation.
+
+        Sets how many current-loop steps elapse between successive executions
+        of the FW headroom integrator.  On a real MCU the FW block runs inside
+        the same slow interrupt as the speed PI (both at ~100 Hz), so the
+        typical setting matches ``speed_loop_divider``.
+
+        Parameters
+        ----------
+        divider : int
+            * ``1``   — FW integrator updates every current-loop step (default,
+                        backward-compatible).
+            * ``N``   — FW integrator updates every N current steps; the
+                        effective integration ``dt`` passed internally is
+                        ``N × current_dt`` so gain values remain unchanged.
+
+        See Also
+        --------
+        configure_mcu_timing : sets both speed and FW dividers together.
+        """
+        if divider < 1:
+            raise ValueError("fw_loop_divider must be >= 1")
+        self.fw_loop_divider = int(divider)
+        self._fw_loop_counter = 0
+
+    def configure_mcu_timing(
+        self,
+        pwm_freq_hz: float,
+        speed_loop_hz: float = 100.0,
+        fw_loop_hz: float | None = None,
+    ) -> dict:
+        """Configure all loop dividers to match a real MCU timing scheme.
+
+        This is a single convenience call that replicates the two-rate ISR
+        structure used in production single-shunt FOC firmware:
+
+        .. code-block:: text
+
+            ┌──────────────────────────────────────────────────────┐
+            │  PWM interrupt  (every T_pwm = 1/Fpwm)              │
+            │    • ADC trigger / current reconstruction            │
+            │    • Clarke / Park transform                         │
+            │    • Angle observer  (SMO or PLL)                   │
+            │    • d-axis PI  →  v_d_sat                          │
+            │    • q-axis PI  →  v_q_sat                          │
+            │    • Voltage saturation (d_priority)                 │
+            ├──────────────────────────────────────────────────────┤
+            │  Slow ISR  (every T_slow = 1/F_speed = N × T_pwm)  │
+            │    • Speed PI  →  Iq_ref  (ZOH between firings)    │
+            │    • FW integrator  →  Id_fw  (ZOH between firings) │
+            └──────────────────────────────────────────────────────┘
+
+        Parameters
+        ----------
+        pwm_freq_hz : float
+            PWM (current-loop) frequency in Hz.  Corresponds directly to
+            ``1 / dt`` used when creating ``BLDCMotor`` / ``SimulationEngine``.
+            Example: 20 000 Hz → dt = 50 µs.
+        speed_loop_hz : float, optional
+            Frequency of the slow ISR (speed PI + FW), default 100 Hz.
+            Must satisfy ``speed_loop_hz ≤ pwm_freq_hz``.
+        fw_loop_hz : float or None, optional
+            Frequency of the FW integrator.  When *None* (default) the FW
+            runs at the same rate as the speed PI (recommended — both in the
+            same slow ISR).  Pass an explicit value only if a different rate
+            is needed.
+
+        Returns
+        -------
+        dict
+            Resolved timing parameters: pwm_freq_hz, speed_loop_hz,
+            fw_loop_hz, speed_divider, fw_divider.
+
+        Raises
+        ------
+        ValueError
+            If ``speed_loop_hz > pwm_freq_hz`` or any frequency is non-positive.
+
+        Examples
+        --------
+        Match a typical STM32 single-shunt FOC setup::
+
+            ctrl.configure_mcu_timing(pwm_freq_hz=20_000, speed_loop_hz=100)
+            # → speed_divider = 200, fw_divider = 200
+
+        Higher-bandwidth speed loop (500 Hz)::
+
+            ctrl.configure_mcu_timing(pwm_freq_hz=20_000, speed_loop_hz=500)
+            # → speed_divider = 40, fw_divider = 40
+        """
+        if pwm_freq_hz <= 0:
+            raise ValueError("pwm_freq_hz must be positive")
+        if speed_loop_hz <= 0 or speed_loop_hz > pwm_freq_hz:
+            raise ValueError(
+                f"speed_loop_hz must be in (0, pwm_freq_hz={pwm_freq_hz}]"
+            )
+        if fw_loop_hz is None:
+            fw_loop_hz = speed_loop_hz
+        if fw_loop_hz <= 0 or fw_loop_hz > pwm_freq_hz:
+            raise ValueError(
+                f"fw_loop_hz must be in (0, pwm_freq_hz={pwm_freq_hz}]"
+            )
+
+        speed_divider = max(1, round(pwm_freq_hz / speed_loop_hz))
+        fw_divider    = max(1, round(pwm_freq_hz / fw_loop_hz))
+
+        self.set_speed_loop_divider(speed_divider)
+        self.set_fw_loop_divider(fw_divider)
+
+        return {
+            "pwm_freq_hz":    pwm_freq_hz,
+            "speed_loop_hz":  pwm_freq_hz / speed_divider,
+            "fw_loop_hz":     pwm_freq_hz / fw_divider,
+            "speed_divider":  speed_divider,
+            "fw_divider":     fw_divider,
+        }
 
     def set_decoupling(self, enable_d: bool = False, enable_q: bool = False) -> None:
         """Enable/disable optional d/q decoupling feed-forward compensation."""
@@ -1024,7 +1162,7 @@ class FOCController(BaseController):
         start_speed_rpm: float = 0.0,
         gain: float = 1.0,
         max_negative_id_a: float = 0.0,
-        headroom_target_v: Optional[float] = None,
+        headroom_target_v: float | None = None,
     ) -> None:
         """Configure voltage-headroom-based field-weakening d-axis current injection."""
         if start_speed_rpm < 0.0:
@@ -1051,13 +1189,60 @@ class FOCController(BaseController):
 
     def _update_field_weakening_from_voltage(
         self,
-        v_d_unsat: float,
-        v_q_unsat: float,
+        v_d: float,
+        v_q: float,
         dt: float,
     ) -> None:
-        """Update FW Id injection to maintain configured dq voltage headroom."""
-        v_mag_cmd = float(np.hypot(v_d_unsat, v_q_unsat))
-        self.field_weakening_headroom_v = float(self.vdq_limit - v_mag_cmd)
+        """Update FW Id injection to maintain configured dq voltage headroom.
+
+        Design (Kim & Sul 1997, Bolognani 1999 — production-drive approach)
+        ────────────────────────────────────────────────────────────────────
+        The FW headroom is computed from the **saturated** (hard-limited) dq
+        voltage command, NOT the unsaturated PI output.
+
+        Why unsaturated PI commands fail
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        During acceleration and load transients the current PI integral winds
+        up well beyond the physical voltage limit (``v_q_unsat`` can reach
+        50–200 V).  Using the raw unsaturated output tricks the FW integrator
+        into injecting maximum negative Id at speeds far below the FW region,
+        reducing Kt_eff and creating a limit cycle (motor stuck at ~2720 RPM
+        instead of reaching 4000 RPM).
+
+        Why back-EMF estimation also fails
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Estimating |v| from motor speed + FW state gives the steady-state
+        back-EMF, which exceeds ``vdq_limit`` any time the actual FW injection
+        is slightly less than the equilibrium value.  This causes persistent
+        negative headroom → FW over-injection → instability.
+
+        Saturated voltage (this implementation)
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        After the d_priority saturation step, |v_d, v_q| ≤ vdq_limit by
+        construction.  Therefore:
+
+          headroom = vdq_limit − √(v_d² + v_q²)  ≥ 0  always.
+
+        Key properties:
+          • Motor at voltage limit (FW region):  |v_sat| ≈ vdq_limit →
+            headroom ≈ 0 → FW integrates at rate ``gain × headroom_target``.
+          • Motor below voltage limit (sub-FW):   |v_sat| < vdq_limit →
+            headroom > 0 → FW injection decays toward zero (correct).
+          • PI windup (large |v_unsat|):  saturation clips to vdq_limit →
+            headroom ≈ 0 (conservative), FW integrates slowly rather than
+            exploding.  The anti-windup on the current PI simultaneously
+            drains the integral, so the windup resolves naturally.
+
+        This is the standard approach in production variable-frequency drives.
+
+        Reference: Kim & Sul, "Torque-Maximizing Field-Weakening Control",
+        IEEE Trans. Ind. Electron., vol. 44, pp. 93–103, 1997.
+        Bolognani, Zigliotto, Zordan, "Extended-range PMSM drives with
+        flux weakening", IEEE Trans. Ind. Appl., 1999.
+        """
+        v_mag = float(np.hypot(v_d, v_q))
+        # v_mag ≤ vdq_limit (caller must pass saturated v_d, v_q)
+        self.field_weakening_headroom_v = float(self.vdq_limit - v_mag)
 
         active = (
             self.field_weakening_enabled
@@ -1077,9 +1262,7 @@ class FOCController(BaseController):
             headroom_error_v = target_headroom - self.field_weakening_headroom_v
             self.field_weakening_voltage_error_v = float(headroom_error_v)
             inj_mag += self.field_weakening_gain * headroom_error_v * dt
-            inj_mag = float(
-                np.clip(inj_mag, 0.0, self.field_weakening_max_negative_id_a)
-            )
+            inj_mag = float(np.clip(inj_mag, 0.0, self.field_weakening_max_negative_id_a))
 
         self.field_weakening_id_injection_a = -float(inj_mag)
 
@@ -1095,11 +1278,9 @@ class FOCController(BaseController):
         J = self.motor.params.rotor_inertia
         state["kp"] = bandwidth * J * 10.0
         state["ki"] = state["kp"] * 10.0  # arbitrary
-        logger.info(
-            f"Auto-tuned {axis}-axis PI: kp={state['kp']:.3f}, ki={state['ki']:.3f}"
-        )
+        logger.info(f"Auto-tuned {axis}-axis PI: kp={state['kp']:.3f}, ki={state['ki']:.3f}")
 
-    def update(self, dt: float) -> Tuple[float, float]:
+    def update(self, dt: float) -> tuple[float, float]:
         """Update controller and return voltage command.
 
         :param dt: Time step [s]
@@ -1136,28 +1317,52 @@ class FOCController(BaseController):
         v_q_pi = _pi_update_anti_windup(self.pi_q, error_q, dt, limit=self.vdq_limit)
 
         omega_elec = self.motor.omega * self.motor.params.poles_pairs
+        lq_eff = (
+            float(self.motor.params.lq)
+            if self.motor.params.lq is not None
+            else float(self.motor.params.phase_inductance)
+        )
+        ld_eff = (
+            float(self.motor.params.ld)
+            if self.motor.params.ld is not None
+            else float(self.motor.params.phase_inductance)
+        )
+        # Decoupling feedforward: use *reference* currents, not measured.
+        #
+        # Using measured id_val / iq_val for feedforward causes large-signal
+        # instability: during transient braking (negative Iq), the d-axis
+        # feedforward v_d_ff = −ωe·Lq·iq_measured can exceed +vdq_limit,
+        # saturating the d-axis completely and driving v_q to zero.  With
+        # no q-axis voltage the motor loses all accelerating torque,
+        # creating a violent limit-cycle even when the speed loop is gentle.
+        #
+        # Using the *reference* values (id_ref_command, iq_ref_command)
+        # instead is the standard production approach (cf. Holtz, 2002;
+        # Briz et al., 2000): references change smoothly and are bounded by
+        # iq_limit_a, so the feedforward never exceeds vdq_limit in the
+        # linear operating range.  In steady-state the reference ≈ the
+        # measured value, so the decoupling quality is unaffected.
+        # id_ref_command / iq_ref_command are set just above (line 1177).
         v_d_ff = (
-            -omega_elec * self.motor.params.lq * iq_val
-            if self.enable_decouple_d
-            else 0.0
+            -omega_elec * lq_eff * float(self.iq_ref_command) if self.enable_decouple_d else 0.0
         )
-        v_q_ff = (
-            omega_elec * self.motor.params.ld * id_val
-            if self.enable_decouple_q
-            else 0.0
-        )
+        v_q_ff = omega_elec * ld_eff * float(self.id_ref_command) if self.enable_decouple_q else 0.0
         v_d_unsat = v_d_pi + v_d_ff
         v_q_unsat = v_q_pi + v_q_ff
 
-        # FW uses commanded dq magnitude to maintain voltage headroom.
-        self._update_field_weakening_from_voltage(v_d_unsat, v_q_unsat, dt)
-
         # Enforce vector saturation to available voltage circle.
+        # NOTE: saturation is applied BEFORE the FW headroom update so that
+        # the FW integrator sees the *actual* applied voltage, not the
+        # wind-up-inflated unsaturated command (which can be 50-200 V during
+        # acceleration transients even though the inverter is limited to
+        # vdq_limit).  Using saturated voltages guarantees headroom ≥ 0 and
+        # makes the FW response immune to PI windup.  This follows the
+        # standard production-drive implementation (e.g. Kim & Sul 1997,
+        # Bolognani 1999): the voltage regulator feedback is the actual
+        # commanded voltage after hard-limiting, not the desired PI output.
         if self.voltage_saturation_mode == "d_priority":
             v_d = float(np.clip(v_d_unsat, -self.vdq_limit, self.vdq_limit))
-            v_q_headroom = float(
-                np.sqrt(max(self.vdq_limit * self.vdq_limit - v_d * v_d, 0.0))
-            )
+            v_q_headroom = float(np.sqrt(max(self.vdq_limit * self.vdq_limit - v_d * v_d, 0.0)))
             v_q = float(np.clip(v_q_unsat, -v_q_headroom, v_q_headroom))
         else:
             v_d = float(v_d_unsat)
@@ -1167,6 +1372,22 @@ class FOCController(BaseController):
                 scale = self.vdq_limit / vdq_mag
                 v_d *= scale
                 v_q *= scale
+
+        # FW headroom from SATURATED voltage: |v_sat| ≤ vdq_limit always,
+        # so headroom = vdq_limit − |v_sat| ≥ 0 always.
+        #
+        # Multi-rate: FW integrator fires every fw_loop_divider current steps
+        # (same cadence as the speed PI — both belong to the slow ISR on a
+        # real MCU).  Between firings the last Id injection is held (ZOH).
+        if self.fw_loop_divider <= 1:
+            self._update_field_weakening_from_voltage(v_d, v_q, dt)
+        else:
+            self._fw_loop_counter += 1
+            if self._fw_loop_counter >= self.fw_loop_divider:
+                self._fw_loop_counter = 0
+                self._update_field_weakening_from_voltage(
+                    v_d, v_q, dt * float(self.fw_loop_divider)
+                )
 
         if self.coupled_voltage_antiwindup_enabled:
             aw = self.coupled_voltage_antiwindup_gain
@@ -1183,10 +1404,9 @@ class FOCController(BaseController):
 
         if self.output_cartesian:
             return v_alpha_cmd, v_beta_cmd
-        else:
-            mag = np.hypot(v_alpha_cmd, v_beta_cmd)
-            ang = np.arctan2(v_beta_cmd, v_alpha_cmd)
-            return mag, ang
+        mag = np.hypot(v_alpha_cmd, v_beta_cmd)
+        ang = np.arctan2(v_beta_cmd, v_alpha_cmd)
+        return mag, ang
 
     def reset(self) -> None:
         """Reset controller state."""
@@ -1296,8 +1516,8 @@ class FOCController(BaseController):
             "observer_confidence_coherence": self.observer_confidence_coherence,
             "observer_confidence_ema": self.observer_confidence_ema,
             "observer_confidence_trend": self.observer_confidence_trend,
-            "observer_confidence_above_threshold_time_s": self.observer_confidence_above_threshold_time_s,
-            "observer_confidence_below_threshold_time_s": self.observer_confidence_below_threshold_time_s,
+            "observer_confidence_above_threshold_time_s": self.observer_confidence_above_threshold_time_s,  # noqa: E501
+            "observer_confidence_below_threshold_time_s": self.observer_confidence_below_threshold_time_s,  # noqa: E501
             "observer_confidence_crossings_up": self.observer_confidence_crossings_up,
             "observer_confidence_crossings_down": self.observer_confidence_crossings_down,
             "startup_handoff_count": self.startup_handoff_count,
@@ -1332,6 +1552,10 @@ class FOCController(BaseController):
             "theta_sensorless_raw": self.theta_sensorless_raw,
             "id_ref_command": self.id_ref_command,
             "iq_ref_command": self.iq_ref_command,
+            "v_d_cmd": self.last_v_d,
+            "v_q_cmd": self.last_v_q,
+            "v_d_ff": self.last_v_d_ff,
+            "v_q_ff": self.last_v_q_ff,
             "field_weakening_enabled": self.field_weakening_enabled,
             "field_weakening_start_speed_rpm": self.field_weakening_start_speed_rpm,
             "field_weakening_gain": self.field_weakening_gain,
@@ -1343,13 +1567,14 @@ class FOCController(BaseController):
             "voltage_saturation_mode": self.voltage_saturation_mode,
             "coupled_voltage_antiwindup_enabled": self.coupled_voltage_antiwindup_enabled,
             "coupled_voltage_antiwindup_gain": self.coupled_voltage_antiwindup_gain,
-            "v_d": self.pi_d,
-            "v_q": self.pi_q,
-            "v_d_cmd": self.last_v_d,
-            "v_q_cmd": self.last_v_q,
-            "v_d_ff": self.last_v_d_ff,
-            "v_q_ff": self.last_v_q_ff,
+            "speed_loop_divider": self.speed_loop_divider,
+            "speed_loop_counter": self._speed_loop_counter,
+            "fw_loop_divider": self.fw_loop_divider,
+            "fw_loop_counter": self._fw_loop_counter,
+            "pi_d": self.pi_d,
+            "pi_q": self.pi_q,
             "speed_pi": self.pi_speed,
             "pll": self.pll,
             "smo": self.smo,
         }
+

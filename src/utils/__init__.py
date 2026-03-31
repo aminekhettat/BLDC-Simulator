@@ -9,11 +9,11 @@ This package contains utility modules for configuration and data logging.
 
 from .config import (
     DEFAULT_MOTOR_PARAMS,
+    LOGS_DIR,
+    MOTOR_PROFILES_DIR,
+    PLOTS_DIR,
     SIMULATION_PARAMS,
     VF_CONTROLLER_PARAMS,
-    LOGS_DIR,
-    PLOTS_DIR,
-    MOTOR_PROFILES_DIR,
 )
 from .data_logger import DataLogger
 from .motor_profiles import (
@@ -25,13 +25,13 @@ from .motor_profiles import (
 
 __all__ = [
     "DEFAULT_MOTOR_PARAMS",
+    "LOGS_DIR",
+    "MOTOR_PROFILES_DIR",
+    "PLOTS_DIR",
+    "PROFILE_SCHEMA",
     "SIMULATION_PARAMS",
     "VF_CONTROLLER_PARAMS",
-    "LOGS_DIR",
-    "PLOTS_DIR",
-    "MOTOR_PROFILES_DIR",
     "DataLogger",
-    "PROFILE_SCHEMA",
     "list_motor_profiles",
     "load_motor_profile",
     "save_motor_profile",

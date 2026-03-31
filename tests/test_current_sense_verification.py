@@ -8,14 +8,14 @@ Atomic features tested in this module:
 """
 
 import math
+
 import numpy as np
 import pytest
 
-from src.hardware import InverterCurrentSense, ShuntAmplifierChannel
-from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.load_model import ConstantLoad
+from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.simulation_engine import SimulationEngine
-
+from src.hardware import InverterCurrentSense, ShuntAmplifierChannel
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -210,9 +210,7 @@ class TestSectorFromVoltages:
         assert sector == expected_sector
 
     def test_near_zero_voltage_returns_none(self):
-        sector = InverterCurrentSense.sector_from_voltages(
-            np.array([0.001, -0.001, 0.0])
-        )
+        sector = InverterCurrentSense.sector_from_voltages(np.array([0.001, -0.001, 0.0]))
         assert sector is None
 
     def test_zero_voltages_returns_none(self):
@@ -267,13 +265,9 @@ class TestSingleShuntSectorAwareReconstruction:
             (5, [2.0, -4.5, 2.5]),
         ]:
             sense.reset()
-            out = sense.measure(
-                np.array(currents, dtype=float), dt=1e-4, svm_sector=sector
-            )
+            out = sense.measure(np.array(currents, dtype=float), dt=1e-4, svm_sector=sector)
             m = out["currents_abc_measured"]
-            assert m[0] + m[1] + m[2] == pytest.approx(
-                0.0, abs=1e-6
-            ), (  # filter residual
+            assert m[0] + m[1] + m[2] == pytest.approx(0.0, abs=1e-6), (  # filter residual
                 f"Kirchhoff violated in sector {sector}: sum={m.sum()}"
             )
 
@@ -281,9 +275,7 @@ class TestSingleShuntSectorAwareReconstruction:
         for sector in range(1, 7):
             sense = self._sense()
             out = sense.measure(np.zeros(3), dt=1e-4, svm_sector=sector)
-            np.testing.assert_allclose(
-                out["currents_abc_measured"], np.zeros(3), atol=1e-6
-            )
+            np.testing.assert_allclose(out["currents_abc_measured"], np.zeros(3), atol=1e-6)
 
     def test_sector_hint_none_falls_back_gracefully(self):
         """No sector → fallback approximation; result is scale-consistent."""
@@ -312,12 +304,10 @@ class TestSingleShuntSectorAwareReconstruction:
             m_triple = triple.measure(np.array(currents, dtype=float), dt=1e-4)[
                 "currents_abc_measured"
             ]
-            m_single = single.measure(
-                np.array(currents, dtype=float), dt=1e-4, svm_sector=sector
-            )["currents_abc_measured"]
-            np.testing.assert_allclose(
-                m_triple, m_single, atol=1e-6
-            )  # filter residual ~1.4e-7
+            m_single = single.measure(np.array(currents, dtype=float), dt=1e-4, svm_sector=sector)[
+                "currents_abc_measured"
+            ]
+            np.testing.assert_allclose(m_triple, m_single, atol=1e-6)  # filter residual ~1.4e-7
 
 
 # ---------------------------------------------------------------------------
@@ -477,5 +467,5 @@ class TestEngineHistoryTrueVsMeasured:
             engine.step(np.array([10.0, -5.0, -5.0]))
         ctrl_currents = engine.get_controller_phase_currents()
         true_currents = engine.motor.currents
-        # With ideal triple-shunt channels, controller view = true physics (single step, filter residual ~1.4e-7)
+        # With ideal triple-shunt channels, controller view = true physics (single step, filter residual ~1.4e-7)  # noqa: E501
         np.testing.assert_allclose(ctrl_currents, true_currents, atol=1e-6)

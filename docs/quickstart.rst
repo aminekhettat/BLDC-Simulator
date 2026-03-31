@@ -19,6 +19,20 @@ Installation
 
     pip install -r requirements.txt
 
+4. Install development quality tools::
+
+    pip install -r requirements-dev.txt
+
+5. Run mandatory local commit gates::
+
+    python -m pre_commit run --all-files
+
+   Note: this repository uses ``.githooks/pre-commit`` via ``core.hooksPath``,
+   so ``pre-commit install`` is not required.
+
+    The hook enforces documentation updates, Sphinx HTML build, quality checks,
+    full tests, and 100% coverage on ``src/`` before commit.
+
 Running the GUI
 ---------------
 
@@ -72,6 +86,16 @@ Execute the test suite::
 Or run accessibility tests::
 
     python tests/test_feature_accessibility_integration.py
+
+Quality Gates
+-------------
+
+The CI pipeline enforces the following quality checks on pull requests:
+
+- ``ruff check .``
+- ``mypy src``
+- ``bandit -c bandit.yaml -r src``
+- ``pip-audit -r requirements.txt``
 
 Core Concepts
 -------------

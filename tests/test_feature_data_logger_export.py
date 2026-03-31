@@ -1,7 +1,8 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - data logger custom path export creates csv and metadata
 """
+
 from pathlib import Path
 
 import numpy as np
@@ -44,12 +45,6 @@ def test_data_logger_custom_path_export_creates_csv_and_metadata(tmp_path):
     metadata_path = custom_path.parent / "my_export_metadata.json"
     assert metadata_path.exists()
 
-    with open(result, "r", encoding="utf-8") as f:
+    with open(result, encoding="utf-8") as f:
         lines = f.readlines()
     assert len(lines) > 1
-
-
-
-
-
-

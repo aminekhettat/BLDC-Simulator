@@ -1,4 +1,37 @@
-exclude = ["data/logs"]
+target-version = "py312"
+line-length = 100
+exclude = ["data/logs", "docs/_build"]
+src = ["src", "tests", "examples"]
 
 [lint]
-per-file-ignores = { "examples/*.py" = ["E402"] }
+select = [
+	"E",
+	"W",
+	"F",
+	"I",
+	"B",
+	"UP",
+	"C90",
+]
+ignore = ["B007", "B027", "B905"]
+
+[lint.per-file-ignores]
+"examples/*.py" = ["E402", "T201", "B007", "E501", "C901"]
+"tests/*.py" = ["F841", "E722", "B011"]
+"tests/test_adaptive_tuning_enhanced.py" = ["E402"]
+"verify_tests.py" = ["E402", "B007"]
+"docs/conf.py" = ["E501"]
+"scripts/*.py" = ["E501"]
+
+[lint.mccabe]
+# Standard professional threshold; functions exceeding this should be split.
+# Known legacy violations are suppressed with `# noqa: C901` annotations.
+max-complexity = 10
+
+[lint.isort]
+known-first-party = ["src"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

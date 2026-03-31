@@ -8,12 +8,12 @@ This module selects a compute backend with safe fallback:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
-from pathlib import Path
 import platform
-from typing import Any
 import warnings
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -31,11 +31,7 @@ def _is_valid_cuda_root(path: Path) -> bool:
     bin_dir = path / "bin"
     include_cuda_h = path / "include" / "cuda.h"
     has_runtime_dll = any(bin_dir.glob("cudart64_*.dll")) if bin_dir.exists() else False
-    return bool(
-        path.exists()
-        and bin_dir.exists()
-        and (has_runtime_dll or include_cuda_h.exists())
-    )
+    return bool(path.exists() and bin_dir.exists() and (has_runtime_dll or include_cuda_h.exists()))
 
 
 def _ensure_cuda_path_windows() -> None:
@@ -72,9 +68,7 @@ def _ensure_cuda_path_windows() -> None:
         bin_dir = str(candidate / "bin")
         current_path = os.environ.get("PATH", "")
         if bin_dir and bin_dir not in current_path.split(";"):
-            os.environ["PATH"] = (
-                f"{bin_dir};{current_path}" if current_path else bin_dir
-            )
+            os.environ["PATH"] = f"{bin_dir};{current_path}" if current_path else bin_dir
         return
 
 

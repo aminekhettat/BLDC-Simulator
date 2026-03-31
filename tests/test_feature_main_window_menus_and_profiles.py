@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - refresh builtin motor menu empty
 - refresh builtin motor menu nonempty triggers loader
@@ -19,17 +19,17 @@ Atomic features tested in this module:
 - simulation thread start and stop paths
 - simulation thread max duration break and missing svm io methods
 """
+
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
+from PyQt6.QtCore import QEvent, Qt
+from PyQt6.QtGui import QKeyEvent
 from PyQt6.QtWidgets import QApplication
 
-from src.ui.main_window import BLDCMotorControlGUI
-from src.ui.main_window import AccessibleTextBlock, SimulationThread
-from PyQt6.QtCore import Qt, QEvent
-from PyQt6.QtGui import QKeyEvent
-import numpy as np
+from src.ui.main_window import AccessibleTextBlock, BLDCMotorControlGUI, SimulationThread
 
 
 @pytest.fixture(scope="module")
@@ -58,9 +58,7 @@ def test_refresh_builtin_motor_menu_empty(gui, monkeypatch):
     assert actions[0].isEnabled() is False
 
 
-def test_refresh_builtin_motor_menu_nonempty_triggers_loader(
-    gui, monkeypatch, tmp_path
-):
+def test_refresh_builtin_motor_menu_nonempty_triggers_loader(gui, monkeypatch, tmp_path):
     profile_path = tmp_path / "m1.json"
     profile_path.write_text("{}", encoding="utf-8")
 
@@ -111,9 +109,7 @@ def test_import_motor_parameters_success(gui, monkeypatch, tmp_path):
             "motor_params": gui._collect_current_motor_parameters(),
         },
     )
-    monkeypatch.setattr(
-        gui, "_apply_to_simulation", lambda: applied.__setitem__("called", True)
-    )
+    monkeypatch.setattr(gui, "_apply_to_simulation", lambda: applied.__setitem__("called", True))
     monkeypatch.setattr(
         "src.ui.main_window.QMessageBox.information",
         lambda *args, **kwargs: informed.__setitem__("called", True),
@@ -307,6 +303,36 @@ def test_get_simulation_params_info_with_and_without_engine(gui):
     assert "Mechanical time constant" in msg_with_engine
 
 
+def test_open_user_manual_pdf_uses_generated_path(gui, monkeypatch, tmp_path):
+    opened = {"called": False}
+    pdf_path = tmp_path / "manual.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4")
+
+    monkeypatch.setattr(gui, "_ensure_user_manual_pdf", lambda: pdf_path)
+    monkeypatch.setattr(
+        "src.ui.main_window.QDesktopServices.openUrl",
+        lambda *_args, **_kwargs: opened.__setitem__("called", True),
+    )
+    monkeypatch.setattr("src.ui.main_window.speak", lambda *args, **kwargs: None)
+
+    gui._open_user_manual_pdf()
+
+    assert opened["called"] is True
+
+
+def test_show_simulation_params_displays_info(gui, monkeypatch):
+    informed = {"called": False}
+    monkeypatch.setattr(
+        "src.ui.main_window.QMessageBox.information",
+        lambda *args, **kwargs: informed.__setitem__("called", True),
+    )
+    monkeypatch.setattr("src.ui.main_window.speak", lambda *args, **kwargs: None)
+
+    gui._show_simulation_params()
+
+    assert informed["called"] is True
+
+
 def test_collect_and_save_simulation_parameters(gui, monkeypatch, tmp_path):
     payload = gui._collect_simulation_configuration()
     assert payload["schema"] == "bldc.simulation_config.v1"
@@ -357,15 +383,9 @@ def test_accessible_text_block_keyboard_navigation(qapp):
     block.focusPreviousChild = lambda: called.__setitem__("prev", called["prev"] + 1)
     block.focusNextChild = lambda: called.__setitem__("next", called["next"] + 1)
 
-    left = QKeyEvent(
-        QEvent.Type.KeyPress, Qt.Key.Key_Left, Qt.KeyboardModifier.NoModifier
-    )
-    down = QKeyEvent(
-        QEvent.Type.KeyPress, Qt.Key.Key_Down, Qt.KeyboardModifier.NoModifier
-    )
-    other = QKeyEvent(
-        QEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier, "a"
-    )
+    left = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Left, Qt.KeyboardModifier.NoModifier)
+    down = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Down, Qt.KeyboardModifier.NoModifier)
+    other = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier, "a")
 
     block.keyPressEvent(left)
     block.keyPressEvent(down)
@@ -522,9 +542,7 @@ def test_simulation_thread_start_and_stop_paths(monkeypatch):
     thread = SimulationThread()
 
     started = {"count": 0}
-    monkeypatch.setattr(
-        thread, "start", lambda: started.__setitem__("count", started["count"] + 1)
-    )
+    monkeypatch.setattr(thread, "start", lambda: started.__setitem__("count", started["count"] + 1))
 
     # Branch where thread is not already running.
     monkeypatch.setattr(thread, "isRunning", lambda: False)
@@ -577,9 +595,3 @@ def test_simulation_thread_max_duration_break_and_missing_svm_io_methods():
     # One control step executes, then loop exits via max-duration break path.
     assert engine.step_calls == 1
     assert svm.sample_time == pytest.approx(engine.dt)
-
-
-
-
-
-

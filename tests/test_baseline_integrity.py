@@ -1,8 +1,9 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - baseline files exist and non empty
 - baseline kpi shape and types
 """
+
 from __future__ import annotations
 
 import json
@@ -49,23 +50,13 @@ def test_baseline_kpi_shape_and_types():
         scenarios = payload["scenarios"]
 
         for scenario_name, kpis in scenarios.items():
-            assert isinstance(kpis, dict), (
-                f"{path}:{scenario_name} KPI block must be object"
-            )
+            assert isinstance(kpis, dict), f"{path}:{scenario_name} KPI block must be object"
 
             missing = REQUIRED_KPIS - set(kpis.keys())
-            assert not missing, (
-                f"{path}:{scenario_name} missing KPIs: {sorted(missing)}"
-            )
+            assert not missing, f"{path}:{scenario_name} missing KPIs: {sorted(missing)}"
 
             for kpi_name in REQUIRED_KPIS:
                 val = kpis[kpi_name]
                 assert isinstance(val, (int, float)), (
                     f"{path}:{scenario_name}:{kpi_name} must be numeric"
                 )
-
-
-
-
-
-

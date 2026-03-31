@@ -127,9 +127,7 @@ def evaluate_case(
     controller = FOCController(motor=motor, enable_speed_loop=True)
 
     controller.set_cascaded_speed_loop(True, iq_limit_a=float(cand.iq_limit_a))
-    controller.set_speed_pi_gains(
-        kp=float(cand.speed_kp), ki=float(cand.speed_ki), kaw=0.05
-    )
+    controller.set_speed_pi_gains(kp=float(cand.speed_kp), ki=float(cand.speed_ki), kaw=0.05)
     controller.set_current_pi_gains(
         d_kp=float(cand.current_kp),
         d_ki=float(cand.current_ki),
@@ -238,9 +236,7 @@ def evaluate_case(
     )
 
     criteria = {
-        "speed_tracking_pm_2pct": bool(
-            abs(mean_speed_err) <= 0.02 * abs(target_speed_rpm)
-        ),
+        "speed_tracking_pm_2pct": bool(abs(mean_speed_err) <= 0.02 * abs(target_speed_rpm)),
         "fw_effective": bool((not fw_required) or fw_effective),
         "speed_phase_margin_ge_45deg": bool(
             (not compute_margins) or margins["speed_phase_margin_deg"] >= 45.0
@@ -296,9 +292,7 @@ def evaluate_case(
     }
 
 
-def generate_candidates(
-    base: Candidate, span: float, target_speed_rpm: float
-) -> list[Candidate]:
+def generate_candidates(base: Candidate, span: float, target_speed_rpm: float) -> list[Candidate]:
     span = float(np.clip(span, 0.03, 0.30))
     speed_factors = [
         max(0.06, 1.0 - 1.4 * span),
@@ -436,9 +430,7 @@ def tune_point_until_success(
                 best_score = s
                 best_cand = cand
                 best_eval = result
-                best_speed = float(
-                    result.get("metrics", {}).get("mean_speed_rpm_last_1s", 0.0)
-                )
+                best_speed = float(result.get("metrics", {}).get("mean_speed_rpm_last_1s", 0.0))
                 print(
                     (
                         "TUNE_BEST_UPDATE "
@@ -499,12 +491,8 @@ def main(
 
     rated = profile.get("rated_info", {})
     rated_speed_rpm = float(rated.get("rated_speed_rpm", 4000.0))
-    rated_current = float(
-        rated.get("rated_current_a", rated.get("rated_current_a_rms", 100.0))
-    )
-    rated_torque = float(
-        rated.get("rated_torque_nm", params.torque_constant * rated_current)
-    )
+    rated_current = float(rated.get("rated_current_a", rated.get("rated_current_a_rms", 100.0)))
+    rated_torque = float(rated.get("rated_torque_nm", params.torque_constant * rated_current))
     plausible_upper = 0.70 * min(rated_torque, params.torque_constant * rated_current)
 
     session = json.loads(session_path.read_text(encoding="utf-8"))
@@ -614,9 +602,7 @@ def main(
                 "trial_torque_nm": float(mid),
                 "success": success,
                 "rounds": int(rounds_mid),
-                "best_score": None
-                if eval_mid is None
-                else float(eval_mid.get("score", 1e9)),
+                "best_score": None if eval_mid is None else float(eval_mid.get("score", 1e9)),
                 "fw_injection_dc_a": None
                 if eval_mid is None
                 else float(eval_mid["metrics"].get("fw_injection_dc_a_last_1s", 0.0)),
@@ -672,9 +658,7 @@ def main(
         "step1_rated_speed_fw_convergence": {
             "rounds": int(rounds_speed),
             "fw_model_trials": fw_model_trials,
-            "selected_flux_weakening_id_coefficient": float(
-                params.flux_weakening_id_coefficient
-            ),
+            "selected_flux_weakening_id_coefficient": float(params.flux_weakening_id_coefficient),
             "candidate": {
                 "speed_kp": float(cand_speed.speed_kp),
                 "speed_ki": float(cand_speed.speed_ki),

@@ -1,0 +1,88 @@
+{
+  "schema": "bldc.fw_calibration.v1",
+  "motor_profile_name": "Innotec 255-EZS48-160",
+  "motor_params_summary": {
+    "R": 0.005,
+    "L": 4e-05,
+    "Ke": 0.152,
+    "Kt": 0.165,
+    "J": 0.006761,
+    "pp": 5,
+    "Vnom": 48.0,
+    "N_rated": 3000.0,
+    "I_rated": 160.0,
+    "T_rated": 26.5
+  },
+  "physics_params": {
+    "flux_weakening_id_coefficient": 0.01301458922996104,
+    "flux_weakening_min_ratio": 0.4075039661813246,
+    "fw_start_rpm": 1566.9347554093042,
+    "fw_gain": 21.13,
+    "fw_id_max_a": 40.0,
+    "fw_headroom_target_v": 1.385640646055102,
+    "no_fw_max_rpm": 1741.038617121449,
+    "rated_speed_rpm": 3000.0,
+    "ratio_required": 0.5513288954217921,
+    "fw_needed": true
+  },
+  "selected_gain": 21.13,
+  "selected_fw_id_max_a": 40.0,
+  "operating_points": [
+    {
+      "target_rpm": 1653.9866862653766,
+      "load_torque_nm": 13.25,
+      "achieved_rpm": 1653.9883902639997,
+      "speed_error_rpm": 0.001703998623042935,
+      "speed_error_pct": 0.00010302372063770857,
+      "fw_injection_a": -0.006500625706507625,
+      "id_a": 12.840518638738876,
+      "iq_a": 87.89838313690687,
+      "efficiency_pct": 72.16020123122094,
+      "stable": true,
+      "status": "PASS"
+    },
+    {
+      "target_rpm": 3000.0,
+      "load_torque_nm": 0.0,
+      "achieved_rpm": 2999.664817439677,
+      "speed_error_rpm": -0.3351825603231191,
+      "speed_error_pct": -0.011172752010770637,
+      "fw_injection_a": -26.483536433609835,
+      "id_a": -25.30161435420913,
+      "iq_a": 7.901838255105933,
+      "efficiency_pct": 0.0,
+      "stable": true,
+      "status": "PASS"
+    },
+    {
+      "target_rpm": 3000.0,
+      "load_torque_nm": 7.949999999999999,
+      "achieved_rpm": 2999.997626451529,
+      "speed_error_rpm": -0.002373548471041431,
+      "speed_error_pct": -7.911828236804771e-05,
+      "fw_injection_a": -29.168441838865945,
+      "id_a": -6.874223144853905,
+      "iq_a": 86.59580581599808,
+      "efficiency_pct": 70.07947751477025,
+      "stable": true,
+      "status": "PASS"
+    },
+    {
+      "target_rpm": 3000.0,
+      "load_torque_nm": 15.899999999999999,
+      "achieved_rpm": 2608.824432580951,
+      "speed_error_rpm": -391.175567419049,
+      "speed_error_pct": -13.039185580634967,
+      "fw_injection_a": -25.50804622173432,
+      "id_a": 9.907816423089738,
+      "iq_a": 154.95973781911223,
+      "efficiency_pct": 71.1952077074011,
+      "stable": true,
+      "status": "FAIL"
+    }
+  ],
+  "all_passed": false,
+  "best_achieved_rpm": 2999.997626451529,
+  "calibration_time_s": 283.54545035399497,
+  "notes": "Sweep over 5 combinations; best gain=21.13, fw_id_max=40.0 A, k_fw=0.01301."
+}

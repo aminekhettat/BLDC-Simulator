@@ -16,17 +16,18 @@ Values used from the product page:
 
 from __future__ import annotations
 
-import numpy as np
 import sys
 from pathlib import Path
+
+import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.control import AdaptiveFOCTuner, FOCController, SVMGenerator  # noqa: E402
-from src.core.load_model import ConstantLoad  # noqa: E402
-from src.core.motor_model import BLDCMotor, MotorParameters  # noqa: E402
-from src.core.simulation_engine import SimulationEngine  # noqa: E402
+from src.control import AdaptiveFOCTuner, FOCController, SVMGenerator
+from src.core.load_model import ConstantLoad
+from src.core.motor_model import BLDCMotor, MotorParameters
+from src.core.simulation_engine import SimulationEngine
 
 
 def run_case(

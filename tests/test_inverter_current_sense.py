@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - InverterCurrentSenseTopology
 - ShuntAmplifierChannelValidation
@@ -7,6 +7,7 @@ Atomic features tested in this module:
 - RuntimeActualTuning
 - ValidationAndState
 """
+
 import numpy as np
 import pytest
 
@@ -69,9 +70,7 @@ class TestMeasurementAndClamp:
         out = sense.measure(np.array([2.0, -1.0, 0.5]), dt=1e-4)
         meas = out["currents_abc_measured"]
         assert meas.shape == (3,)
-        assert (
-            meas[0] > 2.0
-        )  # positive gain/offset deviation should bias reconstruction up
+        assert meas[0] > 2.0  # positive gain/offset deviation should bias reconstruction up
 
     def test_adc_clamp_is_applied(self):
         ch = ShuntAmplifierChannel(
@@ -127,13 +126,9 @@ class TestVoltageDrop:
 class TestRuntimeActualTuning:
     def test_set_actual_channel_changes_output(self):
         sense = InverterCurrentSense(topology="triple")
-        base = sense.measure(np.array([1.0, -0.5, -0.5]), dt=1e-4)[
-            "currents_abc_measured"
-        ][0]
+        base = sense.measure(np.array([1.0, -0.5, -0.5]), dt=1e-4)["currents_abc_measured"][0]
         sense.set_actual_channel(0, gain=30.0, offset_v=2.0)
-        changed = sense.measure(np.array([1.0, -0.5, -0.5]), dt=1e-4)[
-            "currents_abc_measured"
-        ][0]
+        changed = sense.measure(np.array([1.0, -0.5, -0.5]), dt=1e-4)["currents_abc_measured"][0]
         assert changed != pytest.approx(base)
 
     def test_set_actual_channel_rejects_non_positive_gain(self):
@@ -156,9 +151,7 @@ class TestValidationAndState:
     def test_apply_shunt_voltage_drop_rejects_invalid_shape(self):
         sense = InverterCurrentSense(topology="single")
         with pytest.raises(ValueError):
-            sense.apply_shunt_voltage_drop(
-                np.array([1.0, 2.0]), np.array([1.0, -0.5, -0.5])
-            )
+            sense.apply_shunt_voltage_drop(np.array([1.0, 2.0]), np.array([1.0, -0.5, -0.5]))
 
     def test_reset_clears_filter_and_currents(self):
         sense = InverterCurrentSense(topology="triple")
@@ -175,9 +168,3 @@ class TestValidationAndState:
         assert state["n_shunts"] == 2
         assert len(state["last_measured_currents_abc"]) == 3
         assert len(state["filter_state_v"]) == 2
-
-
-
-
-
-

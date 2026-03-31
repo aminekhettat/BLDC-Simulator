@@ -14,20 +14,20 @@ All widgets support:
 :version: 0.8.0
 """
 
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QWidget,
+    QComboBox,
+    QDoubleSpinBox,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
-    QSpinBox,
-    QDoubleSpinBox,
-    QPushButton,
-    QComboBox,
-    QGroupBox,
-    QTabWidget,
-    QTableWidget,
     QListWidget,
+    QPushButton,
+    QSpinBox,
+    QTableWidget,
+    QTabWidget,
+    QWidget,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
 
 
 class AccessibleDoubleSpinBox(QDoubleSpinBox):
@@ -432,9 +432,7 @@ class AccessibleListWidget(QListWidget):
 
         self.setAccessibleName(label if label else "List")
         help_text = (
-            description
-            if description
-            else "Use arrow keys to navigate, Space or Enter to select"
+            description if description else "Use arrow keys to navigate, Space or Enter to select"
         )
         self.setAccessibleDescription(help_text)
 

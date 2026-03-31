@@ -7,8 +7,6 @@ from pathlib import Path
 
 import numpy as np
 
-# ruff: noqa: E402
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -127,9 +125,7 @@ def evaluate_case(
     controller = FOCController(motor=motor, enable_speed_loop=True)
 
     controller.set_cascaded_speed_loop(True, iq_limit_a=float(cand.iq_limit_a))
-    controller.set_speed_pi_gains(
-        kp=float(cand.speed_kp), ki=float(cand.speed_ki), kaw=0.05
-    )
+    controller.set_speed_pi_gains(kp=float(cand.speed_kp), ki=float(cand.speed_ki), kaw=0.05)
     controller.set_current_pi_gains(
         d_kp=float(cand.current_kp),
         d_ki=float(cand.current_ki),
@@ -233,9 +229,7 @@ def evaluate_case(
     )
 
     criteria = {
-        "speed_tracking_pm_2pct": bool(
-            abs(mean_speed_err) <= 0.02 * abs(target_speed_rpm)
-        ),
+        "speed_tracking_pm_2pct": bool(abs(mean_speed_err) <= 0.02 * abs(target_speed_rpm)),
         "orthogonality_90_pm_5deg": bool(orth_err <= 5.0),
         "speed_phase_margin_ge_45deg": bool(
             (not compute_margins) or margins["speed_phase_margin_deg"] >= 45.0
@@ -467,12 +461,8 @@ def main() -> None:
         raise RuntimeError("Unable to find stable candidate at max no-FW speed.")
 
     rated = profile.get("rated_info", {})
-    rated_current = float(
-        rated.get("rated_current_a", rated.get("rated_current_a_rms", 100.0))
-    )
-    rated_torque = float(
-        rated.get("rated_torque_nm", params.torque_constant * rated_current)
-    )
+    rated_current = float(rated.get("rated_current_a", rated.get("rated_current_a_rms", 100.0)))
+    rated_torque = float(rated.get("rated_torque_nm", params.torque_constant * rated_current))
     plausible_upper = 0.70 * min(rated_torque, params.torque_constant * rated_current)
 
     # Step 2/3: smooth load increase and retune until success at highest plausible point.
@@ -499,9 +489,7 @@ def main() -> None:
                 "trial_torque_nm": float(mid),
                 "success": success,
                 "rounds": int(rounds_mid),
-                "best_score": None
-                if eval_mid is None
-                else float(eval_mid.get("score", 1e9)),
+                "best_score": None if eval_mid is None else float(eval_mid.get("score", 1e9)),
                 "efficiency_pct": None
                 if eval_mid is None
                 else float(eval_mid["metrics"].get("efficiency_pct_last_1s", 0.0)),
@@ -588,12 +576,8 @@ def main() -> None:
             "result_fast_search": final_eval,
             "result_high_fidelity": final_eval_hifi,
             "success": bool(final_eval_hifi.get("all_criteria_passed", False)),
-            "orthogonality_success": bool(
-                final_eval_hifi.get("orthogonality_stage_passed", False)
-            ),
-            "efficiency_gate_active": bool(
-                final_eval_hifi.get("efficiency_gate_active", False)
-            ),
+            "orthogonality_success": bool(final_eval_hifi.get("orthogonality_stage_passed", False)),
+            "efficiency_gate_active": bool(final_eval_hifi.get("efficiency_gate_active", False)),
         },
     }
 

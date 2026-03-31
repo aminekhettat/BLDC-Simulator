@@ -24,16 +24,17 @@ IMPROVEMENTS IN THIS VERSION:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from typing import Dict, Iterable, Optional, Tuple
 import json
+from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
-from src.core.motor_model import MotorParameters, BLDCMotor
 from src.core.load_model import LoadProfile
+from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.simulation_engine import SimulationEngine
+
 from .foc_controller import FOCController
 from .svm_generator import SVMGenerator
 from .transforms import clarke_transform, park_transform
@@ -45,8 +46,8 @@ class MarginResult:
 
     gain_margin_db: float
     phase_margin_deg: float
-    gain_crossover_hz: Optional[float]
-    phase_crossover_hz: Optional[float]
+    gain_crossover_hz: float | None
+    phase_crossover_hz: float | None
 
 
 @dataclass(frozen=True)
@@ -90,13 +91,13 @@ class CalibrationReport:
     """Comprehensive calibration report including gains, margins, and metrics."""
 
     motor_profile_name: str
-    motor_params: Dict
+    motor_params: dict
     tuning_result: AdaptiveTuningResult
-    analytical_initial_guess: Dict[str, float]
-    validation_metrics: Dict
-    simulation_validation: Optional[Dict] = None
+    analytical_initial_guess: dict[str, float]
+    validation_metrics: dict
+    simulation_validation: dict | None = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert report to dictionary."""
         return {
             "motor_profile_name": self.motor_profile_name,
@@ -141,8 +142,8 @@ class AdaptiveFOCTuner:
     def __init__(
         self,
         params: MotorParameters,
-        current_targets: Optional[LoopDesignTargets] = None,
-        speed_targets: Optional[LoopDesignTargets] = None,
+        current_targets: LoopDesignTargets | None = None,
+        speed_targets: LoopDesignTargets | None = None,
     ) -> None:
         self.params = params
         self.current_targets = current_targets or LoopDesignTargets()
@@ -170,9 +171,7 @@ class AdaptiveFOCTuner:
         t = -y1 / (y2 - y1)
         return x1 + t * (x2 - x1)
 
-    def _estimate_margins(
-        self, open_loop: np.ndarray, omega: np.ndarray
-    ) -> MarginResult:
+    def _estimate_margins(self, open_loop: np.ndarray, omega: np.ndarray) -> MarginResult:
         mag = np.abs(open_loop)
         phase_deg = np.unwrap(np.angle(open_loop)) * 180.0 / np.pi
 
@@ -213,9 +212,7 @@ class AdaptiveFOCTuner:
         return MarginResult(
             gain_margin_db=float(gain_margin_db),
             phase_margin_deg=float(phase_margin),
-            gain_crossover_hz=(
-                None if gain_cross is None else float(gain_cross / (2.0 * np.pi))
-            ),
+            gain_crossover_hz=(None if gain_cross is None else float(gain_cross / (2.0 * np.pi))),
             phase_crossover_hz=(
                 None if phase_cross is None else float(phase_cross / (2.0 * np.pi))
             ),
@@ -241,7 +238,7 @@ class AdaptiveFOCTuner:
 
     def _current_loop_state_space(
         self, kp: float, ki: float
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         r = max(self.params.phase_resistance, 1e-12)
         phase_l = max(self.params.phase_inductance, 1e-12)
 
@@ -258,7 +255,7 @@ class AdaptiveFOCTuner:
 
     def _speed_loop_state_space(
         self, kp: float, ki: float
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         j = max(self.params.rotor_inertia, 1e-12)
         b_fric = max(self.params.friction_coefficient, 1e-12)
         kt = max(self.params.torque_constant, 1e-12)
@@ -274,7 +271,7 @@ class AdaptiveFOCTuner:
         c = np.array([[1.0, 0.0]], dtype=np.float64)
         return a, b, c
 
-    def analyze_current_loop(self, kp: float, ki: float) -> Dict[str, object]:
+    def analyze_current_loop(self, kp: float, ki: float) -> dict[str, object]:
         omega = np.logspace(0, 6, 2000)
         plant = self._first_order_frequency_response(
             num=1.0,
@@ -296,7 +293,7 @@ class AdaptiveFOCTuner:
             "observable": observable,
         }
 
-    def analyze_speed_loop(self, kp: float, ki: float) -> Dict[str, object]:
+    def analyze_speed_loop(self, kp: float, ki: float) -> dict[str, object]:
         omega = np.logspace(-1, 4, 2000)
         plant = self._first_order_frequency_response(
             num=max(self.params.torque_constant, 1e-12),
@@ -346,11 +343,11 @@ class AdaptiveFOCTuner:
         self,
         analyzer,
         targets: LoopDesignTargets,
-        kp_range: Tuple[float, float],
-        ki_range: Tuple[float, float],
+        kp_range: tuple[float, float],
+        ki_range: tuple[float, float],
         grid_size: int,
     ) -> PIGainCandidate:
-        best: Optional[PIGainCandidate] = None
+        best: PIGainCandidate | None = None
 
         for kp in self._search_space(kp_range[0], kp_range[1], grid_size):
             for ki in self._search_space(ki_range[0], ki_range[1], grid_size):
@@ -385,8 +382,8 @@ class AdaptiveFOCTuner:
         targets: LoopDesignTargets,
         kp_init: float,
         ki_init: float,
-        kp_range_abs: Tuple[float, float] = (1e-3, 5.0),
-        ki_range_abs: Tuple[float, float] = (1e-1, 5e3),
+        kp_range_abs: tuple[float, float] = (1e-3, 5.0),
+        ki_range_abs: tuple[float, float] = (1e-1, 5e3),
     ) -> PIGainCandidate:
         """Multi-resolution search: coarse around analytical guess, then fine."""
 
@@ -408,8 +405,8 @@ class AdaptiveFOCTuner:
         log_ki_lo = max(log_ki_lo, np.log10(ki_range_abs[0]))
         log_ki_hi = min(log_ki_hi, np.log10(ki_range_abs[1]))
 
-        kp_range_coarse = (10.0 ** log_kp_lo, 10.0 ** log_kp_hi)
-        ki_range_coarse = (10.0 ** log_ki_lo, 10.0 ** log_ki_hi)
+        kp_range_coarse = (10.0**log_kp_lo, 10.0**log_kp_hi)
+        ki_range_coarse = (10.0**log_ki_lo, 10.0**log_ki_hi)
 
         coarse = self._optimize_loop(
             analyzer, targets, kp_range_coarse, ki_range_coarse, grid_size=8
@@ -433,21 +430,19 @@ class AdaptiveFOCTuner:
         log_ki_lo_fine = max(log_ki_lo_fine, np.log10(ki_range_abs[0]))
         log_ki_hi_fine = min(log_ki_hi_fine, np.log10(ki_range_abs[1]))
 
-        kp_range_fine = (10.0 ** log_kp_lo_fine, 10.0 ** log_kp_hi_fine)
-        ki_range_fine = (10.0 ** log_ki_lo_fine, 10.0 ** log_ki_hi_fine)
+        kp_range_fine = (10.0**log_kp_lo_fine, 10.0**log_kp_hi_fine)
+        ki_range_fine = (10.0**log_ki_lo_fine, 10.0**log_ki_hi_fine)
 
-        fine = self._optimize_loop(
-            analyzer, targets, kp_range_fine, ki_range_fine, grid_size=10
-        )
+        fine = self._optimize_loop(analyzer, targets, kp_range_fine, ki_range_fine, grid_size=10)
 
         return fine
 
     def tune(
         self,
-        current_kp_range: Tuple[float, float] = (1e-3, 5.0),
-        current_ki_range: Tuple[float, float] = (1e-1, 5e3),
-        speed_kp_range: Tuple[float, float] = (1e-6, 2.0),
-        speed_ki_range: Tuple[float, float] = (1e-4, 5e2),
+        current_kp_range: tuple[float, float] = (1e-3, 5.0),
+        current_ki_range: tuple[float, float] = (1e-1, 5e3),
+        speed_kp_range: tuple[float, float] = (1e-6, 2.0),
+        speed_ki_range: tuple[float, float] = (1e-4, 5e2),
         grid_size: int = 12,
     ) -> AdaptiveTuningResult:
         """Classic uniform grid tuning (backward compatible)."""
@@ -481,11 +476,11 @@ class AdaptiveFOCTuner:
 
     def tune_analytical(
         self,
-        current_kp_range: Tuple[float, float] = (1e-3, 5.0),
-        current_ki_range: Tuple[float, float] = (1e-1, 5e3),
-        speed_kp_range: Tuple[float, float] = (1e-6, 2.0),
-        speed_ki_range: Tuple[float, float] = (1e-4, 5e2),
-    ) -> Tuple[AdaptiveTuningResult, Dict[str, float]]:
+        current_kp_range: tuple[float, float] = (1e-3, 5.0),
+        current_ki_range: tuple[float, float] = (1e-1, 5e3),
+        speed_kp_range: tuple[float, float] = (1e-6, 2.0),
+        speed_ki_range: tuple[float, float] = (1e-4, 5e2),
+    ) -> tuple[AdaptiveTuningResult, dict[str, float]]:
         """Enhanced tuning based on analytical bandwidth design.
 
         Strategy:
@@ -507,12 +502,8 @@ class AdaptiveFOCTuner:
         analytical = self._compute_analytical_initial_guess()
 
         # Evaluate margins at the analytical operating point directly
-        curr_info = self.analyze_current_loop(
-            analytical["current_kp"], analytical["current_ki"]
-        )
-        spd_info = self.analyze_speed_loop(
-            analytical["speed_kp"], analytical["speed_ki"]
-        )
+        curr_info = self.analyze_current_loop(analytical["current_kp"], analytical["current_ki"])
+        spd_info = self.analyze_speed_loop(analytical["speed_kp"], analytical["speed_ki"])
 
         # If analytical gains already satisfy targets, use them directly.
         # Otherwise, do a NARROW refinement (±20% log-space = ±0.08 decade) to
@@ -522,6 +513,7 @@ class AdaptiveFOCTuner:
 
         def _narrow_refine(analyzer, targets, kp_init, ki_init, kp_range_abs, ki_range_abs):
             import numpy as _np
+
             lkp = _np.log10(max(kp_init, 1e-12))
             lki = _np.log10(max(ki_init, 1e-12))
             kp_lo = max(10.0 ** (lkp - NARROW_SPAN), kp_range_abs[0])
@@ -529,13 +521,17 @@ class AdaptiveFOCTuner:
             ki_lo = max(10.0 ** (lki - NARROW_SPAN), ki_range_abs[0])
             ki_hi = min(10.0 ** (lki + NARROW_SPAN), ki_range_abs[1])
             return self._optimize_loop(
-                analyzer, targets,
+                analyzer,
+                targets,
                 kp_range=(kp_lo, kp_hi),
                 ki_range=(ki_lo, ki_hi),
                 grid_size=10,
             )
 
-        curr_margin = curr_info["margin"]
+        curr_margin_obj = curr_info["margin"]
+        if not isinstance(curr_margin_obj, MarginResult):
+            raise TypeError("analyze_current_loop returned non-MarginResult margin")
+        curr_margin = curr_margin_obj
         curr_ok = (
             curr_margin.phase_margin_deg >= self.current_targets.min_phase_margin_deg
             and curr_margin.gain_margin_db >= self.current_targets.min_gain_margin_db
@@ -544,7 +540,6 @@ class AdaptiveFOCTuner:
         )
         if curr_ok:
             # Build a synthetic PIGainCandidate from the analytical result
-            from dataclasses import replace as _replace  # noqa: PLC0415
             curr_best = PIGainCandidate(
                 kp=analytical["current_kp"],
                 ki=analytical["current_ki"],
@@ -552,8 +547,10 @@ class AdaptiveFOCTuner:
                 controllable=bool(curr_info["controllable"]),
                 observable=bool(curr_info["observable"]),
                 score=self._candidate_score(
-                    curr_margin, self.current_targets,
-                    bool(curr_info["controllable"]), bool(curr_info["observable"])
+                    curr_margin,
+                    self.current_targets,
+                    bool(curr_info["controllable"]),
+                    bool(curr_info["observable"]),
                 ),
             )
         else:
@@ -566,7 +563,10 @@ class AdaptiveFOCTuner:
                 current_ki_range,
             )
 
-        spd_margin = spd_info["margin"]
+        spd_margin_obj = spd_info["margin"]
+        if not isinstance(spd_margin_obj, MarginResult):
+            raise TypeError("analyze_speed_loop returned non-MarginResult margin")
+        spd_margin = spd_margin_obj
         spd_ok = (
             spd_margin.phase_margin_deg >= self.speed_targets.min_phase_margin_deg
             and spd_margin.gain_margin_db >= self.speed_targets.min_gain_margin_db
@@ -581,8 +581,10 @@ class AdaptiveFOCTuner:
                 controllable=bool(spd_info["controllable"]),
                 observable=bool(spd_info["observable"]),
                 score=self._candidate_score(
-                    spd_margin, self.speed_targets,
-                    bool(spd_info["controllable"]), bool(spd_info["observable"])
+                    spd_margin,
+                    self.speed_targets,
+                    bool(spd_info["controllable"]),
+                    bool(spd_info["observable"]),
                 ),
             )
         else:
@@ -611,7 +613,7 @@ class AdaptiveFOCTuner:
             analytical,
         )
 
-    def _compute_analytical_initial_guess(self) -> Dict[str, float]:
+    def _compute_analytical_initial_guess(self) -> dict[str, float]:
         """Compute analytically-derived initial PI gains from motor parameters.
 
         Design approach (zero-pole cancellation with practical bandwidth):
@@ -649,8 +651,8 @@ class AdaptiveFOCTuner:
         omega_c = BANDWIDTH_FACTOR * R / L
 
         # Zero-pole cancellation: zero at R/L, bandwidth at omega_c
-        current_kp = omega_c * L            # = BANDWIDTH_FACTOR * R
-        current_ki = omega_c * R            # = current_kp * R/L
+        current_kp = omega_c * L  # = BANDWIDTH_FACTOR * R
+        current_ki = omega_c * R  # = current_kp * R/L
 
         # --- Speed loop ---
         # Cascade ratio: speed loop ≈ 100x slower than current loop for stability
@@ -672,7 +674,7 @@ class AdaptiveFOCTuner:
             "omega_s_rad_s": float(omega_s),
         }
 
-    def _compute_safe_dt(self, dt_hint: Optional[float] = None) -> float:
+    def _compute_safe_dt(self, dt_hint: float | None = None) -> float:
         """Compute a simulation time step safe for the closed-loop dynamics.
 
         The critical constraint is the current-loop bandwidth, not the raw
@@ -705,9 +707,9 @@ class AdaptiveFOCTuner:
         tuning: AdaptiveTuningResult,
         target_speed_rpm: float,
         load_torque_nm: float = 0.0,
-        dt: Optional[float] = None,
+        dt: float | None = None,
         sim_end_s: float = 2.0,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """Validate tuning via actual simulation at a specific operating point.
 
         If *dt* is ``None`` the step size is computed automatically from the
@@ -730,9 +732,7 @@ class AdaptiveFOCTuner:
         svm.set_sample_time(dt)
 
         # Configure controller
-        controller.set_speed_pi_gains(
-            kp=tuning.speed_kp, ki=tuning.speed_ki, kaw=0.05
-        )
+        controller.set_speed_pi_gains(kp=tuning.speed_kp, ki=tuning.speed_ki, kaw=0.05)
         controller.set_current_pi_gains(
             d_kp=tuning.current_kp,
             d_ki=tuning.current_ki,
@@ -743,7 +743,7 @@ class AdaptiveFOCTuner:
         # Estimate rated current from motor parameters:
         # I_rated ≈ V_max_phase / (sqrt(2) * R) capped at 500A for safety
         # V_max_phase = Vnom / sqrt(3)
-        v_max_phase = self.params.nominal_voltage / (3.0 ** 0.5)
+        v_max_phase = self.params.nominal_voltage / (3.0**0.5)
         iq_limit = min(v_max_phase / max(self.params.phase_resistance, 1e-6) * 0.35, 500.0)
         iq_limit = max(iq_limit, 10.0)
         controller.set_cascaded_speed_loop(True, iq_limit_a=iq_limit)
@@ -793,7 +793,7 @@ class AdaptiveFOCTuner:
             ids[k] = float(i_d)
             iqs[k] = float(i_q)
 
-        result = {"stable": stable}
+        result: dict[str, object] = {"stable": stable}
         if stable:
             tail = max(int(0.5 / dt), 1)
             sp_tail = speeds[-tail:]
@@ -803,16 +803,12 @@ class AdaptiveFOCTuner:
             mean_speed = float(np.mean(sp_tail))
             speed_error = mean_speed - target_speed_rpm
             speed_error_pct = (
-                100.0 * speed_error / target_speed_rpm
-                if abs(target_speed_rpm) > 1e-9
-                else 0.0
+                100.0 * speed_error / target_speed_rpm if abs(target_speed_rpm) > 1e-9 else 0.0
             )
 
             id_dc = float(np.mean(id_tail))
             iq_dc = float(np.mean(iq_tail))
-            flux_angle_deg = float(
-                np.degrees(np.arctan2(abs(iq_dc), abs(id_dc) + 1e-12))
-            )
+            flux_angle_deg = float(np.degrees(np.arctan2(abs(iq_dc), abs(id_dc) + 1e-12)))
             orthogonality_error_deg = float(abs(90.0 - flux_angle_deg))
 
             result.update(
@@ -924,21 +920,11 @@ def calibrate_motor(
     # Simulation validation at rated operating point
     simulation_validation = None
     if enable_simulation_validation and not quick_mode:
-        rated = profile_dict.get("rated_info", {})
-        rated_current = float(
-            rated.get(
-                "rated_current_a",
-                rated.get("rated_current_a_rms", 100.0),
-            )
-        )
-        rated_torque = float(
-            rated.get("rated_torque_nm", params.torque_constant * rated_current)
-        )
-
         # Compute the maximum achievable speed without field weakening.
         # Above this speed, field weakening is required; simulation without FW
         # can only reach this limit. Use 95% of theoretical maximum for margin.
         import math as _math
+
         v_max_phase = params.nominal_voltage / _math.sqrt(3.0)
         ke = max(params.back_emf_constant, 1e-12)
         omega_max_mech = (v_max_phase * 0.95) / ke  # rad/s

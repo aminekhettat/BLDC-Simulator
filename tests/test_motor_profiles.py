@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - ListMotorProfiles
 - SaveMotorProfile
@@ -6,6 +6,7 @@ Atomic features tested in this module:
 - NormalizeMotorParamsValidation
 - MotorParametersLdLq
 """
+
 from __future__ import annotations
 
 import json
@@ -13,14 +14,13 @@ from pathlib import Path
 
 import pytest
 
+from src.core.motor_model import MotorParameters
 from src.utils.motor_profiles import (
     PROFILE_SCHEMA,
     list_motor_profiles,
     load_motor_profile,
     save_motor_profile,
 )
-from src.core.motor_model import MotorParameters
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -94,9 +94,7 @@ class TestListMotorProfiles:
 
 
 class TestSaveMotorProfile:
-    def test_file_is_created(
-        self, tmp_profiles_dir: Path, minimal_motor_params: dict
-    ) -> None:
+    def test_file_is_created(self, tmp_profiles_dir: Path, minimal_motor_params: dict) -> None:
         fp = tmp_profiles_dir / "saved.json"
         result = save_motor_profile(fp, minimal_motor_params, "My Motor")
         assert fp.exists()
@@ -140,10 +138,7 @@ class TestSaveMotorProfile:
         fp = tmp_profiles_dir / "poles.json"
         save_motor_profile(fp, minimal_motor_params, "Poles Motor")
         payload = json.loads(fp.read_text(encoding="utf-8"))
-        assert (
-            payload["motor_params"]["poles_pairs"]
-            == minimal_motor_params["num_poles"] // 2
-        )
+        assert payload["motor_params"]["poles_pairs"] == minimal_motor_params["num_poles"] // 2
 
 
 # ---------------------------------------------------------------------------
@@ -161,12 +156,8 @@ class TestLoadMotorProfile:
     ) -> None:
         profile = load_motor_profile(saved_profile)
         params = profile["motor_params"]
-        assert params["nominal_voltage"] == pytest.approx(
-            minimal_motor_params["nominal_voltage"]
-        )
-        assert params["phase_resistance"] == pytest.approx(
-            minimal_motor_params["phase_resistance"]
-        )
+        assert params["nominal_voltage"] == pytest.approx(minimal_motor_params["nominal_voltage"])
+        assert params["phase_resistance"] == pytest.approx(minimal_motor_params["phase_resistance"])
 
     def test_schema_field_is_returned(self, saved_profile: Path) -> None:
         profile = load_motor_profile(saved_profile)
@@ -305,9 +296,3 @@ class TestMotorParametersLdLq:
         )
         assert params.ld != params.lq
         assert params.lq > params.ld  # typical salient-pole relationship
-
-
-
-
-
-

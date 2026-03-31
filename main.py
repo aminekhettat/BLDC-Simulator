@@ -1,5 +1,5 @@
 """
-BLDC Motor Control Application - Main Entry Point
+    BLDC Motor Control Application - Main Entry Point
 ==================================================
 
 Launches the GUI application for BLDC motor simulation with V/f control.
@@ -11,15 +11,16 @@ Requirements:
     See requirements.txt
 
 :author: BLDC Control Team
-:version: 0.8.1
+:version: 0.9.0
 
-.. versionadded:: 0.8.1
+.. versionadded:: 0.9.0
     Initial application release
 """
 
+import logging
 import sys
 from pathlib import Path
-import logging
+
 from PyQt6.QtWidgets import QApplication
 
 # Add project root to path
@@ -40,7 +41,7 @@ def main():
     Initializes PyQt6 application and launches the main GUI window.
     """
     logger.info("=" * 60)
-    logger.info("BLIND SYSTEMS BLDC Simulator v0.8.1")
+    logger.info("BLIND SYSTEMS BLDC Simulator v0.9.0")
     logger.info("=" * 60)
 
     try:
@@ -56,7 +57,7 @@ def main():
 
         # Set application info
         app.setApplicationName("BLIND SYSTEMS BLDC Simulator")
-        app.setApplicationVersion("0.8.1")
+        app.setApplicationVersion("0.9.0")
 
         # Create and show main window
         window = BLDCMotorControlGUI()

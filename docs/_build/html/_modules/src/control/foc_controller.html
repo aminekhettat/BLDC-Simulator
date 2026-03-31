@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>src.control.foc_controller &mdash; BLDC Motor Control 0.8.0 documentation</title>
+  <title>src.control.foc_controller &mdash; BLDC Motor Control 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=486e5634"></script>
+      <script src="../../../_static/documentation_options.js?v=ec16d22d"></script>
       <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -103,17 +103,19 @@
 <span class="sd">    Initial FOC implementation with PI regulators and auto-tune stub</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.core.motor_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">BLDCMotor</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base_controller</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseController</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">clarke_transform</span><span class="p">,</span>
-    <span class="n">park_transform</span><span class="p">,</span>
-    <span class="n">inverse_park</span><span class="p">,</span>
     <span class="n">concordia_transform</span><span class="p">,</span>
+    <span class="n">inverse_park</span><span class="p">,</span>
+    <span class="n">park_transform</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">src.core.motor_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">BLDCMotor</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -136,14 +138,14 @@
     <span class="n">kp</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span>
     <span class="n">ki</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;ki&quot;</span><span class="p">]</span>
     <span class="n">state</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">error</span> <span class="o">*</span> <span class="n">dt</span>
-    <span class="k">return</span> <span class="n">kp</span> <span class="o">*</span> <span class="n">error</span> <span class="o">+</span> <span class="n">ki</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">kp</span> <span class="o">*</span> <span class="n">error</span> <span class="o">+</span> <span class="n">ki</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">])</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_pi_update_anti_windup</span><span class="p">(</span>
-    <span class="n">state</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
     <span class="n">error</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;PI update with optional back-calculation anti-windup and output limiting.&quot;&quot;&quot;</span>
     <span class="n">kp</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span>
@@ -299,6 +301,24 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_angle</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">id_ref_command</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">iq_ref_command</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># ── Multi-rate speed loop ──────────────────────────────────────────────</span>
+        <span class="c1"># On a real single-shunt FOC MCU (e.g. Fpwm = 20 kHz):</span>
+        <span class="c1">#   • Clarke/Park + current PI + observer : every PWM period  (50 µs)</span>
+        <span class="c1">#   • Speed PI                            : every N periods  (~10 ms → N≈200)</span>
+        <span class="c1">#</span>
+        <span class="c1"># speed_loop_divider = 1 → legacy behaviour: speed PI runs every step.</span>
+        <span class="c1"># speed_loop_divider = N → speed PI runs every N current-loop steps;</span>
+        <span class="c1">#   effective dt for the speed integrator = N × current dt.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed_loop_divider</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_speed_loop_counter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_iq_speed_ref</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c1"># FW integrator update divider — defaults to speed_loop_divider.</span>
+        <span class="c1"># In a real MCU the FW block runs in the same slow ISR as the speed PI</span>
+        <span class="c1"># (both at ~100 Hz).  Use configure_mcu_timing() to set both together.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fw_loop_divider</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fw_loop_counter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># ──────────────────────────────────────────────────────────────────────</span>
 
         <span class="c1"># Optional field-weakening scheduler (independent feature toggle).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_enabled</span> <span class="o">=</span> <span class="kc">False</span>
@@ -463,9 +483,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_align_angle</span>
         <span class="k">elif</span> <span class="n">phase</span> <span class="o">==</span> <span class="s2">&quot;open_loop&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">angle_observer_mode</span> <span class="o">=</span> <span class="s2">&quot;OpenLoop&quot;</span>
-            <span class="n">measured_theta</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
-                <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-            <span class="p">)</span>
+            <span class="n">measured_theta</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_angle</span> <span class="o">=</span> <span class="n">measured_theta</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_speed_rpm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_initial_speed_rpm</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">startup_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -492,11 +510,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_enter_startup_phase</span><span class="p">(</span><span class="s2">&quot;open_loop&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_update_target_observer_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_target_observer_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update target observer states and return measured/target angles.&quot;&quot;&quot;</span>
-        <span class="n">theta_measured</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
-            <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-        <span class="p">)</span>
+        <span class="n">theta_measured</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
 
         <span class="n">emf_a</span><span class="p">,</span> <span class="n">emf_b</span><span class="p">,</span> <span class="n">emf_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">back_emf</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_concordia</span><span class="p">:</span>
@@ -515,13 +531,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">theta_error_pll</span> <span class="o">=</span> <span class="n">err</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">theta_error_smo</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">err</span> <span class="o">*</span> <span class="n">dt</span>
-            <span class="n">omega_correction</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">err</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;ki&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">]</span>
-            <span class="p">)</span>
+            <span class="n">omega_correction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">err</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;ki&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">]</span>
             <span class="n">omega_base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span> <span class="o">+</span> <span class="p">(</span><span class="n">omega_base</span> <span class="o">+</span> <span class="n">omega_correction</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
-            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span> <span class="o">+</span> <span class="p">(</span><span class="n">omega_base</span> <span class="o">+</span> <span class="n">omega_correction</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="p">)</span>
             <span class="n">theta_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_target_mode</span> <span class="o">==</span> <span class="s2">&quot;SMO&quot;</span><span class="p">:</span>
             <span class="n">err</span> <span class="o">=</span> <span class="n">_wrap_angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_meas_emf</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span><span class="p">)</span>
@@ -530,25 +544,18 @@
             <span class="n">boundary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;boundary&quot;</span><span class="p">]</span>
             <span class="n">slide</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">err</span> <span class="o">/</span> <span class="n">boundary</span><span class="p">))</span>
             <span class="n">omega_target</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span>
-                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;k_slide&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">slide</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;k_slide&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">slide</span>
             <span class="p">)</span>
             <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;lpf_alpha&quot;</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span>
-                <span class="s2">&quot;omega_est&quot;</span>
-            <span class="p">]</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">omega_target</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
-                <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">omega_target</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
             <span class="n">theta_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">theta_error_pll</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">theta_error_smo</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="n">theta_target</span> <span class="o">=</span> <span class="n">theta_measured</span>
 
-        <span class="n">speed_norm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">speed_rpm</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_speed_rpm</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span>
-        <span class="p">)</span>
+        <span class="n">speed_norm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">speed_rpm</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_speed_rpm</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
         <span class="n">emf_norm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">emf_mag</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_emf_v</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
         <span class="n">phase_err</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">_wrap_angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_meas_emf</span> <span class="o">-</span> <span class="n">theta_target</span><span class="p">))</span>
         <span class="n">coherence</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">phase_err</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
@@ -588,9 +595,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">theta_sensorless_raw</span> <span class="o">=</span> <span class="n">theta_target</span>
         <span class="k">return</span> <span class="n">theta_measured</span><span class="p">,</span> <span class="n">theta_target</span><span class="p">,</span> <span class="n">emf_mag</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_sensorless_blend</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">theta_measured</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">theta_target</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_sensorless_blend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta_measured</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">theta_target</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Blend measured and observer angles for low-speed robustness.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_target_mode</span> <span class="o">==</span> <span class="s2">&quot;Measured&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">sensorless_blend_weight</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -612,9 +617,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sensorless_blend_weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">w_speed</span> <span class="o">*</span> <span class="n">w_conf</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">_blend_angles</span><span class="p">(</span><span class="n">theta_measured</span><span class="p">,</span> <span class="n">theta_target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sensorless_blend_weight</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_evaluate_sensorless_handoff</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">emf_mag</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_evaluate_sensorless_handoff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">emf_mag</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate when it is safe to leave forced open-loop startup.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_elapsed_s</span> <span class="o">+=</span> <span class="n">dt</span>
 
@@ -630,13 +633,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-        <span class="n">adaptive_ready</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_elapsed_s</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_hold_s</span>
-        <span class="p">)</span>
+        <span class="n">adaptive_ready</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_elapsed_s</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_hold_s</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_ready_to_switch</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">static_ready</span> <span class="ow">and</span> <span class="n">adaptive_ready</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_confidence_peak</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_confidence_peak</span><span class="p">,</span> <span class="n">confidence</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_confidence_peak</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_confidence_peak</span><span class="p">,</span> <span class="n">confidence</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_transition_enabled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_ready_to_switch</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_record_sensorless_handoff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">emf_mag</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -644,15 +643,10 @@
         <span class="n">speed_mag</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">speed_rpm</span><span class="p">)</span>
         <span class="n">speed_score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">speed_mag</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_speed_rpm</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
         <span class="n">emf_score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">emf_mag</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_emf_v</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
-        <span class="n">time_score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_elapsed_s</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_elapsed_s</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span>
-        <span class="p">)</span>
+        <span class="n">time_score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_elapsed_s</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_elapsed_s</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_quality</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
             <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span>
-                <span class="mf">0.5</span> <span class="o">*</span> <span class="n">confidence</span>
-                <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">speed_score</span>
-                <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">emf_score</span>
-                <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">time_score</span><span class="p">,</span>
+                <span class="mf">0.5</span> <span class="o">*</span> <span class="n">confidence</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">speed_score</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">emf_score</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">time_score</span><span class="p">,</span>
                 <span class="mf">0.0</span><span class="p">,</span>
                 <span class="mf">1.0</span><span class="p">,</span>
             <span class="p">)</span>
@@ -671,9 +665,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_enabled</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
 
-        <span class="n">conf_lo</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
-            <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_min_confidence</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_hysteresis</span>
-        <span class="p">)</span>
+        <span class="n">conf_lo</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_min_confidence</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_hysteresis</span><span class="p">)</span>
         <span class="n">speed_release</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_min_speed_rpm</span> <span class="o">*</span> <span class="mf">0.9</span>
         <span class="n">emf_release</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_min_emf_v</span> <span class="o">*</span> <span class="mf">0.9</span>
         <span class="n">degraded</span> <span class="o">=</span> <span class="p">(</span>
@@ -695,13 +687,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_event_count</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="n">total_transitions</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_event_count</span>
-        <span class="p">)</span>
+        <span class="n">total_transitions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_event_count</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_stability_ratio</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">/</span> <span class="n">total_transitions</span>
-            <span class="k">if</span> <span class="n">total_transitions</span> <span class="o">&gt;</span> <span class="mi">0</span>
-            <span class="k">else</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">/</span> <span class="n">total_transitions</span> <span class="k">if</span> <span class="n">total_transitions</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">True</span>
 
@@ -749,9 +737,9 @@
                 <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
                 <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_angle</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_angle</span> <span class="o">+</span> <span class="n">omega_elec</span> <span class="o">*</span> <span class="n">dt</span>
-            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_angle</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_angle</span> <span class="o">+</span> <span class="n">omega_elec</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="p">)</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_evaluate_sensorless_handoff</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">emf_mag</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_record_sensorless_handoff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence</span><span class="p">,</span> <span class="n">emf_mag</span><span class="p">)</span>
@@ -769,16 +757,48 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_angle</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_sensorless_blend</span><span class="p">(</span><span class="n">theta_measured</span><span class="p">,</span> <span class="n">theta_target</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_active_references</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return d/q references after applying startup phase overrides.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_active_references</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return d/q references after applying startup phase overrides.</span>
+
+<span class="sd">        Multi-rate speed loop</span>
+<span class="sd">        ~~~~~~~~~~~~~~~~~~~~~</span>
+<span class="sd">        The speed PI is executed only every ``speed_loop_divider`` calls,</span>
+<span class="sd">        matching the real MCU timing model where:</span>
+
+<span class="sd">        * Current PI + Clarke/Park + observer → every PWM period (e.g. 50 µs)</span>
+<span class="sd">        * Speed PI → every N periods (e.g. N=200 → 10 ms at 20 kHz)</span>
+
+<span class="sd">        Between speed-PI executions the last Iq reference is held, exactly as a</span>
+<span class="sd">        real interrupt-driven implementation would do with a slow-loop flag.</span>
+<span class="sd">        The effective integration step for the speed PI is ``N × dt`` so gains</span>
+<span class="sd">        tuned with ``speed_loop_divider=1`` remain valid; only the update</span>
+<span class="sd">        cadence changes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">id_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_ref</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_id_injection_a</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_speed_loop</span><span class="p">:</span>
             <span class="n">speed_ref_rad_s</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">speed_ref</span> <span class="o">/</span> <span class="mf">60.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">speed_error</span> <span class="o">=</span> <span class="n">speed_ref_rad_s</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">omega</span>
-            <span class="n">iq_ref</span> <span class="o">=</span> <span class="n">_pi_update_anti_windup</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pi_speed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_error</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">iq_limit_a</span>
-            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_loop_divider</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Legacy / high-fidelity mode: speed PI every current step.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_last_iq_speed_ref</span> <span class="o">=</span> <span class="n">_pi_update_anti_windup</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pi_speed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_error</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">iq_limit_a</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Multi-rate: only integrate the speed PI every N steps.</span>
+                <span class="c1"># Hold _last_iq_speed_ref in between (ZOH, same as real MCU).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_speed_loop_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_loop_counter</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_loop_divider</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_speed_loop_counter</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">dt_speed</span> <span class="o">=</span> <span class="n">dt</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">speed_loop_divider</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_last_iq_speed_ref</span> <span class="o">=</span> <span class="n">_pi_update_anti_windup</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">pi_speed</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">speed_error</span><span class="p">,</span>
+                        <span class="n">dt_speed</span><span class="p">,</span>
+                        <span class="n">limit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">iq_limit_a</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="n">iq_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_iq_speed_ref</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">iq_ref</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">speed_ref</span> <span class="o">/</span> <span class="mf">60.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi_q</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">speed_error</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -792,9 +812,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_id_ref_a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_open_loop_iq_ref_a</span>
         <span class="k">return</span> <span class="n">id_ref</span><span class="p">,</span> <span class="n">iq_ref</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_observer_mode</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">emf_mag</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_observer_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">emf_mag</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve active observer mode considering startup transition logic.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_transition_enabled</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">startup_transition_done</span> <span class="o">=</span> <span class="kc">True</span>
@@ -816,9 +834,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-        <span class="n">adaptive_ready</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_elapsed_s</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_hold_s</span>
-        <span class="p">)</span>
+        <span class="n">adaptive_ready</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_elapsed_s</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_hold_s</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_ready_to_switch</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">static_ready</span> <span class="ow">and</span> <span class="n">adaptive_ready</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_transition_done</span><span class="p">:</span>
@@ -829,15 +845,10 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_transition_done</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_ready_to_switch</span><span class="p">:</span>
             <span class="n">speed_score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">speed_mag</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_speed_rpm</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
             <span class="n">emf_score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">emf_mag</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_emf_v</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
-            <span class="n">time_score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">startup_elapsed_s</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_elapsed_s</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span>
-            <span class="p">)</span>
+            <span class="n">time_score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_elapsed_s</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_elapsed_s</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_quality</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span>
-                    <span class="mf">0.5</span> <span class="o">*</span> <span class="n">confidence</span>
-                    <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">speed_score</span>
-                    <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">emf_score</span>
-                    <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">time_score</span><span class="p">,</span>
+                    <span class="mf">0.5</span> <span class="o">*</span> <span class="n">confidence</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">speed_score</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">emf_score</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">time_score</span><span class="p">,</span>
                     <span class="mf">0.0</span><span class="p">,</span>
                     <span class="mf">1.0</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -851,11 +862,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_transition_done</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_enabled</span><span class="p">:</span>
             <span class="n">speed_release</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_min_speed_rpm</span> <span class="o">*</span> <span class="mf">0.9</span>
             <span class="n">emf_release</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_min_emf_v</span> <span class="o">*</span> <span class="mf">0.9</span>
-            <span class="n">degraded</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">confidence</span> <span class="o">&lt;=</span> <span class="n">conf_lo</span>
-                <span class="ow">or</span> <span class="n">speed_mag</span> <span class="o">&lt;</span> <span class="n">speed_release</span>
-                <span class="ow">or</span> <span class="n">emf_mag</span> <span class="o">&lt;</span> <span class="n">emf_release</span>
-            <span class="p">)</span>
+            <span class="n">degraded</span> <span class="o">=</span> <span class="n">confidence</span> <span class="o">&lt;=</span> <span class="n">conf_lo</span> <span class="ow">or</span> <span class="n">speed_mag</span> <span class="o">&lt;</span> <span class="n">speed_release</span> <span class="ow">or</span> <span class="n">emf_mag</span> <span class="o">&lt;</span> <span class="n">emf_release</span>
             <span class="k">if</span> <span class="n">degraded</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_elapsed_s</span> <span class="o">+=</span> <span class="n">dt</span>
             <span class="k">else</span><span class="p">:</span>
@@ -868,23 +875,15 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">startup_confidence_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_elapsed_s</span> <span class="o">=</span> <span class="mf">0.0</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_event_count</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">total_transitions</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_event_count</span>
-                <span class="p">)</span>
+                <span class="n">total_transitions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_event_count</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_stability_ratio</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">/</span> <span class="n">total_transitions</span>
-                    <span class="k">if</span> <span class="n">total_transitions</span> <span class="o">&gt;</span> <span class="mi">0</span>
-                    <span class="k">else</span> <span class="mf">1.0</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">/</span> <span class="n">total_transitions</span> <span class="k">if</span> <span class="n">total_transitions</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_initial_mode</span>
 
-        <span class="n">total_transitions</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_event_count</span>
-        <span class="p">)</span>
+        <span class="n">total_transitions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_fallback_event_count</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_stability_ratio</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">/</span> <span class="n">total_transitions</span>
-            <span class="k">if</span> <span class="n">total_transitions</span> <span class="o">&gt;</span> <span class="mi">0</span>
-            <span class="k">else</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span> <span class="o">/</span> <span class="n">total_transitions</span> <span class="k">if</span> <span class="n">total_transitions</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_transition_done</span><span class="p">:</span>
@@ -935,11 +934,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sensorless_blend_min_confidence</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_confidence</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_estimate_theta_electrical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimate_theta_electrical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># noqa: C901  # TODO: extract observer-mode branches (11)</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate electrical angle from selected observer mode.&quot;&quot;&quot;</span>
-        <span class="n">theta_measured</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
-            <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-        <span class="p">)</span>
+        <span class="n">theta_measured</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
 
         <span class="n">emf_a</span><span class="p">,</span> <span class="n">emf_b</span><span class="p">,</span> <span class="n">emf_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">back_emf</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_concordia</span><span class="p">:</span>
@@ -953,9 +950,7 @@
         <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">emf_alpha</span><span class="p">)</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">emf_beta</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">theta_meas_emf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">emf_beta</span><span class="p">,</span> <span class="n">emf_alpha</span><span class="p">))</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
 
-        <span class="n">speed_norm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">speed_rpm</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_speed_rpm</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span>
-        <span class="p">)</span>
+        <span class="n">speed_norm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">speed_rpm</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_speed_rpm</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
         <span class="n">emf_norm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">emf_mag</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">startup_min_emf_v</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_target_mode</span> <span class="o">==</span> <span class="s2">&quot;PLL&quot;</span><span class="p">:</span>
@@ -1018,13 +1013,11 @@
             <span class="n">err</span> <span class="o">=</span> <span class="n">_wrap_angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_meas_emf</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">theta_error_pll</span> <span class="o">=</span> <span class="n">err</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">err</span> <span class="o">*</span> <span class="n">dt</span>
-            <span class="n">omega_correction</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">err</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;ki&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">]</span>
-            <span class="p">)</span>
+            <span class="n">omega_correction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">err</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;ki&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">[</span><span class="s2">&quot;integral&quot;</span><span class="p">]</span>
             <span class="n">omega_base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span> <span class="o">+</span> <span class="p">(</span><span class="n">omega_base</span> <span class="o">+</span> <span class="n">omega_correction</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
-            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span> <span class="o">+</span> <span class="p">(</span><span class="n">omega_base</span> <span class="o">+</span> <span class="n">omega_correction</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="p">)</span>
             <span class="n">theta_obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_pll</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># Sliding-mode-inspired observer variant.</span>
@@ -1033,16 +1026,11 @@
             <span class="n">boundary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;boundary&quot;</span><span class="p">]</span>
             <span class="n">slide</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">err</span> <span class="o">/</span> <span class="n">boundary</span><span class="p">))</span>
             <span class="n">omega_target</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span>
-                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;k_slide&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">slide</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;k_slide&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">slide</span>
             <span class="p">)</span>
             <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;lpf_alpha&quot;</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span>
-                <span class="s2">&quot;omega_est&quot;</span>
-            <span class="p">]</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">omega_target</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
-                <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">omega_target</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">[</span><span class="s2">&quot;omega_est&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">dt</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
             <span class="n">theta_obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_est_smo</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">theta_sensorless_raw</span> <span class="o">=</span> <span class="n">theta_obs</span>
@@ -1065,9 +1053,7 @@
 
 <div class="viewcode-block" id="FOCController.set_cascaded_speed_loop">
 <a class="viewcode-back" href="../../../api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.set_cascaded_speed_loop">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">set_cascaded_speed_loop</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">iq_limit_a</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_cascaded_speed_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">iq_limit_a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Enable/disable cascaded speed-&gt;iq loop and optionally set iq clamp.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_speed_loop</span> <span class="o">=</span> <span class="n">enabled</span>
         <span class="k">if</span> <span class="n">iq_limit_a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1081,6 +1067,167 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pi_speed</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kp</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pi_speed</span><span class="p">[</span><span class="s2">&quot;ki&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ki</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pi_speed</span><span class="p">[</span><span class="s2">&quot;kaw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kaw</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FOCController.set_speed_loop_divider">
+<a class="viewcode-back" href="../../../api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.set_speed_loop_divider">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_speed_loop_divider</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">divider</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure multi-rate speed loop decimation.</span>
+
+<span class="sd">        Matches real MCU timing where the current loop (Clarke/Park + d/q PI)</span>
+<span class="sd">        runs every PWM interrupt while the speed PI runs at a lower rate:</span>
+
+<span class="sd">        .. code-block:: text</span>
+
+<span class="sd">            Real MCU example (Fpwm = 20 kHz, Ts = 50 µs):</span>
+<span class="sd">              Current PI + observer : every Ts        →  50 µs</span>
+<span class="sd">              Speed PI              : every 200 × Ts  →  10 ms</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        divider : int</span>
+<span class="sd">            Number of current-loop steps between successive speed-PI updates.</span>
+
+<span class="sd">            * ``1``   — legacy/high-rate mode: speed PI executes every step</span>
+<span class="sd">                        (same rate as current PI). Default, backward-compatible.</span>
+<span class="sd">            * ``200`` — speed PI at 1/200 of current-loop rate (10 ms at 20 kHz).</span>
+<span class="sd">            * Any positive integer is accepted.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Between speed-PI firings the last Iq reference is held (zero-order hold),</span>
+<span class="sd">        exactly as a real interrupt-driven implementation does.</span>
+<span class="sd">        The effective integration step passed to the speed-PI integrator is</span>
+<span class="sd">        ``divider × dt``, so d/q PI gains tuned at ``divider=1`` remain valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">divider</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;speed_loop_divider must be &gt;= 1&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed_loop_divider</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">divider</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_speed_loop_counter</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="FOCController.set_fw_loop_divider">
+<a class="viewcode-back" href="../../../api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.set_fw_loop_divider">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_fw_loop_divider</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">divider</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure multi-rate field-weakening integrator decimation.</span>
+
+<span class="sd">        Sets how many current-loop steps elapse between successive executions</span>
+<span class="sd">        of the FW headroom integrator.  On a real MCU the FW block runs inside</span>
+<span class="sd">        the same slow interrupt as the speed PI (both at ~100 Hz), so the</span>
+<span class="sd">        typical setting matches ``speed_loop_divider``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        divider : int</span>
+<span class="sd">            * ``1``   — FW integrator updates every current-loop step (default,</span>
+<span class="sd">                        backward-compatible).</span>
+<span class="sd">            * ``N``   — FW integrator updates every N current steps; the</span>
+<span class="sd">                        effective integration ``dt`` passed internally is</span>
+<span class="sd">                        ``N × current_dt`` so gain values remain unchanged.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        configure_mcu_timing : sets both speed and FW dividers together.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">divider</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;fw_loop_divider must be &gt;= 1&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fw_loop_divider</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">divider</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fw_loop_counter</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="FOCController.configure_mcu_timing">
+<a class="viewcode-back" href="../../../api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.configure_mcu_timing">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configure_mcu_timing</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">pwm_freq_hz</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">speed_loop_hz</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.0</span><span class="p">,</span>
+        <span class="n">fw_loop_hz</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure all loop dividers to match a real MCU timing scheme.</span>
+
+<span class="sd">        This is a single convenience call that replicates the two-rate ISR</span>
+<span class="sd">        structure used in production single-shunt FOC firmware:</span>
+
+<span class="sd">        .. code-block:: text</span>
+
+<span class="sd">            ┌──────────────────────────────────────────────────────┐</span>
+<span class="sd">            │  PWM interrupt  (every T_pwm = 1/Fpwm)              │</span>
+<span class="sd">            │    • ADC trigger / current reconstruction            │</span>
+<span class="sd">            │    • Clarke / Park transform                         │</span>
+<span class="sd">            │    • Angle observer  (SMO or PLL)                   │</span>
+<span class="sd">            │    • d-axis PI  →  v_d_sat                          │</span>
+<span class="sd">            │    • q-axis PI  →  v_q_sat                          │</span>
+<span class="sd">            │    • Voltage saturation (d_priority)                 │</span>
+<span class="sd">            ├──────────────────────────────────────────────────────┤</span>
+<span class="sd">            │  Slow ISR  (every T_slow = 1/F_speed = N × T_pwm)  │</span>
+<span class="sd">            │    • Speed PI  →  Iq_ref  (ZOH between firings)    │</span>
+<span class="sd">            │    • FW integrator  →  Id_fw  (ZOH between firings) │</span>
+<span class="sd">            └──────────────────────────────────────────────────────┘</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        pwm_freq_hz : float</span>
+<span class="sd">            PWM (current-loop) frequency in Hz.  Corresponds directly to</span>
+<span class="sd">            ``1 / dt`` used when creating ``BLDCMotor`` / ``SimulationEngine``.</span>
+<span class="sd">            Example: 20 000 Hz → dt = 50 µs.</span>
+<span class="sd">        speed_loop_hz : float, optional</span>
+<span class="sd">            Frequency of the slow ISR (speed PI + FW), default 100 Hz.</span>
+<span class="sd">            Must satisfy ``speed_loop_hz ≤ pwm_freq_hz``.</span>
+<span class="sd">        fw_loop_hz : float or None, optional</span>
+<span class="sd">            Frequency of the FW integrator.  When *None* (default) the FW</span>
+<span class="sd">            runs at the same rate as the speed PI (recommended — both in the</span>
+<span class="sd">            same slow ISR).  Pass an explicit value only if a different rate</span>
+<span class="sd">            is needed.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Resolved timing parameters: pwm_freq_hz, speed_loop_hz,</span>
+<span class="sd">            fw_loop_hz, speed_divider, fw_divider.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``speed_loop_hz &gt; pwm_freq_hz`` or any frequency is non-positive.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Match a typical STM32 single-shunt FOC setup::</span>
+
+<span class="sd">            ctrl.configure_mcu_timing(pwm_freq_hz=20_000, speed_loop_hz=100)</span>
+<span class="sd">            # → speed_divider = 200, fw_divider = 200</span>
+
+<span class="sd">        Higher-bandwidth speed loop (500 Hz)::</span>
+
+<span class="sd">            ctrl.configure_mcu_timing(pwm_freq_hz=20_000, speed_loop_hz=500)</span>
+<span class="sd">            # → speed_divider = 40, fw_divider = 40</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pwm_freq_hz</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pwm_freq_hz must be positive&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">speed_loop_hz</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">speed_loop_hz</span> <span class="o">&gt;</span> <span class="n">pwm_freq_hz</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;speed_loop_hz must be in (0, pwm_freq_hz=</span><span class="si">{</span><span class="n">pwm_freq_hz</span><span class="si">}</span><span class="s2">]&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">fw_loop_hz</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fw_loop_hz</span> <span class="o">=</span> <span class="n">speed_loop_hz</span>
+        <span class="k">if</span> <span class="n">fw_loop_hz</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">fw_loop_hz</span> <span class="o">&gt;</span> <span class="n">pwm_freq_hz</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;fw_loop_hz must be in (0, pwm_freq_hz=</span><span class="si">{</span><span class="n">pwm_freq_hz</span><span class="si">}</span><span class="s2">]&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">speed_divider</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">pwm_freq_hz</span> <span class="o">/</span> <span class="n">speed_loop_hz</span><span class="p">))</span>
+        <span class="n">fw_divider</span>    <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">pwm_freq_hz</span> <span class="o">/</span> <span class="n">fw_loop_hz</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_speed_loop_divider</span><span class="p">(</span><span class="n">speed_divider</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_fw_loop_divider</span><span class="p">(</span><span class="n">fw_divider</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;pwm_freq_hz&quot;</span><span class="p">:</span>    <span class="n">pwm_freq_hz</span><span class="p">,</span>
+            <span class="s2">&quot;speed_loop_hz&quot;</span><span class="p">:</span>  <span class="n">pwm_freq_hz</span> <span class="o">/</span> <span class="n">speed_divider</span><span class="p">,</span>
+            <span class="s2">&quot;fw_loop_hz&quot;</span><span class="p">:</span>     <span class="n">pwm_freq_hz</span> <span class="o">/</span> <span class="n">fw_divider</span><span class="p">,</span>
+            <span class="s2">&quot;speed_divider&quot;</span><span class="p">:</span>  <span class="n">speed_divider</span><span class="p">,</span>
+            <span class="s2">&quot;fw_divider&quot;</span><span class="p">:</span>     <span class="n">fw_divider</span><span class="p">,</span>
+        <span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="FOCController.set_decoupling">
@@ -1166,7 +1313,7 @@
         <span class="n">start_speed_rpm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">gain</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
         <span class="n">max_negative_id_a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-        <span class="n">headroom_target_v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">headroom_target_v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure voltage-headroom-based field-weakening d-axis current injection.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">start_speed_rpm</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
@@ -1194,13 +1341,60 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_update_field_weakening_from_voltage</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">v_d_unsat</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-        <span class="n">v_q_unsat</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">v_d</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">v_q</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update FW Id injection to maintain configured dq voltage headroom.&quot;&quot;&quot;</span>
-        <span class="n">v_mag_cmd</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">v_d_unsat</span><span class="p">,</span> <span class="n">v_q_unsat</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_headroom_v</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span> <span class="o">-</span> <span class="n">v_mag_cmd</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update FW Id injection to maintain configured dq voltage headroom.</span>
+
+<span class="sd">        Design (Kim &amp; Sul 1997, Bolognani 1999 — production-drive approach)</span>
+<span class="sd">        ────────────────────────────────────────────────────────────────────</span>
+<span class="sd">        The FW headroom is computed from the **saturated** (hard-limited) dq</span>
+<span class="sd">        voltage command, NOT the unsaturated PI output.</span>
+
+<span class="sd">        Why unsaturated PI commands fail</span>
+<span class="sd">        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+<span class="sd">        During acceleration and load transients the current PI integral winds</span>
+<span class="sd">        up well beyond the physical voltage limit (``v_q_unsat`` can reach</span>
+<span class="sd">        50–200 V).  Using the raw unsaturated output tricks the FW integrator</span>
+<span class="sd">        into injecting maximum negative Id at speeds far below the FW region,</span>
+<span class="sd">        reducing Kt_eff and creating a limit cycle (motor stuck at ~2720 RPM</span>
+<span class="sd">        instead of reaching 4000 RPM).</span>
+
+<span class="sd">        Why back-EMF estimation also fails</span>
+<span class="sd">        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+<span class="sd">        Estimating |v| from motor speed + FW state gives the steady-state</span>
+<span class="sd">        back-EMF, which exceeds ``vdq_limit`` any time the actual FW injection</span>
+<span class="sd">        is slightly less than the equilibrium value.  This causes persistent</span>
+<span class="sd">        negative headroom → FW over-injection → instability.</span>
+
+<span class="sd">        Saturated voltage (this implementation)</span>
+<span class="sd">        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+<span class="sd">        After the d_priority saturation step, |v_d, v_q| ≤ vdq_limit by</span>
+<span class="sd">        construction.  Therefore:</span>
+
+<span class="sd">          headroom = vdq_limit − √(v_d² + v_q²)  ≥ 0  always.</span>
+
+<span class="sd">        Key properties:</span>
+<span class="sd">          • Motor at voltage limit (FW region):  |v_sat| ≈ vdq_limit →</span>
+<span class="sd">            headroom ≈ 0 → FW integrates at rate ``gain × headroom_target``.</span>
+<span class="sd">          • Motor below voltage limit (sub-FW):   |v_sat| &lt; vdq_limit →</span>
+<span class="sd">            headroom &gt; 0 → FW injection decays toward zero (correct).</span>
+<span class="sd">          • PI windup (large |v_unsat|):  saturation clips to vdq_limit →</span>
+<span class="sd">            headroom ≈ 0 (conservative), FW integrates slowly rather than</span>
+<span class="sd">            exploding.  The anti-windup on the current PI simultaneously</span>
+<span class="sd">            drains the integral, so the windup resolves naturally.</span>
+
+<span class="sd">        This is the standard approach in production variable-frequency drives.</span>
+
+<span class="sd">        Reference: Kim &amp; Sul, &quot;Torque-Maximizing Field-Weakening Control&quot;,</span>
+<span class="sd">        IEEE Trans. Ind. Electron., vol. 44, pp. 93–103, 1997.</span>
+<span class="sd">        Bolognani, Zigliotto, Zordan, &quot;Extended-range PMSM drives with</span>
+<span class="sd">        flux weakening&quot;, IEEE Trans. Ind. Appl., 1999.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">v_mag</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">v_d</span><span class="p">,</span> <span class="n">v_q</span><span class="p">))</span>
+        <span class="c1"># v_mag ≤ vdq_limit (caller must pass saturated v_d, v_q)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_headroom_v</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span> <span class="o">-</span> <span class="n">v_mag</span><span class="p">)</span>
 
         <span class="n">active</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_enabled</span>
@@ -1220,9 +1414,7 @@
             <span class="n">headroom_error_v</span> <span class="o">=</span> <span class="n">target_headroom</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_headroom_v</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_voltage_error_v</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">headroom_error_v</span><span class="p">)</span>
             <span class="n">inj_mag</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_gain</span> <span class="o">*</span> <span class="n">headroom_error_v</span> <span class="o">*</span> <span class="n">dt</span>
-            <span class="n">inj_mag</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">inj_mag</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_max_negative_id_a</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="n">inj_mag</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">inj_mag</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_max_negative_id_a</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_id_injection_a</span> <span class="o">=</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">inj_mag</span><span class="p">)</span>
 
@@ -1240,14 +1432,12 @@
         <span class="n">J</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">rotor_inertia</span>
         <span class="n">state</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bandwidth</span> <span class="o">*</span> <span class="n">J</span> <span class="o">*</span> <span class="mf">10.0</span>
         <span class="n">state</span><span class="p">[</span><span class="s2">&quot;ki&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;kp&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">10.0</span>  <span class="c1"># arbitrary</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Auto-tuned </span><span class="si">{</span><span class="n">axis</span><span class="si">}</span><span class="s2">-axis PI: kp=</span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;kp&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, ki=</span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;ki&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span></div>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Auto-tuned </span><span class="si">{</span><span class="n">axis</span><span class="si">}</span><span class="s2">-axis PI: kp=</span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;kp&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, ki=</span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;ki&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="FOCController.update">
 <a class="viewcode-back" href="../../../api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.update">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update controller and return voltage command.</span>
 
 <span class="sd">        :param dt: Time step [s]</span>
@@ -1284,28 +1474,52 @@
         <span class="n">v_q_pi</span> <span class="o">=</span> <span class="n">_pi_update_anti_windup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pi_q</span><span class="p">,</span> <span class="n">error_q</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span><span class="p">)</span>
 
         <span class="n">omega_elec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">poles_pairs</span>
+        <span class="n">lq_eff</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">lq</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">lq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">phase_inductance</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">ld_eff</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">ld</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">ld</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">phase_inductance</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># Decoupling feedforward: use *reference* currents, not measured.</span>
+        <span class="c1">#</span>
+        <span class="c1"># Using measured id_val / iq_val for feedforward causes large-signal</span>
+        <span class="c1"># instability: during transient braking (negative Iq), the d-axis</span>
+        <span class="c1"># feedforward v_d_ff = −ωe·Lq·iq_measured can exceed +vdq_limit,</span>
+        <span class="c1"># saturating the d-axis completely and driving v_q to zero.  With</span>
+        <span class="c1"># no q-axis voltage the motor loses all accelerating torque,</span>
+        <span class="c1"># creating a violent limit-cycle even when the speed loop is gentle.</span>
+        <span class="c1">#</span>
+        <span class="c1"># Using the *reference* values (id_ref_command, iq_ref_command)</span>
+        <span class="c1"># instead is the standard production approach (cf. Holtz, 2002;</span>
+        <span class="c1"># Briz et al., 2000): references change smoothly and are bounded by</span>
+        <span class="c1"># iq_limit_a, so the feedforward never exceeds vdq_limit in the</span>
+        <span class="c1"># linear operating range.  In steady-state the reference ≈ the</span>
+        <span class="c1"># measured value, so the decoupling quality is unaffected.</span>
+        <span class="c1"># id_ref_command / iq_ref_command are set just above (line 1177).</span>
         <span class="n">v_d_ff</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="o">-</span><span class="n">omega_elec</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">lq</span> <span class="o">*</span> <span class="n">iq_val</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_decouple_d</span>
-            <span class="k">else</span> <span class="mf">0.0</span>
+            <span class="o">-</span><span class="n">omega_elec</span> <span class="o">*</span> <span class="n">lq_eff</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iq_ref_command</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_decouple_d</span> <span class="k">else</span> <span class="mf">0.0</span>
         <span class="p">)</span>
-        <span class="n">v_q_ff</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">omega_elec</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">ld</span> <span class="o">*</span> <span class="n">id_val</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_decouple_q</span>
-            <span class="k">else</span> <span class="mf">0.0</span>
-        <span class="p">)</span>
+        <span class="n">v_q_ff</span> <span class="o">=</span> <span class="n">omega_elec</span> <span class="o">*</span> <span class="n">ld_eff</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id_ref_command</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_decouple_q</span> <span class="k">else</span> <span class="mf">0.0</span>
         <span class="n">v_d_unsat</span> <span class="o">=</span> <span class="n">v_d_pi</span> <span class="o">+</span> <span class="n">v_d_ff</span>
         <span class="n">v_q_unsat</span> <span class="o">=</span> <span class="n">v_q_pi</span> <span class="o">+</span> <span class="n">v_q_ff</span>
 
-        <span class="c1"># FW uses commanded dq magnitude to maintain voltage headroom.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_field_weakening_from_voltage</span><span class="p">(</span><span class="n">v_d_unsat</span><span class="p">,</span> <span class="n">v_q_unsat</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
-
         <span class="c1"># Enforce vector saturation to available voltage circle.</span>
+        <span class="c1"># NOTE: saturation is applied BEFORE the FW headroom update so that</span>
+        <span class="c1"># the FW integrator sees the *actual* applied voltage, not the</span>
+        <span class="c1"># wind-up-inflated unsaturated command (which can be 50-200 V during</span>
+        <span class="c1"># acceleration transients even though the inverter is limited to</span>
+        <span class="c1"># vdq_limit).  Using saturated voltages guarantees headroom ≥ 0 and</span>
+        <span class="c1"># makes the FW response immune to PI windup.  This follows the</span>
+        <span class="c1"># standard production-drive implementation (e.g. Kim &amp; Sul 1997,</span>
+        <span class="c1"># Bolognani 1999): the voltage regulator feedback is the actual</span>
+        <span class="c1"># commanded voltage after hard-limiting, not the desired PI output.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_saturation_mode</span> <span class="o">==</span> <span class="s2">&quot;d_priority&quot;</span><span class="p">:</span>
             <span class="n">v_d</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">v_d_unsat</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span><span class="p">))</span>
-            <span class="n">v_q_headroom</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span> <span class="o">-</span> <span class="n">v_d</span> <span class="o">*</span> <span class="n">v_d</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
-            <span class="p">)</span>
+            <span class="n">v_q_headroom</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span> <span class="o">-</span> <span class="n">v_d</span> <span class="o">*</span> <span class="n">v_d</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
             <span class="n">v_q</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">v_q_unsat</span><span class="p">,</span> <span class="o">-</span><span class="n">v_q_headroom</span><span class="p">,</span> <span class="n">v_q_headroom</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">v_d</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v_d_unsat</span><span class="p">)</span>
@@ -1315,6 +1529,22 @@
                 <span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vdq_limit</span> <span class="o">/</span> <span class="n">vdq_mag</span>
                 <span class="n">v_d</span> <span class="o">*=</span> <span class="n">scale</span>
                 <span class="n">v_q</span> <span class="o">*=</span> <span class="n">scale</span>
+
+        <span class="c1"># FW headroom from SATURATED voltage: |v_sat| ≤ vdq_limit always,</span>
+        <span class="c1"># so headroom = vdq_limit − |v_sat| ≥ 0 always.</span>
+        <span class="c1">#</span>
+        <span class="c1"># Multi-rate: FW integrator fires every fw_loop_divider current steps</span>
+        <span class="c1"># (same cadence as the speed PI — both belong to the slow ISR on a</span>
+        <span class="c1"># real MCU).  Between firings the last Id injection is held (ZOH).</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fw_loop_divider</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_field_weakening_from_voltage</span><span class="p">(</span><span class="n">v_d</span><span class="p">,</span> <span class="n">v_q</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fw_loop_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fw_loop_counter</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fw_loop_divider</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fw_loop_counter</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_field_weakening_from_voltage</span><span class="p">(</span>
+                    <span class="n">v_d</span><span class="p">,</span> <span class="n">v_q</span><span class="p">,</span> <span class="n">dt</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fw_loop_divider</span><span class="p">)</span>
+                <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coupled_voltage_antiwindup_enabled</span><span class="p">:</span>
             <span class="n">aw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coupled_voltage_antiwindup_gain</span>
@@ -1331,10 +1561,9 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_cartesian</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">v_alpha_cmd</span><span class="p">,</span> <span class="n">v_beta_cmd</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">v_alpha_cmd</span><span class="p">,</span> <span class="n">v_beta_cmd</span><span class="p">)</span>
-            <span class="n">ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">v_beta_cmd</span><span class="p">,</span> <span class="n">v_alpha_cmd</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">mag</span><span class="p">,</span> <span class="n">ang</span></div>
+        <span class="n">mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">v_alpha_cmd</span><span class="p">,</span> <span class="n">v_beta_cmd</span><span class="p">)</span>
+        <span class="n">ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">v_beta_cmd</span><span class="p">,</span> <span class="n">v_alpha_cmd</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mag</span><span class="p">,</span> <span class="n">ang</span></div>
 
 
 <div class="viewcode-block" id="FOCController.reset">
@@ -1450,8 +1679,8 @@
             <span class="s2">&quot;observer_confidence_coherence&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_coherence</span><span class="p">,</span>
             <span class="s2">&quot;observer_confidence_ema&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_ema</span><span class="p">,</span>
             <span class="s2">&quot;observer_confidence_trend&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_trend</span><span class="p">,</span>
-            <span class="s2">&quot;observer_confidence_above_threshold_time_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_above_threshold_time_s</span><span class="p">,</span>
-            <span class="s2">&quot;observer_confidence_below_threshold_time_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_below_threshold_time_s</span><span class="p">,</span>
+            <span class="s2">&quot;observer_confidence_above_threshold_time_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_above_threshold_time_s</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
+            <span class="s2">&quot;observer_confidence_below_threshold_time_s&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_below_threshold_time_s</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
             <span class="s2">&quot;observer_confidence_crossings_up&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_crossings_up</span><span class="p">,</span>
             <span class="s2">&quot;observer_confidence_crossings_down&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_confidence_crossings_down</span><span class="p">,</span>
             <span class="s2">&quot;startup_handoff_count&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_handoff_count</span><span class="p">,</span>
@@ -1486,6 +1715,10 @@
             <span class="s2">&quot;theta_sensorless_raw&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_sensorless_raw</span><span class="p">,</span>
             <span class="s2">&quot;id_ref_command&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_ref_command</span><span class="p">,</span>
             <span class="s2">&quot;iq_ref_command&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">iq_ref_command</span><span class="p">,</span>
+            <span class="s2">&quot;v_d_cmd&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_v_d</span><span class="p">,</span>
+            <span class="s2">&quot;v_q_cmd&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_v_q</span><span class="p">,</span>
+            <span class="s2">&quot;v_d_ff&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_v_d_ff</span><span class="p">,</span>
+            <span class="s2">&quot;v_q_ff&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_v_q_ff</span><span class="p">,</span>
             <span class="s2">&quot;field_weakening_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_enabled</span><span class="p">,</span>
             <span class="s2">&quot;field_weakening_start_speed_rpm&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_start_speed_rpm</span><span class="p">,</span>
             <span class="s2">&quot;field_weakening_gain&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_weakening_gain</span><span class="p">,</span>
@@ -1497,17 +1730,18 @@
             <span class="s2">&quot;voltage_saturation_mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_saturation_mode</span><span class="p">,</span>
             <span class="s2">&quot;coupled_voltage_antiwindup_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">coupled_voltage_antiwindup_enabled</span><span class="p">,</span>
             <span class="s2">&quot;coupled_voltage_antiwindup_gain&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">coupled_voltage_antiwindup_gain</span><span class="p">,</span>
-            <span class="s2">&quot;v_d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi_d</span><span class="p">,</span>
-            <span class="s2">&quot;v_q&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi_q</span><span class="p">,</span>
-            <span class="s2">&quot;v_d_cmd&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_v_d</span><span class="p">,</span>
-            <span class="s2">&quot;v_q_cmd&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_v_q</span><span class="p">,</span>
-            <span class="s2">&quot;v_d_ff&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_v_d_ff</span><span class="p">,</span>
-            <span class="s2">&quot;v_q_ff&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_v_q_ff</span><span class="p">,</span>
+            <span class="s2">&quot;speed_loop_divider&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_loop_divider</span><span class="p">,</span>
+            <span class="s2">&quot;speed_loop_counter&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_loop_counter</span><span class="p">,</span>
+            <span class="s2">&quot;fw_loop_divider&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fw_loop_divider</span><span class="p">,</span>
+            <span class="s2">&quot;fw_loop_counter&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fw_loop_counter</span><span class="p">,</span>
+            <span class="s2">&quot;pi_d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi_d</span><span class="p">,</span>
+            <span class="s2">&quot;pi_q&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi_q</span><span class="p">,</span>
             <span class="s2">&quot;speed_pi&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi_speed</span><span class="p">,</span>
             <span class="s2">&quot;pll&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pll</span><span class="p">,</span>
             <span class="s2">&quot;smo&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">smo</span><span class="p">,</span>
         <span class="p">}</span></div>
 </div>
+
 
 </pre></div>
 

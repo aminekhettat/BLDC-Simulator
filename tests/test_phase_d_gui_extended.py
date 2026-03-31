@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - BuildCurrentSenseModelExtended
 - ApplyToSimulationCurrentSense
@@ -18,20 +18,16 @@ Atomic features tested in this module:
 
 import json
 import sys
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtWidgets import QApplication, QTableWidgetItem
 
-from src.ui.main_window import BLDCMotorControlGUI
 from src.hardware.inverter_current_sense import (
     InverterCurrentSense,
-    ShuntAmplifierChannel,
 )
-
+from src.ui.main_window import BLDCMotorControlGUI
 
 # ---------------------------------------------------------------------------
 # Qt application fixture (module-scoped to avoid re-creating the app)
@@ -539,9 +535,9 @@ class TestSimulationEngineCurrentSenseIntegration:
     """Direct engine-level tests for current_sense in step() / get_current_state()."""
 
     def _make_engine(self, topology="triple"):
-        from src.core.simulation_engine import SimulationEngine
-        from src.core.motor_model import BLDCMotor, MotorParameters
         from src.core.load_model import ConstantLoad
+        from src.core.motor_model import BLDCMotor, MotorParameters
+        from src.core.simulation_engine import SimulationEngine
 
         params = MotorParameters()
         motor = BLDCMotor(params, dt=0.0001)
@@ -573,9 +569,9 @@ class TestSimulationEngineCurrentSenseIntegration:
         assert currents.shape == (3,)
 
     def test_get_controller_phase_currents_without_sense(self):
-        from src.core.simulation_engine import SimulationEngine
-        from src.core.motor_model import BLDCMotor, MotorParameters
         from src.core.load_model import ConstantLoad
+        from src.core.motor_model import BLDCMotor, MotorParameters
+        from src.core.simulation_engine import SimulationEngine
 
         params = MotorParameters()
         motor = BLDCMotor(params, dt=0.0001)
@@ -845,7 +841,6 @@ class TestResetSimulation:
 
 class TestAutoTuneAxis:
     def test_warns_when_no_foc_controller(self, gui, monkeypatch):
-        from src.control.vf_controller import VFController
 
         gui.current_sense_enable.setChecked(False)
         gui._apply_to_simulation()
@@ -867,11 +862,208 @@ class TestAutoTuneAxis:
 
         assert isinstance(gui.controller, FOCController)
         called = []
-        monkeypatch.setattr(
-            gui.controller, "auto_tune_pi", lambda axis: called.append(axis)
-        )
+        monkeypatch.setattr(gui.controller, "auto_tune_pi", lambda axis: called.append(axis))
         with patch("src.ui.main_window.QMessageBox.information"):
             gui._auto_tune_axis("d")
         assert "d" in called
         # restore
         gui.ctrl_mode.setCurrentText("V/f")
+
+
+# ===========================================================================
+# Section 15 – plotting/export and FFT coverage helpers
+# ===========================================================================
+
+
+class TestPlotAndExportHelpers:
+    def _history(self, include_true: bool = True) -> dict:
+        time = np.linspace(0.0, 0.2, 64)
+        history = {
+            "time": time,
+            "currents_a": np.sin(2.0 * np.pi * 10.0 * time),
+            "currents_b": np.sin(2.0 * np.pi * 10.0 * time - 2.094),
+            "currents_c": np.sin(2.0 * np.pi * 10.0 * time - 4.189),
+            "voltages_a": 12.0 * np.sin(2.0 * np.pi * 10.0 * time),
+            "voltages_b": 12.0 * np.sin(2.0 * np.pi * 10.0 * time - 2.094),
+            "voltages_c": 12.0 * np.sin(2.0 * np.pi * 10.0 * time - 4.189),
+            "emf_a": 8.0 * np.sin(2.0 * np.pi * 10.0 * time),
+            "emf_b": 8.0 * np.sin(2.0 * np.pi * 10.0 * time - 2.094),
+            "emf_c": 8.0 * np.sin(2.0 * np.pi * 10.0 * time - 4.189),
+            "speed": np.full_like(time, 1000.0),
+            "torque": np.full_like(time, 1.5),
+            "load_torque": np.full_like(time, 0.8),
+            "rotation_speed_rpm": np.full_like(time, 1000.0),
+            "motor_torque": np.full_like(time, 1.5),
+            "power_factor": np.linspace(0.85, 0.95, time.size),
+            "input_power": np.linspace(90.0, 110.0, time.size),
+            "pfc_command_var": np.linspace(0.0, 5.0, time.size),
+            "mechanical_output_power": np.linspace(70.0, 85.0, time.size),
+            "total_loss_power": np.linspace(12.0, 15.0, time.size),
+            "efficiency": np.linspace(0.75, 0.88, time.size),
+            "effective_dc_voltage": np.linspace(48.0, 47.0, time.size),
+            "dc_link_ripple_v": np.linspace(0.2, 0.6, time.size),
+            "dc_link_bus_current_a": np.linspace(1.5, 3.0, time.size),
+            "inverter_total_loss_power": np.linspace(5.0, 6.0, time.size),
+            "device_loss_power": np.linspace(2.0, 2.2, time.size),
+            "conduction_loss_power": np.linspace(1.0, 1.1, time.size),
+            "switching_loss_power": np.linspace(1.3, 1.4, time.size),
+            "dead_time_loss_power": np.linspace(0.2, 0.25, time.size),
+            "diode_loss_power": np.linspace(0.1, 0.15, time.size),
+            "inverter_junction_temp_c": np.linspace(30.0, 40.0, time.size),
+            "common_mode_voltage": np.linspace(-3.0, 3.0, time.size),
+            "custom_signal": np.linspace(0.0, 1.0, time.size),
+        }
+        if include_true:
+            history["currents_a_true"] = history["currents_a"] + 0.01
+            history["currents_b_true"] = history["currents_b"] + 0.01
+            history["currents_c_true"] = history["currents_c"] + 0.01
+        return history
+
+    def _attach_engine(self, gui, include_true: bool = True) -> dict:
+        history = self._history(include_true=include_true)
+        gui.engine = MagicMock()
+        gui.engine.get_history.return_value = history
+        gui.engine.get_efficiency_state.return_value = {"efficiency": 0.88}
+        gui.engine.get_power_factor_control_state.return_value = {"power_factor": 0.94}
+        return history
+
+    def test_export_data_success_and_error_paths(self, gui, monkeypatch, tmp_path):
+        history = self._attach_engine(gui)
+        out_path = tmp_path / "sim.csv"
+        gui.logger = MagicMock()
+
+        monkeypatch.setattr(
+            "src.ui.main_window.QFileDialog.getSaveFileName",
+            lambda *args, **kwargs: (str(out_path), "CSV Files (*.csv)"),
+        )
+        monkeypatch.setattr(
+            "src.ui.main_window.QMessageBox.information",
+            lambda *args, **kwargs: None,
+        )
+        monkeypatch.setattr("src.ui.main_window.speak", lambda *args, **kwargs: None)
+
+        gui._export_data()
+        gui.logger.save_simulation_data.assert_called_once()
+        saved_history = gui.logger.save_simulation_data.call_args.args[0]
+        assert np.array_equal(saved_history["time"], history["time"])
+
+        gui.logger.save_simulation_data.side_effect = RuntimeError("boom")
+        critical = {"called": False}
+        monkeypatch.setattr(
+            "src.ui.main_window.QMessageBox.critical",
+            lambda *args, **kwargs: critical.__setitem__("called", True),
+        )
+        gui._export_data()
+        assert critical["called"] is True
+
+    def test_plot_helpers_and_efficiency_dialog_paths(self, gui, monkeypatch):
+        history = self._attach_engine(gui, include_true=True)
+        plotted = []
+
+        class FigureStub:
+            def __init__(self, name):
+                self.name = name
+
+            def show(self):
+                plotted.append(self.name)
+
+        monkeypatch.setattr(
+            "src.ui.main_window.SimulationPlotter.create_3phase_plot",
+            lambda *args, **kwargs: FigureStub("3phase"),
+        )
+        monkeypatch.setattr(
+            "src.ui.main_window.SimulationPlotter.create_current_plot",
+            lambda *args, **kwargs: FigureStub("current"),
+        )
+        monkeypatch.setattr(
+            "src.ui.main_window.SimulationPlotter.create_pfc_analysis_plot",
+            lambda *args, **kwargs: FigureStub("pfc"),
+        )
+        monkeypatch.setattr(
+            "src.ui.main_window.SimulationPlotter.create_efficiency_analysis_plot",
+            lambda *args, **kwargs: FigureStub("efficiency"),
+        )
+        monkeypatch.setattr(
+            "src.ui.main_window.SimulationPlotter.create_inverter_analysis_plot",
+            lambda *args, **kwargs: FigureStub("inverter"),
+        )
+        monkeypatch.setattr(
+            "src.ui.main_window.SimulationPlotter.create_measured_vs_true_current_plot",
+            lambda *args, **kwargs: FigureStub("measured"),
+        )
+        monkeypatch.setattr(
+            "src.ui.main_window.SimulationPlotter.create_multi_axis_plot",
+            lambda *args, **kwargs: FigureStub("custom"),
+        )
+        monkeypatch.setattr("src.ui.main_window.speak", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            "src.ui.main_window.recommend_efficiency_adjustments",
+            lambda **kwargs: {
+                "efficiency": 0.88,
+                "power_factor": 0.94,
+                "suggestions": ["Reduce switching frequency"],
+            },
+        )
+        monkeypatch.setattr(
+            "src.ui.main_window.QMessageBox.information",
+            lambda *args, **kwargs: None,
+        )
+
+        gui.plot_var_list.setRowCount(1)
+        gui.plot_var_list.setColumnCount(1)
+        gui.plot_var_list.setItem(0, 0, QTableWidgetItem("custom_signal"))
+        gui.plot_var_list.selectRow(0)
+
+        gui._plot_3phase()
+        gui._plot_currents()
+        gui._plot_pfc_analysis()
+        gui._plot_efficiency_analysis()
+        gui._plot_inverter_analysis()
+        gui._plot_measured_vs_true()
+        gui._plot_custom()
+        gui._show_efficiency_recommendations()
+
+        assert plotted == [
+            "3phase",
+            "current",
+            "pfc",
+            "efficiency",
+            "inverter",
+            "measured",
+            "custom",
+        ]
+        assert np.array_equal(gui.engine.get_history.return_value["time"], history["time"])
+
+    def test_plot_measured_vs_true_without_true_history_and_no_data_warnings(
+        self, gui, monkeypatch
+    ):
+        self._attach_engine(gui, include_true=False)
+        monkeypatch.setattr(
+            "src.ui.main_window.SimulationPlotter.create_measured_vs_true_current_plot",
+            lambda *args, **kwargs: type(
+                "FigureStub",
+                (),
+                {"show": lambda self: None},
+            )(),
+        )
+        spoken = []
+        monkeypatch.setattr("src.ui.main_window.speak", lambda message: spoken.append(message))
+        gui._plot_measured_vs_true()
+        assert any("no true-current history available" in msg.lower() for msg in spoken)
+
+        gui.engine = None
+        warned = {"count": 0}
+        monkeypatch.setattr(
+            "src.ui.main_window.QMessageBox.warning",
+            lambda *args, **kwargs: warned.__setitem__("count", warned["count"] + 1),
+        )
+        gui._plot_3phase()
+        gui._plot_currents()
+        gui._plot_pfc_analysis()
+        gui._plot_efficiency_analysis()
+        gui._plot_inverter_analysis()
+        gui._plot_measured_vs_true()
+        gui._plot_custom()
+        gui._show_efficiency_recommendations()
+        gui._export_data()
+        assert warned["count"] >= 8

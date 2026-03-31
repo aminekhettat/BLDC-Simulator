@@ -9,9 +9,9 @@ Tests cover:
 
 from __future__ import annotations
 
+import json
 import os
 import sys
-import json
 from pathlib import Path
 
 import numpy as np
@@ -53,13 +53,9 @@ def test_backward_compatibility_margin_estimators() -> None:
     speed_margin = speed["margin"]
 
     assert np.isfinite(current_margin.phase_margin_deg)
-    assert current_margin.gain_crossover_hz is None or np.isfinite(
-        current_margin.gain_crossover_hz
-    )
+    assert current_margin.gain_crossover_hz is None or np.isfinite(current_margin.gain_crossover_hz)
     assert np.isfinite(speed_margin.phase_margin_deg)
-    assert speed_margin.gain_crossover_hz is None or np.isfinite(
-        speed_margin.gain_crossover_hz
-    )
+    assert speed_margin.gain_crossover_hz is None or np.isfinite(speed_margin.gain_crossover_hz)
 
 
 def test_backward_compatibility_state_space() -> None:
@@ -215,12 +211,7 @@ def test_validate_at_operating_point_quick() -> None:
 
 def test_calibrate_motor_with_real_profile() -> None:
     """Test calibrate_motor() with real motor profile."""
-    profile_path = (
-        Path(PROJECT_ROOT)
-        / "data"
-        / "motor_profiles"
-        / "motenergy_me1718_48v.json"
-    )
+    profile_path = Path(PROJECT_ROOT) / "data" / "motor_profiles" / "motenergy_me1718_48v.json"
 
     if not profile_path.exists():
         print(f"Skipping test: {profile_path} not found")

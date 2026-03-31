@@ -11,18 +11,18 @@ Includes:
 - visualization: Plotting and data export
 
 :author: BLDC Control Team
-:version: 0.8.1
+:version: 0.9.0
 """
 
 from importlib import import_module
 
 __all__ = [
-    "core",
     "control",
+    "core",
+    "hardware",
     "ui",
     "utils",
     "visualization",
-    "hardware",
 ]
 
 

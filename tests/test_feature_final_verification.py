@@ -1,8 +1,9 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Atomic features tested in this module:
 - feature final verification
 """
+
 import inspect
 
 print("=" * 60)
@@ -34,7 +35,7 @@ except Exception as e:
 
 # Test 2: Motor model with numba
 try:
-    from src.core.motor_model import BLDCMotor, HAS_NUMBA
+    from src.core.motor_model import HAS_NUMBA, BLDCMotor
 
     motor = BLDCMotor()
     print(f"âœ… Motor model with numba support: OK (HAS_NUMBA={HAS_NUMBA})")
@@ -43,8 +44,9 @@ except Exception as e:
 
 # Test 3: Main window with status bar
 try:
-    from src.ui.main_window import BLDCMotorControlGUI
     from PyQt6.QtWidgets import QApplication, QLabel
+
+    from src.ui.main_window import BLDCMotorControlGUI
 
     app = QApplication.instance() or QApplication([])
     gui = BLDCMotorControlGUI()
@@ -84,9 +86,3 @@ except Exception as e:
 print("=" * 60)
 print("âœ… All features verified successfully!")
 print("=" * 60)
-
-
-
-
-
-

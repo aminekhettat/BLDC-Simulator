@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>src.control.svm_generator &mdash; BLDC Motor Control 1.0.0 documentation</title>
+  <title>src.control.svm_generator &mdash; BLDC Motor Control 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/documentation_options.js?v=ec16d22d"></script>
       <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -117,7 +117,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">asdict</span><span class="p">,</span> <span class="n">dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -204,7 +204,7 @@
         <span class="c1"># Stateful realism blocks keep their own bus and temperature states.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cap_voltage</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dc_voltage</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_junction_temperature_c</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">ambient_temperature_c</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># Preserve the legacy public attributes used by existing tests and any</span>
         <span class="c1"># downstream analysis code.</span>
@@ -259,9 +259,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset capacitor voltage, temperature, and cached telemetry.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cap_voltage</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_dc_voltage</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_junction_temperature_c</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">ambient_temperature_c</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_empty_telemetry</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_compute_available_bus_voltage</span><span class="p">()</span>
-        <span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_empty_telemetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_compute_available_bus_voltage</span><span class="p">())</span></div>
 
 
 <div class="viewcode-block" id="SVMGenerator.modulate">
@@ -360,17 +358,17 @@
 
 <div class="viewcode-block" id="SVMGenerator.set_nonidealities">
 <a class="viewcode-back" href="../../../api/generated/src.control.svm_generator.html#src.control.svm_generator.SVMGenerator.set_nonidealities">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">set_nonidealities</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_nonidealities</span><span class="p">(</span>  <span class="c1"># noqa: C901  # TODO: split validation logic into sub-validators (14)</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">device_drop_v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">dead_time_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">conduction_resistance_ohm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">switching_frequency_hz</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">switching_loss_coeff_v_per_a_khz</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-        <span class="n">enable_device_drop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">enable_dead_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">enable_conduction_drop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">enable_switching_loss</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">enable_device_drop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">enable_dead_time</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">enable_conduction_drop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">enable_switching_loss</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_diode_freewheel</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">diode_drop_v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">diode_resistance_ohm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -434,14 +432,10 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;phase scale factors must be positive&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_device_drop</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="nb">bool</span><span class="p">(</span><span class="n">device_drop_v</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">enable_device_drop</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_device_drop</span><span class="p">)</span>
+            <span class="nb">bool</span><span class="p">(</span><span class="n">device_drop_v</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="k">if</span> <span class="n">enable_device_drop</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_device_drop</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_dead_time</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="nb">bool</span><span class="p">(</span><span class="n">dead_time_fraction</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">enable_dead_time</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_dead_time</span><span class="p">)</span>
+            <span class="nb">bool</span><span class="p">(</span><span class="n">dead_time_fraction</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="k">if</span> <span class="n">enable_dead_time</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_dead_time</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_conduction_drop</span> <span class="o">=</span> <span class="p">(</span>
             <span class="nb">bool</span><span class="p">(</span><span class="n">conduction_resistance_ohm</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
@@ -449,9 +443,7 @@
             <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_conduction_drop</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_switching_loss</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="nb">bool</span><span class="p">(</span>
-                <span class="n">switching_frequency_hz</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">switching_loss_coeff_v_per_a_khz</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
-            <span class="p">)</span>
+            <span class="nb">bool</span><span class="p">(</span><span class="n">switching_frequency_hz</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">switching_loss_coeff_v_per_a_khz</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">enable_switching_loss</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_switching_loss</span><span class="p">)</span>
         <span class="p">)</span>
@@ -460,9 +452,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dead_time_fraction</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dead_time_fraction</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">conduction_resistance_ohm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">conduction_resistance_ohm</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">switching_frequency_hz</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">switching_frequency_hz</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">switching_loss_coeff_v_per_a_khz</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
-            <span class="n">switching_loss_coeff_v_per_a_khz</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">switching_loss_coeff_v_per_a_khz</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">switching_loss_coeff_v_per_a_khz</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_diode_freewheel</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_diode_freewheel</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">diode_drop_v</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">diode_drop_v</span><span class="p">)</span>
@@ -473,9 +463,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_bus_ripple</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_bus_ripple</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_capacitance_f</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dc_link_capacitance_f</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_source_resistance_ohm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
-            <span class="n">dc_link_source_resistance_ohm</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_source_resistance_ohm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dc_link_source_resistance_ohm</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_esr_ohm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dc_link_esr_ohm</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_thermal_coupling</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_thermal_coupling</span><span class="p">)</span>
@@ -539,10 +527,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_dead_time</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dead_time_fraction</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="n">activity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">/</span> <span class="n">half_bus</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
             <span class="n">dead_time_error</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">current_sign</span>
-                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dead_time_fraction</span>
-                <span class="o">*</span> <span class="n">available_bus</span>
-                <span class="o">*</span> <span class="n">activity</span>
+                <span class="n">current_sign</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dead_time_fraction</span> <span class="o">*</span> <span class="n">available_bus</span> <span class="o">*</span> <span class="n">activity</span>
             <span class="p">)</span>
             <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">-</span> <span class="n">dead_time_error</span>
             <span class="n">dead_time_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dead_time_error</span><span class="p">)</span> <span class="o">*</span> <span class="n">current_abs</span><span class="p">))</span>
@@ -569,14 +554,9 @@
             <span class="n">total_drop</span> <span class="o">+=</span> <span class="n">device_drop</span>
             <span class="n">device_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">device_drop</span> <span class="o">*</span> <span class="n">current_abs</span><span class="p">))</span>
 
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_conduction_drop</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">conduction_resistance_ohm</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
-        <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_conduction_drop</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">conduction_resistance_ohm</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="n">conduction_res</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">conduction_resistance_ohm</span>
-                <span class="o">*</span> <span class="n">resistance_temp_scale</span>
-                <span class="o">*</span> <span class="n">drop_scales</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">conduction_resistance_ohm</span> <span class="o">*</span> <span class="n">resistance_temp_scale</span> <span class="o">*</span> <span class="n">drop_scales</span>
             <span class="p">)</span>
             <span class="n">conduction_drop</span> <span class="o">=</span> <span class="n">conduction_res</span> <span class="o">*</span> <span class="n">current_abs</span>
             <span class="n">total_drop</span> <span class="o">+=</span> <span class="n">conduction_drop</span>
@@ -588,9 +568,7 @@
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">switching_loss_coeff_v_per_a_khz</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
         <span class="p">):</span>
             <span class="n">f_khz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">switching_frequency_hz</span> <span class="o">/</span> <span class="mf">1000.0</span>
-            <span class="n">switching_drop</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">switching_loss_coeff_v_per_a_khz</span> <span class="o">*</span> <span class="n">current_abs</span> <span class="o">*</span> <span class="n">f_khz</span>
-            <span class="p">)</span>
+            <span class="n">switching_drop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">switching_loss_coeff_v_per_a_khz</span> <span class="o">*</span> <span class="n">current_abs</span> <span class="o">*</span> <span class="n">f_khz</span>
             <span class="n">total_drop</span> <span class="o">+=</span> <span class="n">switching_drop</span>
             <span class="n">switching_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">switching_drop</span> <span class="o">*</span> <span class="n">current_abs</span><span class="p">))</span>
 
@@ -602,8 +580,7 @@
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">freewheel_mask</span><span class="p">):</span>
             <span class="n">diode_drop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
                 <span class="n">freewheel_mask</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">diode_drop_v</span>
-                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">diode_resistance_ohm</span> <span class="o">*</span> <span class="n">current_abs</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">diode_drop_v</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">diode_resistance_ohm</span> <span class="o">*</span> <span class="n">current_abs</span><span class="p">,</span>
                 <span class="mf">0.0</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">total_drop</span> <span class="o">+=</span> <span class="n">diode_drop</span>
@@ -667,26 +644,16 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_compute_available_bus_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the bus voltage currently available to the bridge.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_bus_ripple</span>
-            <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_capacitance_f</span> <span class="o">&lt;=</span> <span class="mf">0.0</span>
-        <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_bus_ripple</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_capacitance_f</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_dc_voltage</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span>
 
-        <span class="n">estimated_bus_current</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dc_link_bus_current_a&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-        <span class="p">)</span>
-        <span class="n">effective_bus</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cap_voltage</span> <span class="o">-</span> <span class="p">(</span>
-            <span class="n">estimated_bus_current</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_esr_ohm</span>
-        <span class="p">)</span>
+        <span class="n">estimated_bus_current</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dc_link_bus_current_a&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="n">effective_bus</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cap_voltage</span> <span class="o">-</span> <span class="p">(</span><span class="n">estimated_bus_current</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_esr_ohm</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">effective_bus</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_update_bus_ripple_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_current</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update reduced-order DC-link capacitor state for the next step.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_bus_ripple</span>
-            <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_capacitance_f</span> <span class="o">&lt;=</span> <span class="mf">0.0</span>
-        <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">enable_bus_ripple</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">dc_link_capacitance_f</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_cap_voltage</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_dc_voltage</span><span class="p">)</span>
             <span class="k">return</span>
 
@@ -717,9 +684,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_junction_temperature_c</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">ambient_temperature_c</span><span class="p">)</span>
             <span class="k">return</span>
 
-        <span class="n">cooling_power</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_junction_temperature_c</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">ambient_temperature_c</span>
-        <span class="p">)</span> <span class="o">/</span> <span class="n">r_th</span>
+        <span class="n">cooling_power</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_junction_temperature_c</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">realism</span><span class="o">.</span><span class="n">ambient_temperature_c</span><span class="p">)</span> <span class="o">/</span> <span class="n">r_th</span>
         <span class="n">d_temp</span> <span class="o">=</span> <span class="p">(</span><span class="n">total_loss_power_w</span> <span class="o">-</span> <span class="n">cooling_power</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_time_s</span> <span class="o">/</span> <span class="n">c_th</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_junction_temperature_c</span> <span class="o">+=</span> <span class="n">d_temp</span>
 
@@ -751,18 +716,16 @@
 
 <div class="viewcode-block" id="SVMGenerator.get_last_telemetry">
 <a class="viewcode-back" href="../../../api/generated/src.control.svm_generator.html#src.control.svm_generator.SVMGenerator.get_last_telemetry">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_last_telemetry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_last_telemetry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return telemetry from the last modulation step.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_empty_telemetry</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_compute_available_bus_voltage</span><span class="p">()</span>
-            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_empty_telemetry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_compute_available_bus_voltage</span><span class="p">())</span>
         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_telemetry</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SVMGenerator.get_realism_state">
 <a class="viewcode-back" href="../../../api/generated/src.control.svm_generator.html#src.control.svm_generator.SVMGenerator.get_realism_state">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_realism_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_realism_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the complete inverter configuration and runtime state.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">get_last_telemetry</span><span class="p">(),</span>
@@ -777,7 +740,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_make_empty_telemetry</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">effective_bus</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a zeroed telemetry packet used before the first modulation step.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;source_dc_voltage&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_dc_voltage</span><span class="p">),</span>

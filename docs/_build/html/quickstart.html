@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quick Start Guide &mdash; BLDC Motor Control 0.8.0 documentation</title>
+  <title>Quick Start Guide &mdash; BLDC Motor Control 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/documentation_options.js?v=ec16d22d"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -50,6 +50,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#current-measurement-and-fft-workflow">Current Measurement and FFT Workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-examples">Running Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-tests">Running Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quality-gates">Quality Gates</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#core-concepts">Core Concepts</a></li>
 </ul>
 </li>
@@ -128,6 +129,22 @@ from use or misuse.</p>
 </pre></div>
 </div>
 </li>
+<li><p>Install development quality tools:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">-</span><span class="n">dev</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+</li>
+<li><p>Run mandatory local commit gates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pre_commit</span> <span class="n">run</span> <span class="o">--</span><span class="nb">all</span><span class="o">-</span><span class="n">files</span>
+</pre></div>
+</div>
+<p>Note: this repository uses <code class="docutils literal notranslate"><span class="pre">.githooks/pre-commit</span></code> via <code class="docutils literal notranslate"><span class="pre">core.hooksPath</span></code>,
+so <code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span></code> is not required.</p>
+<blockquote>
+<div><p>The hook enforces documentation updates, Sphinx HTML build, quality checks,
+full tests, and 100% coverage on <code class="docutils literal notranslate"><span class="pre">src/</span></code> before commit.</p>
+</div></blockquote>
+</li>
 </ol>
 </section>
 <section id="running-the-gui">
@@ -180,6 +197,16 @@ from use or misuse.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">tests</span><span class="o">/</span><span class="n">test_feature_accessibility_integration</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
+</section>
+<section id="quality-gates">
+<h2>Quality Gates<a class="headerlink" href="#quality-gates" title="Link to this heading"></a></h2>
+<p>The CI pipeline enforces the following quality checks on pull requests:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ruff</span> <span class="pre">check</span> <span class="pre">.</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mypy</span> <span class="pre">src</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bandit</span> <span class="pre">-c</span> <span class="pre">bandit.yaml</span> <span class="pre">-r</span> <span class="pre">src</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pip-audit</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></p></li>
+</ul>
 </section>
 <section id="core-concepts">
 <h2>Core Concepts<a class="headerlink" href="#core-concepts" title="Link to this heading"></a></h2>

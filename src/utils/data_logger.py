@@ -10,11 +10,12 @@ Handles data logging, CSV export, and history management.
 
 import csv
 import json
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any, Optional
-import numpy as np
 import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class DataLogger:
     - File management
     """
 
-    def __init__(self, log_dir: Optional[Path] = None):
+    def __init__(self, log_dir: Path | None = None):
         """
         Initialize data logger.
 
@@ -47,9 +48,9 @@ class DataLogger:
 
     def save_simulation_data(
         self,
-        history: Dict[str, np.ndarray],
-        metadata: Optional[Dict[str, Any]] = None,
-        filename: Optional[str] = None,
+        history: dict[str, np.ndarray],
+        metadata: dict[str, Any] | None = None,
+        filename: str | None = None,
         use_custom_path: bool = False,
     ) -> Path:
         """
@@ -104,7 +105,7 @@ class DataLogger:
 
         return csv_file
 
-    def _save_csv(self, history: Dict[str, np.ndarray], filepath: Path) -> None:
+    def _save_csv(self, history: dict[str, np.ndarray], filepath: Path) -> None:
         """
         Save history to CSV file.
 
@@ -163,7 +164,7 @@ class DataLogger:
                 row = [history[key][i] for key in available_keys]
                 writer.writerow(row)
 
-    def _save_json(self, data: Dict[str, Any], filepath: Path) -> None:
+    def _save_json(self, data: dict[str, Any], filepath: Path) -> None:
         """
         Save metadata to JSON file.
 
@@ -175,7 +176,7 @@ class DataLogger:
         with open(filepath, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
-    def load_simulation_data(self, filepath: Path) -> Dict[str, np.ndarray]:
+    def load_simulation_data(self, filepath: Path) -> dict[str, np.ndarray]:
         """
         Load simulation data from CSV.
 
@@ -184,27 +185,28 @@ class DataLogger:
         :return: History dictionary with numpy arrays
         :rtype: dict
         """
-        history = {}
+        raw_history: dict[str, list[float]] = {}
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             reader = csv.reader(f)
             headers = next(reader)
 
             # Initialize lists
             for header in headers:
-                history[header] = []
+                raw_history[header] = []
 
             # Read data
             for row in reader:
                 for header, value in zip(headers, row):
                     try:
-                        history[header].append(float(value))
+                        raw_history[header].append(float(value))
                     except ValueError:
-                        history[header].append(0.0)
+                        raw_history[header].append(0.0)
 
         # Convert to numpy arrays
-        for key in history:
-            history[key] = np.array(history[key], dtype=np.float64)
+        history: dict[str, np.ndarray] = {
+            key: np.array(values, dtype=np.float64) for key, values in raw_history.items()
+        }
 
         logger.info(f"Loaded simulation data from {filepath}")
 

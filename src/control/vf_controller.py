@@ -22,6 +22,7 @@ Commonly used for:
 """
 
 import numpy as np
+
 from .base_controller import BaseController
 
 
@@ -198,9 +199,7 @@ class VFController(BaseController):
     def _update_open_loop_frequency(self, dt: float) -> None:
         """Advance frequency reference toward its target with slew limiting."""
         delta_f_max = self.frequency_slew_rate * dt
-        delta_f = np.clip(
-            self.frequency_ref - self.frequency_actual, -delta_f_max, delta_f_max
-        )
+        delta_f = np.clip(self.frequency_ref - self.frequency_actual, -delta_f_max, delta_f_max)
         self.frequency_actual += delta_f
 
     def set_speed_reference(self, frequency: float) -> None:
@@ -283,9 +282,7 @@ class VFController(BaseController):
 
         return voltage, self.angle
 
-    def set_vf_characteristic(
-        self, v_startup: float, v_nominal: float, f_nominal: float
-    ) -> None:
+    def set_vf_characteristic(self, v_startup: float, v_nominal: float, f_nominal: float) -> None:
         """
         Configure V/f characteristic.
 

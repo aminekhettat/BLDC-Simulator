@@ -1,6 +1,178 @@
 Advanced Topics
 ================
 
+.. contents:: Table of Contents
+   :local:
+   :depth: 2
+
+Multi-Rate Control Loop Execution
+----------------------------------
+
+Real-world single-shunt FOC implementations on microcontrollers (e.g. STM32,
+TMS320, dsPIC) use two distinct interrupt rates:
+
+.. list-table:: Real MCU execution rates (Fpwm = 20 kHz)
+   :header-rows: 1
+   :widths: 40 20 20 20
+
+   * - Task
+     - Trigger
+     - Period
+     - Frequency
+   * - Current reconstruction (single-shunt)
+     - PWM interrupt
+     - 50 µs
+     - 20 kHz
+   * - Clarke / Park transform
+     - PWM interrupt
+     - 50 µs
+     - 20 kHz
+   * - Rotor angle observer (SMO / PLL)
+     - PWM interrupt
+     - 50 µs
+     - 20 kHz
+   * - d/q current PI regulators
+     - PWM interrupt
+     - 50 µs
+     - 20 kHz
+   * - Speed PI regulator
+     - Slow-loop flag (every N periods)
+     - ~10 ms
+     - ~100 Hz
+
+Running the speed PI at the same rate as the current PI would make its
+integrator gains unrealistically large and its transient response unrealistically
+fast.  The simulator replicates this two-rate structure with the
+``speed_loop_divider`` parameter on ``FOCController``.
+
+**Configuration**::
+
+    ctrl = FOCController(motor, enable_speed_loop=True)
+    # Fpwm = 20 kHz  →  dt = 50 µs  →  divider = round(10 ms / 50 µs) = 200
+    ctrl.set_speed_loop_divider(200)
+
+The ``FOCController`` then:
+
+* Runs Clarke/Park + observer + d/q current PI **every** ``update()`` call.
+* Increments an internal counter and runs the speed PI only every
+  ``speed_loop_divider`` calls, passing an effective ``dt_speed = N × dt``
+  to the integrator.
+* Holds the last Iq reference as a zero-order hold (ZOH) between speed-PI
+  firings, matching the real interrupt-driven behaviour.
+
+**Automatic setting in FW calibrator**
+
+``FieldWeakeningCalibrator`` sets the divider automatically::
+
+    _speed_divider = max(1, min(500, round(10e-3 / dt)))
+    ctrl.set_speed_loop_divider(_speed_divider)
+
+This keeps the speed-PI effective period at ≈ 10 ms regardless of the
+simulation time-step chosen by the user.
+
+**Backward compatibility**
+
+``speed_loop_divider = 1`` (the default) restores the original behaviour where
+both loops run at the same rate.  This is useful for unit-test comparisons
+against pre-existing baselines.
+
+Field-Weakening Root Cause Analysis and Fixes
+----------------------------------------------
+
+Prior to the March 2026 patch, all motor profiles were stuck at approximately
+2720 RPM even though their rated speeds are 4000–5000 RPM.  Four root-cause
+bugs were identified and resolved.
+
+Bug 1 — FW headroom computed from unsaturated PI voltage (Critical)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Location:** ``FOCController.update()`` and
+``_update_field_weakening_from_voltage()``
+
+**Root cause:** The FW headroom ``h = V_lim − |v_unsat|`` was computed
+*before* the d_priority saturation block clipped the PI outputs.  During
+acceleration, the current PI output can reach 50–200 V; the formula then
+gives ``h = 27.71 − 200 = −172 V``, a permanently negative headroom that
+drives the FW integrator to its maximum at every step.
+
+**Fix:** Saturation is applied *first*, then the saturated voltages
+``(v_d_sat, v_q_sat)`` are passed to ``_update_field_weakening_from_voltage()``.
+By construction ``|v_sat| ≤ V_lim``, so ``h ≥ 0`` at steady state.
+
+*Reference: Kim & Sul, IEEE Trans. Ind. Appl. 33(2), 1997.*
+
+Bug 2 — Decoupling feedforward using measured currents (High)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Location:** ``FOCController.update()`` — feedforward block
+
+**Root cause:** The cross-coupling terms were ``v_d_ff = −ωe·Lq·Iq_measured``.
+During braking transients, measured Iq can spike to −400 A, pushing
+``v_d_ff`` to +28 V, which exceeds ``V_lim = 27.71 V``.  With d_priority
+saturation, ``v_d = +27.71 V`` and ``v_q_sat = 0 V`` (zero torque), causing
+the motor to decelerate freely through 0 RPM and reverse.
+
+**Fix:** Feedforward uses **reference** currents ``id_ref_command`` /
+``iq_ref_command``, which are always bounded by ``iq_limit_a`` and
+``fw_id_max``.
+
+*Reference: Holtz, IEEE Proc. 90(8), 2002; Briz et al., IEEE TIE 47(4), 2000.*
+
+Bug 3 — Speed loop anti-windup gain kaw = 0.05 (Medium)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Location:** ``FieldWeakeningCalibrator._run_fw_simulation()``
+
+**Root cause:** With ``kaw = 0.05`` the back-calculation drain rate was
+≈ 86 A/s.  An integral accumulated to 2000 A during acceleration took
+≈ 23 s to drain — longer than the 10 s simulation window.
+
+**Fix:** ``kaw = 1.0`` → drain rate ≈ 2000 A/s → clears in ≈ 1 s.
+
+*Reference: Åström & Hägglund, PID Controllers, ISA Press, 1995.*
+
+Bug 4 — Step speed reference causing severe overshoot (Medium)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Location:** ``FieldWeakeningCalibrator._run_fw_simulation()``
+
+**Root cause:** Speed reference was set to the full target RPM at t = 0.
+The motor overshot rated speed by ≥ 30 %, triggering the reversal mechanism
+of Bug 2.
+
+**Fix:** Linear ramp from 0 to ``target_rpm`` over
+``t_ramp = clip(0.4 × T_sim, 2 s, 6 s)``, keeping the speed error small
+throughout acceleration.
+
+*Reference: Morimoto et al., IEEE Trans. Ind. Appl. 30(4), 1994.*
+
+**Post-fix results**
+
+.. list-table:: Calibration results after all four fixes
+   :header-rows: 1
+   :widths: 30 20 20 30
+
+   * - Motor
+     - Rated RPM
+     - Achieved RPM
+     - Status
+   * - MotEnergy ME1718 48 V
+     - 4000
+     - 4034
+     - 3 / 4 PASS ✓
+   * - MotEnergy ME1719 48 V
+     - 4000
+     - 3998
+     - 3 / 4 PASS ✓
+   * - Innotec 255-EZS48-160
+     - 3000
+     - 3000
+     - 3 / 4 PASS ✓
+
+The 60 % rated-load failure at rated FW speed is physically expected:
+above base speed the motor operates in constant-power mode and maximum
+available torque is limited by ``fw_id_max`` and the current circle.
+
 Field-Oriented Control (FOC) Implementation
 --------------------------------------------
 
@@ -380,6 +552,40 @@ Performance Tuning
 - `dt`: Time step (default 0.0001 s) - smaller = more accuracy but slower
 - `update_freq`: GUI update frequency (default 100 Hz)
 - `max_iterations`: Stop after N steps
+
+**RK4 Stability Advisory (dt/PWM only)**
+
+The simulator now computes and displays an RK4 stability advisory in the quick-info
+panel and status bar. This advisory is based on the linear stability region of
+explicit RK4 and recommends only simulation-setting actions:
+
+- Decrease ``dt``
+- Increase PWM/switching frequency (``f_pwm = 1/dt``)
+
+Motor physical parameters are treated as fixed real-world constants for this guidance.
+
+**Criteria used**
+
+- RK4 linear stability bound: ``|lambda * dt| <= 2.785``
+- Electrical mode: ``lambda_e = R/L``  ->  ``dt_max_e = 2.785 * (L/R)``
+- Mechanical mode: ``lambda_m = b/J`` ->  ``dt_max_m = 2.785 * (J/b)``
+- Effective limit: ``dt_max = min(dt_max_e, dt_max_m)``
+- Recommended conservative target: ``dt_recommended = dt_max / 5``
+- Recommended minimum PWM: ``f_pwm_recommended >= 1 / dt_recommended``
+
+**Severity levels**
+
+- ``unstable``: ``dt > dt_max``
+- ``marginal``: ``0.5 * dt_max < dt <= dt_max``
+- ``stable``: ``dt <= 0.5 * dt_max``
+- ``unknown``: missing positive ``R/L`` or ``J/b`` pair
+
+The GUI color coding is:
+
+- ``stable`` -> green
+- ``marginal`` -> orange
+- ``unstable`` -> red
+- ``unknown`` -> neutral gray
 
 **Control Tuning**
 - **Kp (Proportional gain)**: Affects response speed and overshoot

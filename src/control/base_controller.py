@@ -38,14 +38,12 @@ class BaseController(ABC):
         :type dt: float
         :return: Control output (controller-specific)
         """
-        pass
 
     @abstractmethod
     def reset(self) -> None:
         """
         Reset controller to initial state.
         """
-        pass
 
     @abstractmethod
     def get_state(self) -> dict:
@@ -55,4 +53,3 @@ class BaseController(ABC):
         :return: Dictionary with controller state
         :rtype: dict
         """
-        pass

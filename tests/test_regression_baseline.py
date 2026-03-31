@@ -1,9 +1,10 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - reference regression baseline
 """
-from pathlib import Path
+
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -14,7 +15,6 @@ from src.utils.regression_baseline import (
     load_baseline,
     run_reference_suite,
 )
-
 
 BASELINE_FILE = Path(__file__).parent / "baselines" / "reference_baseline.json"
 
@@ -37,9 +37,3 @@ def test_reference_regression_baseline():
         rows = build_drift_report(current=current, baseline_payload=baseline)
         report = format_drift_report(rows, failed_only=True)
         assert False, "\n".join(failures) + "\n\n" + report
-
-
-
-
-
-

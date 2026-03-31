@@ -40,8 +40,8 @@ def _print_report(title: str, baseline_path: Path, current: dict) -> None:
 
 def main() -> None:
     from src.utils.regression_baseline import (
-        run_foc_startup_transition_diagnostics,
         run_foc_reference_suite,
+        run_foc_startup_transition_diagnostics,
         run_reference_suite,
     )
 

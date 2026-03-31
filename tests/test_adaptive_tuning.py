@@ -1,9 +1,10 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - margin estimators return finite values
 - state space checks are true for nominal model
 - tune returns finite positive gains
 """
+
 from __future__ import annotations
 
 import os
@@ -42,13 +43,9 @@ def test_margin_estimators_return_finite_values() -> None:
     current_margin = current["margin"]
     speed_margin = speed["margin"]
     assert np.isfinite(current_margin.phase_margin_deg)
-    assert current_margin.gain_crossover_hz is None or np.isfinite(
-        current_margin.gain_crossover_hz
-    )
+    assert current_margin.gain_crossover_hz is None or np.isfinite(current_margin.gain_crossover_hz)
     assert np.isfinite(speed_margin.phase_margin_deg)
-    assert speed_margin.gain_crossover_hz is None or np.isfinite(
-        speed_margin.gain_crossover_hz
-    )
+    assert speed_margin.gain_crossover_hz is None or np.isfinite(speed_margin.gain_crossover_hz)
 
 
 def test_state_space_checks_are_true_for_nominal_model() -> None:
@@ -71,9 +68,3 @@ def test_tune_returns_finite_positive_gains() -> None:
     assert result.speed_ki > 0.0
     assert np.isfinite(result.current_margin.phase_margin_deg)
     assert np.isfinite(result.speed_margin.phase_margin_deg)
-
-
-
-
-
-

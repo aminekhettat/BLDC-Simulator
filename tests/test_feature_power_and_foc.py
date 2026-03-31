@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - supply profile basic
 - power metrics unity pf for in phase waveforms
@@ -57,12 +57,13 @@ Atomic features tested in this module:
 - gui monitoring updates advanced foc status blocks
 """
 
+import sys
+
 import numpy as np
 import pytest
-import sys
 from PyQt6.QtWidgets import QApplication
 
-from src.control import FOCController, VFController, SVMGenerator, CartesianSVMGenerator
+from src.control import CartesianSVMGenerator, FOCController, SVMGenerator, VFController
 from src.core.load_model import ConstantLoad
 from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.power_model import (
@@ -159,9 +160,7 @@ def test_efficiency_recommendations_flag_loss_and_pf_issues():
 def test_engine_pfc_telemetry_hook_updates_metrics():
     motor = BLDCMotor(MotorParameters())
     load = ConstantLoad(0.1)
-    engine = SimulationEngine(
-        motor, load, dt=0.0005, supply_profile=ConstantSupply(48.0)
-    )
+    engine = SimulationEngine(motor, load, dt=0.0005, supply_profile=ConstantSupply(48.0))
     engine.configure_power_factor_control(enabled=True, target_pf=0.97, kp=0.1, ki=0.2)
 
     for _ in range(80):
@@ -181,9 +180,7 @@ def test_engine_pfc_telemetry_hook_updates_metrics():
 def test_engine_efficiency_telemetry_updates_metrics():
     motor = BLDCMotor(MotorParameters())
     load = ConstantLoad(0.05)
-    engine = SimulationEngine(
-        motor, load, dt=0.0005, supply_profile=ConstantSupply(48.0)
-    )
+    engine = SimulationEngine(motor, load, dt=0.0005, supply_profile=ConstantSupply(48.0))
 
     for _ in range(80):
         engine.step(np.array([5.0, -2.5, -2.5]), log_data=True)
@@ -397,12 +394,18 @@ def test_foc_decoupling_feedforward_changes_dq_voltage_commands():
     motor.state[3] = 120.0
     motor.state[4] = 0.7
 
+    # In non-speed-loop mode, iq_ref_command is derived from speed_ref
+    # (not from set_current_references).  Both controllers use the same
+    # speed_ref so they share an identical iq_ref_command; only ctrl_ff adds
+    # the decoupling feedforward on top.
     ctrl_no_ff = FOCController(motor=motor)
     ctrl_no_ff.set_current_references(id_ref=0.2, iq_ref=0.3)
+    ctrl_no_ff.set_speed_reference(10.0)
     _ = ctrl_no_ff.update(0.001)
 
     ctrl_ff = FOCController(motor=motor)
     ctrl_ff.set_current_references(id_ref=0.2, iq_ref=0.3)
+    ctrl_ff.set_speed_reference(10.0)
     ctrl_ff.set_decoupling(enable_d=True, enable_q=True)
     _ = ctrl_ff.update(0.001)
 
@@ -727,9 +730,7 @@ def test_foc_standard_startup_sequence_handoffs_from_open_loop_to_closed_loop():
 
 
 def test_vf_standard_startup_sequence_aligns_then_ramps_then_runs():
-    controller = VFController(
-        v_nominal=48.0, f_nominal=100.0, dc_voltage=48.0, v_startup=1.0
-    )
+    controller = VFController(v_nominal=48.0, f_nominal=100.0, dc_voltage=48.0, v_startup=1.0)
     controller.set_speed_reference(20.0)
     controller.set_startup_sequence(
         enable=True,
@@ -908,9 +909,7 @@ def test_svm_phase_asymmetry_changes_phase_voltage_distribution():
 def test_engine_records_inverter_telemetry_in_history_and_info():
     motor = BLDCMotor(MotorParameters())
     load = ConstantLoad(0.05)
-    engine = SimulationEngine(
-        motor, load, dt=0.001, supply_profile=ConstantSupply(48.0)
-    )
+    engine = SimulationEngine(motor, load, dt=0.001, supply_profile=ConstantSupply(48.0))
     svm = SVMGenerator(dc_voltage=48.0)
     svm.set_sample_time(engine.dt)
     svm.set_nonidealities(
@@ -943,8 +942,8 @@ def test_engine_records_inverter_telemetry_in_history_and_info():
 
 def test_gui_supply_profile():
     # verify that the GUI applies correct supply profile settings
+    from src.core.power_model import ConstantSupply, RampSupply
     from src.ui.main_window import BLDCMotorControlGUI
-    from src.core.power_model import RampSupply, ConstantSupply
 
     gui = BLDCMotorControlGUI()
     gui.supply_type.setCurrentText("Ramp")
@@ -1245,9 +1244,7 @@ def test_gui_monitoring_updates_pfc_status_blocks():
     assert gui.status_blocks["pfc_target_pf"].current_value == pytest.approx(0.97)
     assert gui.status_blocks["pfc_power_factor"].current_value == pytest.approx(0.91)
     assert gui.status_blocks["pfc_active_power_w"].current_value == pytest.approx(320.0)
-    assert gui.status_blocks["pfc_reactive_power_var"].current_value == pytest.approx(
-        145.0
-    )
+    assert gui.status_blocks["pfc_reactive_power_var"].current_value == pytest.approx(145.0)
     assert gui.status_blocks["pfc_command_var"].current_value == pytest.approx(120.0)
 
 
@@ -1270,9 +1267,7 @@ def test_gui_monitoring_updates_efficiency_status_blocks():
     )
 
     assert gui.status_blocks["efficiency"].current_value == pytest.approx(0.88)
-    assert gui.status_blocks[
-        "mechanical_output_power_w"
-    ].current_value == pytest.approx(280.0)
+    assert gui.status_blocks["mechanical_output_power_w"].current_value == pytest.approx(280.0)
     assert gui.status_blocks["total_loss_power_w"].current_value == pytest.approx(38.0)
 
 
@@ -1299,16 +1294,10 @@ def test_gui_monitoring_updates_hardware_status_blocks():
 
     assert gui.status_blocks["hardware_enabled"].current_value == pytest.approx(1.0)
     assert gui.status_blocks["hardware_connected"].current_value == pytest.approx(1.0)
-    assert gui.status_blocks["hardware_backend_code"].current_value == pytest.approx(
-        1.0
-    )
-    assert gui.status_blocks["hardware_write_count"].current_value == pytest.approx(
-        14.0
-    )
+    assert gui.status_blocks["hardware_backend_code"].current_value == pytest.approx(1.0)
+    assert gui.status_blocks["hardware_write_count"].current_value == pytest.approx(14.0)
     assert gui.status_blocks["hardware_read_count"].current_value == pytest.approx(14.0)
-    assert gui.status_blocks["hardware_io_error_flag"].current_value == pytest.approx(
-        0.0
-    )
+    assert gui.status_blocks["hardware_io_error_flag"].current_value == pytest.approx(0.0)
 
 
 def test_gui_monitoring_updates_advanced_foc_status_blocks():
@@ -1350,21 +1339,13 @@ def test_gui_monitoring_updates_advanced_foc_status_blocks():
     )
 
     ctrl_state = gui.controller.get_state()
-    assert gui.status_blocks["id_ref"].current_value == pytest.approx(
-        ctrl_state["id_ref_command"]
-    )
-    assert gui.status_blocks["iq_ref"].current_value == pytest.approx(
-        ctrl_state["iq_ref_command"]
-    )
+    assert gui.status_blocks["id_ref"].current_value == pytest.approx(ctrl_state["id_ref_command"])
+    assert gui.status_blocks["iq_ref"].current_value == pytest.approx(ctrl_state["iq_ref_command"])
     assert gui.status_blocks["speed_error"].current_value == pytest.approx(
         ctrl_state["speed_error"]
     )
-    assert gui.status_blocks["v_d_ff"].current_value == pytest.approx(
-        ctrl_state["v_d_ff"]
-    )
-    assert gui.status_blocks["v_q_ff"].current_value == pytest.approx(
-        ctrl_state["v_q_ff"]
-    )
+    assert gui.status_blocks["v_d_ff"].current_value == pytest.approx(ctrl_state["v_d_ff"])
+    assert gui.status_blocks["v_q_ff"].current_value == pytest.approx(ctrl_state["v_q_ff"])
     assert gui.status_blocks["speed_loop_enabled"].current_value == pytest.approx(1.0)
     assert gui.status_blocks["decouple_d_enabled"].current_value == pytest.approx(1.0)
     assert gui.status_blocks["decouple_q_enabled"].current_value == pytest.approx(1.0)
@@ -1390,43 +1371,37 @@ def test_gui_monitoring_updates_advanced_foc_status_blocks():
     assert gui.status_blocks["observer_confidence_emf"].current_value == pytest.approx(
         ctrl_state["observer_confidence_emf"]
     )
-    assert gui.status_blocks[
-        "observer_confidence_speed"
-    ].current_value == pytest.approx(ctrl_state["observer_confidence_speed"])
-    assert gui.status_blocks[
-        "observer_confidence_coherence"
-    ].current_value == pytest.approx(ctrl_state["observer_confidence_coherence"])
+    assert gui.status_blocks["observer_confidence_speed"].current_value == pytest.approx(
+        ctrl_state["observer_confidence_speed"]
+    )
+    assert gui.status_blocks["observer_confidence_coherence"].current_value == pytest.approx(
+        ctrl_state["observer_confidence_coherence"]
+    )
     assert gui.status_blocks["observer_confidence_ema"].current_value == pytest.approx(
         ctrl_state["observer_confidence_ema"]
     )
-    assert gui.status_blocks[
-        "observer_confidence_trend"
-    ].current_value == pytest.approx(ctrl_state["observer_confidence_trend"])
+    assert gui.status_blocks["observer_confidence_trend"].current_value == pytest.approx(
+        ctrl_state["observer_confidence_trend"]
+    )
     assert gui.status_blocks[
         "observer_confidence_above_threshold_time_s"
-    ].current_value == pytest.approx(
-        ctrl_state["observer_confidence_above_threshold_time_s"]
-    )
+    ].current_value == pytest.approx(ctrl_state["observer_confidence_above_threshold_time_s"])
     assert gui.status_blocks[
         "observer_confidence_below_threshold_time_s"
-    ].current_value == pytest.approx(
-        ctrl_state["observer_confidence_below_threshold_time_s"]
-    )
-    assert gui.status_blocks["startup_sequence_enabled"].current_value == pytest.approx(
-        0.0
-    )
+    ].current_value == pytest.approx(ctrl_state["observer_confidence_below_threshold_time_s"])
+    assert gui.status_blocks["startup_sequence_enabled"].current_value == pytest.approx(0.0)
     assert gui.status_blocks["startup_phase_code"].current_value == pytest.approx(
         ctrl_state["startup_phase_code"]
     )
-    assert gui.status_blocks[
-        "startup_sequence_elapsed_s"
-    ].current_value == pytest.approx(ctrl_state["startup_sequence_elapsed_s"])
+    assert gui.status_blocks["startup_sequence_elapsed_s"].current_value == pytest.approx(
+        ctrl_state["startup_sequence_elapsed_s"]
+    )
     assert gui.status_blocks["startup_phase_elapsed_s"].current_value == pytest.approx(
         ctrl_state["startup_phase_elapsed_s"]
     )
     assert gui.status_blocks["startup_handoff_quality"].current_value == pytest.approx(
         ctrl_state["startup_handoff_quality"]
     )
-    assert gui.status_blocks[
-        "startup_handoff_stability_ratio"
-    ].current_value == pytest.approx(ctrl_state["startup_handoff_stability_ratio"])
+    assert gui.status_blocks["startup_handoff_stability_ratio"].current_value == pytest.approx(
+        ctrl_state["startup_handoff_stability_ratio"]
+    )

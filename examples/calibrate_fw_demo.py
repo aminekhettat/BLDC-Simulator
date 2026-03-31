@@ -4,8 +4,6 @@ Shows rated speed + rated torque achievable with field weakening
 Uses known-good seed points for fast convergence.
 """
 
-# ruff: noqa: E402
-
 import json
 import sys
 from pathlib import Path

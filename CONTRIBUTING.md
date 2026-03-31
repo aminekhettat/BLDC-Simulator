@@ -32,12 +32,34 @@ The following must pass:
 
 1. Regression Gates / regression
 2. Baseline integrity tests
+3. Code Quality Gates / quality
+
+## Mandatory Rules Before Commit
+
+The pre-commit hook (`.githooks/pre-commit`) enforces all of the following:
+
+1. Update all needed documentation when code/config changes are staged.
+2. Regenerate Sphinx HTML docs (`python -m sphinx -b html docs docs/_build/html`).
+3. Ensure quality gates are green (`ruff`, `mypy`, `bandit`).
+4. Ensure tests pass with 100% source coverage (`pytest --cov=src --cov-fail-under=100`).
+5. Ensure local CI-equivalent checks pass (`pip-audit -r requirements.txt` plus quality/test/docs gates).
+
+Note: no local process can absolutely guarantee remote CI will never fail, but this policy mirrors CI commands to minimize post-push failures.
 
 Recommended local command:
 
 ```bash
 pytest tests/test_baseline_integrity.py tests/test_regression_baseline.py tests/test_regression_baseline_foc.py tests/test_regression_reporting.py -v
 ```
+
+Recommended quality command:
+
+```bash
+pip install -r requirements-dev.txt
+python -m pre_commit run --all-files
+```
+
+Note: this repository uses `.githooks/pre-commit` via `core.hooksPath`, so `pre-commit install` is not required.
 
 ## Regenerating Baselines
 
@@ -61,8 +83,13 @@ Use and complete:
 
 - .github/PULL_REQUEST_TEMPLATE.md
 
+## Security Reporting
+
+- SECURITY.md
+
 ## Release Notes Checklist
 
 Use this template when preparing release notes:
 
 - RELEASE_NOTES_TEMPLATE.md
+- .github/RELEASE_CHECKLIST.md

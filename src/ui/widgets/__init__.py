@@ -8,23 +8,23 @@ This package contains accessible PyQt6 widgets for screen reader support.
 """
 
 from .accessible_widgets import (
-    AccessibleDoubleSpinBox,
-    AccessibleSpinBox,
-    AccessibleComboBox,
     AccessibleButton,
+    AccessibleComboBox,
+    AccessibleDoubleSpinBox,
     AccessibleGroupBox,
+    AccessibleSpinBox,
     AccessibleTabWidget,
-    LabeledSpinBox,
     LabeledComboBox,
+    LabeledSpinBox,
 )
 
 __all__ = [
-    "AccessibleDoubleSpinBox",
-    "AccessibleSpinBox",
-    "AccessibleComboBox",
     "AccessibleButton",
+    "AccessibleComboBox",
+    "AccessibleDoubleSpinBox",
     "AccessibleGroupBox",
+    "AccessibleSpinBox",
     "AccessibleTabWidget",
-    "LabeledSpinBox",
     "LabeledComboBox",
+    "LabeledSpinBox",
 ]

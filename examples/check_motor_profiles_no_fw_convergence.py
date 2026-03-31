@@ -15,11 +15,11 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.control import AdaptiveFOCTuner, FOCController, SVMGenerator  # noqa: E402
-from src.core.load_model import ConstantLoad  # noqa: E402
-from src.core.motor_model import BLDCMotor, MotorParameters  # noqa: E402
-from src.core.simulation_engine import SimulationEngine  # noqa: E402
-from src.utils.motor_profiles import load_motor_profile  # noqa: E402
+from src.control import AdaptiveFOCTuner, FOCController, SVMGenerator
+from src.core.load_model import ConstantLoad
+from src.core.motor_model import BLDCMotor, MotorParameters
+from src.core.simulation_engine import SimulationEngine
+from src.utils.motor_profiles import load_motor_profile
 
 
 def _to_motor_params(m: dict) -> MotorParameters:
@@ -48,9 +48,7 @@ def run_case(profile_path: Path, sim_time_s: float = 2.5) -> dict:
     if rated_speed <= 0.0:
         raise ValueError(f"Missing rated_speed_rpm in {profile_path.name}")
 
-    rated_current = float(
-        rated.get("rated_current_a", rated.get("rated_current_a_rms", 20.0))
-    )
+    rated_current = float(rated.get("rated_current_a", rated.get("rated_current_a_rms", 20.0)))
 
     params = _to_motor_params(profile["motor_params"])
     dt = 1.0 / 20000.0

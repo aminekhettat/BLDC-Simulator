@@ -21,8 +21,9 @@ The mechanical model includes:
     Initial implementation of BLDC motor model
 """
 
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
 
 try:
     from numba import njit
@@ -139,9 +140,19 @@ class BLDCMotor:
         if parameters.phase_inductance <= 0:
             raise ValueError("Phase inductance must be positive")
         if parameters.model_type == "dq":
-            if parameters.ld <= 0:
+            ld_eff = (
+                float(parameters.ld)
+                if parameters.ld is not None
+                else float(parameters.phase_inductance)
+            )
+            lq_eff = (
+                float(parameters.lq)
+                if parameters.lq is not None
+                else float(parameters.phase_inductance)
+            )
+            if ld_eff <= 0:
                 raise ValueError("d-axis inductance (Ld) must be positive for dq model")
-            if parameters.lq <= 0:
+            if lq_eff <= 0:
                 raise ValueError("q-axis inductance (Lq) must be positive for dq model")
 
         self.params = parameters
@@ -173,7 +184,7 @@ class BLDCMotor:
         :return: Angular velocity
         :rtype: float
         """
-        return self.state[3]
+        return float(self.state[3])
 
     @property
     def theta(self) -> float:
@@ -183,7 +194,7 @@ class BLDCMotor:
         :return: Angular position (wrapped to [0, 2*pi])
         :rtype: float
         """
-        return self.state[4] % (2 * np.pi)
+        return float(self.state[4] % (2 * np.pi))
 
     @property
     def speed_rpm(self) -> float:
@@ -224,18 +235,13 @@ class BLDCMotor:
         theta_norm = theta_elec % (2 * np.pi)
         pi_6 = np.pi / 6.0
 
-        if theta_norm < pi_6:
+        if theta_norm < pi_6 or theta_norm < np.pi - pi_6:
             return 1.0
-        elif theta_norm < np.pi - pi_6:
-            return 1.0
-        elif theta_norm < np.pi:
+        if theta_norm < np.pi:
             return (np.pi - theta_norm) / pi_6
-        elif theta_norm < np.pi + pi_6:
+        if theta_norm < np.pi + pi_6 or theta_norm < 2 * np.pi - pi_6:
             return -1.0
-        elif theta_norm < 2 * np.pi - pi_6:
-            return -1.0
-        else:
-            return (theta_norm - 2 * np.pi) / pi_6
+        return (theta_norm - 2 * np.pi) / pi_6
 
     @staticmethod
     @njit
@@ -243,7 +249,7 @@ class BLDCMotor:
         """
         Fast sinusoidal back-EMF lookup (numba-compiled).
         """
-        return np.sin(theta_elec)
+        return float(np.sin(theta_elec))
 
     def _calculate_back_emf_sinusoidal(self, theta: float) -> np.ndarray:
         theta_elec = self.params.poles_pairs * theta
@@ -273,17 +279,17 @@ class BLDCMotor:
         """
         if self.params.emf_shape == "sinusoidal":
             return self._calculate_back_emf_sinusoidal(theta)
-        else:  # Default to trapezoidal
-            # Convert to electrical angle
-            theta_elec = self.params.poles_pairs * theta
+        # Default to trapezoidal
+        # Convert to electrical angle
+        theta_elec = self.params.poles_pairs * theta
 
-            # Trapezoidal EMF model (three 120° shifts)
-            k_emf = self.params.back_emf_constant * self.state[3]  # K * omega
+        # Trapezoidal EMF model (three 120° shifts)
+        k_emf = self.params.back_emf_constant * self.state[3]  # K * omega
 
-            emf_a = k_emf * self._trapezoidal_fast(theta_elec)
-            emf_b = k_emf * self._trapezoidal_fast(theta_elec - 2 * np.pi / 3)
-            emf_c = k_emf * self._trapezoidal_fast(theta_elec - 4 * np.pi / 3)
-            return np.array([emf_a, emf_b, emf_c], dtype=np.float64)
+        emf_a = k_emf * self._trapezoidal_fast(theta_elec)
+        emf_b = k_emf * self._trapezoidal_fast(theta_elec - 2 * np.pi / 3)
+        emf_c = k_emf * self._trapezoidal_fast(theta_elec - 4 * np.pi / 3)
+        return np.array([emf_a, emf_b, emf_c], dtype=np.float64)
 
     @staticmethod
     def _trapezoidal(angle: float) -> float:
@@ -305,12 +311,12 @@ class BLDCMotor:
 
         if angle < 2 * np.pi / 3:  # 0 to 120°
             return 1.0
-        elif angle < np.pi:  # 120° to 180°
+        if angle < np.pi:  # 120° to 180°
             return (np.pi - angle) / (np.pi / 3) - 1.0
-        elif angle < 5 * np.pi / 3:  # 180° to 300°
+        if angle < 5 * np.pi / 3:  # 180° to 300°
             return -1.0
-        else:  # 300° to 360°
-            return (angle - 5 * np.pi / 3) / (np.pi / 3) - 1.0
+        # 300° to 360°
+        return (angle - 5 * np.pi / 3) / (np.pi / 3) - 1.0
 
     @staticmethod
     @njit
@@ -337,11 +343,9 @@ class BLDCMotor:
         # Simplified: torque proportional to active phase current
         # For trapezoidal BLDC, active phase = max current in conducting phases
         i_active = np.max(np.abs(currents))
-        return self.params.torque_constant * i_active
+        return float(self.params.torque_constant * i_active)
 
-    def _calculate_electromagnetic_torque_dq(
-        self, currents: np.ndarray, theta: float
-    ) -> float:
+    def _calculate_electromagnetic_torque_dq(self, currents: np.ndarray, theta: float) -> float:
         """
         Calculate electromagnetic torque from d-q currents.
         Torque = 3/2 * P * ( (Ld-Lq)*id*iq + iq*lambda_pm )
@@ -367,12 +371,18 @@ class BLDCMotor:
         lambda_pm = self.params.torque_constant / (1.5 * P)
         flux_ratio = self._flux_weakening_ratio(i_d)
         lambda_pm_eff = lambda_pm * flux_ratio
-
-        torque = (
-            1.5
-            * P
-            * ((self.params.ld - self.params.lq) * i_d * i_q + i_q * lambda_pm_eff)
+        ld_eff = (
+            float(self.params.ld)
+            if self.params.ld is not None
+            else float(self.params.phase_inductance)
         )
+        lq_eff = (
+            float(self.params.lq)
+            if self.params.lq is not None
+            else float(self.params.phase_inductance)
+        )
+
+        torque = 1.5 * P * ((ld_eff - lq_eff) * i_d * i_q + i_q * lambda_pm_eff)
         return torque
 
     def _flux_weakening_ratio(self, i_d: float) -> float:
@@ -384,8 +394,8 @@ class BLDCMotor:
     def _calculate_torque(self, currents: np.ndarray, theta: float) -> float:
         if self.params.model_type == "dq":
             return self._calculate_electromagnetic_torque_dq(currents, theta)
-        else:  # scalar
-            return self._calculate_electromagnetic_torque(currents)
+        # scalar
+        return self._calculate_electromagnetic_torque(currents)
 
     def _state_derivatives(self, state: np.ndarray, voltages: np.ndarray) -> np.ndarray:
         """
@@ -433,9 +443,9 @@ class BLDCMotor:
         if self.params.model_type == "dq":
             from src.control.transforms import (
                 clarke_transform,
-                park_transform,
-                inverse_park,
                 inverse_clarke,
+                inverse_park,
+                park_transform,
             )
 
             # d-q model requires transforming voltages and currents
@@ -453,15 +463,11 @@ class BLDCMotor:
             # d-q voltage equations
             # back_emf_constant is Ke [V·s/mech.rad]; flux linkage λ_pm = Ke/P.
             # BEMF term in q-axis: ωe × λ_pm = ωe × Ke/P = ωmech × Ke = omega × Ke.
-            lambda_pm = self.params.back_emf_constant / max(
-                float(self.params.poles_pairs), 1.0
-            )
+            lambda_pm = self.params.back_emf_constant / max(float(self.params.poles_pairs), 1.0)
             flux_ratio = self._flux_weakening_ratio(i_d)
             lambda_pm_eff = lambda_pm * flux_ratio
             di_d_dt = (
-                v_d
-                - self.params.phase_resistance * i_d
-                + omega_elec * self.params.lq * i_q
+                v_d - self.params.phase_resistance * i_d + omega_elec * self.params.lq * i_q
             ) / self.params.ld
             di_q_dt = (
                 v_q
@@ -477,9 +483,7 @@ class BLDCMotor:
             #   d(iβ)/dt = iPark(diᵈ/dt, diᵍ/dt, θe)[β] + ωe · iα
             # Without this term the ABC state "freezes" while Park transform rotates,
             # producing a spurious limit cycle at the electrical frequency.
-            di_alpha_dt_base, di_beta_dt_base = inverse_park(
-                di_d_dt, di_q_dt, theta_elec
-            )
+            di_alpha_dt_base, di_beta_dt_base = inverse_park(di_d_dt, di_q_dt, theta_elec)
             di_alpha_dt = di_alpha_dt_base - omega_elec * i_beta
             di_beta_dt = di_beta_dt_base + omega_elec * i_alpha
             di_dt_a, di_dt_b, di_dt_c = inverse_clarke(di_alpha_dt, di_beta_dt)
@@ -541,36 +545,28 @@ class BLDCMotor:
 
         # Modify k1 to include load torque effect on omega
         k1_derivatives[3] = (
-            self._last_torque
-            - load_torque
-            - self.params.friction_coefficient * self.state[3]
+            self._last_torque - load_torque - self.params.friction_coefficient * self.state[3]
         ) / self.params.rotor_inertia
 
         # k2
         state_k2 = self.state + 0.5 * self.dt * k1_derivatives
         k2_derivatives = self._state_derivatives(state_k2, voltages)
         k2_derivatives[3] = (
-            self._last_torque
-            - load_torque
-            - self.params.friction_coefficient * state_k2[3]
+            self._last_torque - load_torque - self.params.friction_coefficient * state_k2[3]
         ) / self.params.rotor_inertia
 
         # k3
         state_k3 = self.state + 0.5 * self.dt * k2_derivatives
         k3_derivatives = self._state_derivatives(state_k3, voltages)
         k3_derivatives[3] = (
-            self._last_torque
-            - load_torque
-            - self.params.friction_coefficient * state_k3[3]
+            self._last_torque - load_torque - self.params.friction_coefficient * state_k3[3]
         ) / self.params.rotor_inertia
 
         # k4
         state_k4 = self.state + self.dt * k3_derivatives
         k4_derivatives = self._state_derivatives(state_k4, voltages)
         k4_derivatives[3] = (
-            self._last_torque
-            - load_torque
-            - self.params.friction_coefficient * state_k4[3]
+            self._last_torque - load_torque - self.params.friction_coefficient * state_k4[3]
         ) / self.params.rotor_inertia
 
         # Final update

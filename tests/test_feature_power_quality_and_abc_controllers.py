@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - ComputePowerMetricsEdgeCases
 - RequiredReactiveCompensationErrors
@@ -10,21 +10,23 @@ Atomic features tested in this module:
 - SupplyProfilesAndAbstractPassLines
 - LoadAndMotorProfilesRemainingBranches
 """
-import numpy as np
-import pytest
+
 import sys
 
-from src.core.power_model import (
-    SupplyProfile,
-    RampSupply,
-    VariableSupply,
-    compute_power_metrics,
-    required_reactive_compensation,
-    compute_efficiency_metrics,
-    recommend_efficiency_adjustments,
-    PowerFactorController,
-)
+import numpy as np
+import pytest
+
 from src.core.load_model import LoadProfile, RampLoad
+from src.core.power_model import (
+    PowerFactorController,
+    RampSupply,
+    SupplyProfile,
+    VariableSupply,
+    compute_efficiency_metrics,
+    compute_power_metrics,
+    recommend_efficiency_adjustments,
+    required_reactive_compensation,
+)
 from src.utils import motor_profiles
 
 
@@ -432,9 +434,7 @@ class TestPowerFactorControllerEdgeCases:
 
     def test_controller_uses_max_baseline_when_pf_is_zero(self):
         """Cover the pf_now <= 0 branch for baseline compensation."""
-        pfc = PowerFactorController(
-            target_pf=0.95, kp=0.0, ki=0.0, max_compensation_var=123.0
-        )
+        pfc = PowerFactorController(target_pf=0.95, kp=0.0, ki=0.0, max_compensation_var=123.0)
         command = pfc.update(current_pf=0.0, active_power_w=1000.0, dt=0.01)
         assert command == pytest.approx(123.0)
 
@@ -530,9 +530,7 @@ class TestSupplyProfilesAndAbstractPassLines:
         assert ramp.get_voltage(5.0) == pytest.approx(24.0)
 
     def test_variable_supply_validates_and_interpolates(self):
-        with pytest.raises(
-            ValueError, match="Provide either voltage_func or time_points"
-        ):
+        with pytest.raises(ValueError, match="Provide either voltage_func or time_points"):
             VariableSupply()
 
         with pytest.raises(ValueError, match="voltage_points required"):
@@ -575,9 +573,3 @@ class TestLoadAndMotorProfilesRemainingBranches:
         monkeypatch.setattr(motor_profiles, "DEFAULT_MOTOR_PARAMS", {})
         with pytest.raises(ValueError, match="Missing motor parameters"):
             motor_profiles._normalize_motor_params({})
-
-
-
-
-
-

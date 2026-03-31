@@ -13,16 +13,17 @@ AC ripple rectification, or other variations.
     Initial implementation of power supply models
 """
 
-import numpy as np
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, List, Dict
+from collections.abc import Callable
+
+import numpy as np
 
 
 def compute_power_metrics(
     voltage: np.ndarray,
     current: np.ndarray,
     backend: str = "cpu",
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Compute basic power-quality metrics from voltage/current waveforms.
 
     Parameters
@@ -95,7 +96,7 @@ def required_reactive_compensation(
     active_power_w: float,
     current_pf: float,
     target_pf: float,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Estimate reactive compensation needed to improve power factor.
 
     Notes
@@ -133,7 +134,7 @@ def compute_efficiency_metrics(
     input_power_w: float,
     torque_nm: float,
     omega_rad_s: float,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Compute simple drivetrain efficiency metrics from power flow values."""
     electrical_input = max(float(input_power_w), 0.0)
     shaft_power = float(torque_nm) * float(omega_rad_s)
@@ -164,29 +165,25 @@ def recommend_efficiency_adjustments(
     switching_frequency_hz: float = 0.0,
     switching_loss_coeff_v_per_a_khz: float = 0.0,
     target_efficiency: float = 0.90,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """Return simple heuristic suggestions for improving simulated efficiency."""
     eff = float(np.clip(efficiency, 0.0, 1.0))
     pf = float(np.clip(abs(power_factor), 0.0, 1.0))
     target = float(np.clip(target_efficiency, 0.0, 1.0))
-    suggestions: List[str] = []
+    suggestions: list[str] = []
 
     if eff < target:
         if device_drop_v > 0.5:
-            suggestions.append(
-                "Reduce inverter device drop or choose lower-Vf switching devices."
-            )
+            suggestions.append("Reduce inverter device drop or choose lower-Vf switching devices.")
         if dead_time_fraction > 0.01:
-            suggestions.append(
-                "Reduce dead-time fraction if switching margins allow it."
-            )
+            suggestions.append("Reduce dead-time fraction if switching margins allow it.")
         if conduction_resistance_ohm > 0.01:
             suggestions.append(
                 "Lower conduction resistance to reduce current-dependent voltage drop."
             )
         if switching_frequency_hz > 12000.0 and switching_loss_coeff_v_per_a_khz > 0.0:
             suggestions.append(
-                "Lower PWM switching frequency or switching-loss coefficient to trade ripple for lower inverter losses."
+                "Lower PWM switching frequency or switching-loss coefficient to trade ripple for lower inverter losses."  # noqa: E501
             )
 
     if pf < 0.90:
@@ -284,11 +281,9 @@ class SupplyProfile(ABC):
     @abstractmethod
     def get_voltage(self, time: float) -> float:
         """Return supply voltage at time t."""
-        pass
 
     def reset(self) -> None:
         """Reset profile state if applicable."""
-        pass
 
 
 class ConstantSupply(SupplyProfile):
@@ -317,11 +312,10 @@ class RampSupply(SupplyProfile):
     def get_voltage(self, time: float) -> float:
         if time <= 0:
             return self.initial
-        elif time >= self.duration:
+        if time >= self.duration:
             return self.final
-        else:
-            slope = (self.final - self.initial) / self.duration
-            return self.initial + slope * time
+        slope = (self.final - self.initial) / self.duration
+        return self.initial + slope * time
 
 
 class VariableSupply(SupplyProfile):
@@ -329,13 +323,15 @@ class VariableSupply(SupplyProfile):
 
     def __init__(
         self,
-        voltage_func: Optional[Callable[[float], float]] = None,
-        time_points: Optional[List[float]] = None,
-        voltage_points: Optional[List[float]] = None,
+        voltage_func: Callable[[float], float] | None = None,
+        time_points: list[float] | None = None,
+        voltage_points: list[float] | None = None,
     ):
         if voltage_func is None and time_points is None:
             raise ValueError("Provide either voltage_func or time_points")
         self.voltage_func = voltage_func
+        self.time_array: np.ndarray | None
+        self.voltage_array: np.ndarray | None
         if time_points is not None:
             if voltage_points is None:
                 raise ValueError("voltage_points required with time_points")
@@ -352,13 +348,14 @@ class VariableSupply(SupplyProfile):
     def get_voltage(self, time: float) -> float:
         if self.voltage_func is not None:
             return float(self.voltage_func(time))
+        if self.time_array is None or self.voltage_array is None:
+            raise RuntimeError("VariableSupply is not initialized with time/voltage arrays")
         if time <= self.time_array[0]:
-            return self.voltage_array[0]
-        elif time >= self.time_array[-1]:
-            return self.voltage_array[-1]
-        else:
-            idx = np.searchsorted(self.time_array, time)
-            t0, t1 = self.time_array[idx - 1], self.time_array[idx]
-            v0, v1 = self.voltage_array[idx - 1], self.voltage_array[idx]
-            alpha = (time - t0) / (t1 - t0)
-            return v0 + alpha * (v1 - v0)
+            return float(self.voltage_array[0])
+        if time >= self.time_array[-1]:
+            return float(self.voltage_array[-1])
+        idx = np.searchsorted(self.time_array, time)
+        t0, t1 = self.time_array[idx - 1], self.time_array[idx]
+        v0, v1 = self.voltage_array[idx - 1], self.voltage_array[idx]
+        alpha = (time - t0) / (t1 - t0)
+        return float(v0 + alpha * (v1 - v0))

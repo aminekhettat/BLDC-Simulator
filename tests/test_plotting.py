@@ -1,10 +1,11 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - create multi axis plot
 - create pfc analysis plot
 - create efficiency analysis plot
 - create inverter analysis plot
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -40,9 +41,7 @@ def make_dummy_history():
 
 def test_create_multi_axis_plot():
     history = make_dummy_history()
-    fig = SimulationPlotter.create_multi_axis_plot(
-        history, ["currents_a", "voltages_a", "speed"]
-    )
+    fig = SimulationPlotter.create_multi_axis_plot(history, ["currents_a", "voltages_a", "speed"])
     # simple sanity: figure should have axes
     assert fig.get_axes()
     plt.close(fig)
@@ -79,9 +78,3 @@ def test_create_inverter_analysis_plot():
     assert "DC-Link" in axes[0].get_title()
     assert "Loss Breakdown" in axes[2].get_title()
     plt.close(fig)
-
-
-
-
-
-

@@ -12,7 +12,6 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.utils.regression_baseline import save_baseline
 
-
 if __name__ == "__main__":
     baseline_path = Path("tests") / "baselines" / "reference_baseline.json"
     save_baseline(baseline_path)

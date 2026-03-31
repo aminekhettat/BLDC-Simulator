@@ -1,0 +1,8 @@
+exclude_dirs:
+  - tests
+  - docs
+  - data
+
+skips:
+  - B101
+  - B110

@@ -51,9 +51,7 @@ def save_calibration_report(report, motor_name: str) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     output_file = output_dir / f"auto_calibrated_{motor_name}.json"
-    output_file.write_text(
-        json.dumps(report.to_dict(), indent=2), encoding="utf-8"
-    )
+    output_file.write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
 
     return output_file
 
@@ -77,30 +75,32 @@ def print_calibration_summary(report, elapsed_s: float) -> None:
     )
 
     print("\nOptimized Gains:")
-    print(
-        f"  Current Loop: Kp={result.current_kp:.6e}, Ki={result.current_ki:.6e}"
-    )
+    print(f"  Current Loop: Kp={result.current_kp:.6e}, Ki={result.current_ki:.6e}")
     print(f"  Speed Loop:   Kp={result.speed_kp:.6e}, Ki={result.speed_ki:.6e}")
 
     print("\nFrequency-Domain Margins:")
-    print(f"  Current Loop: GM={result.current_margin.gain_margin_db:.2f} dB, "
-          f"PM={result.current_margin.phase_margin_deg:.2f}°")
-    print(f"  Speed Loop:   GM={result.speed_margin.gain_margin_db:.2f} dB, "
-          f"PM={result.speed_margin.phase_margin_deg:.2f}°")
+    print(
+        f"  Current Loop: GM={result.current_margin.gain_margin_db:.2f} dB, "
+        f"PM={result.current_margin.phase_margin_deg:.2f}°"
+    )
+    print(
+        f"  Speed Loop:   GM={result.speed_margin.gain_margin_db:.2f} dB, "
+        f"PM={result.speed_margin.phase_margin_deg:.2f}°"
+    )
 
     print("\nState-Space Properties:")
-    print(f"  Current: Ctrl={result.current_controllable}, "
-          f"Obs={result.current_observable}")
-    print(f"  Speed:   Ctrl={result.speed_controllable}, "
-          f"Obs={result.speed_observable}")
+    print(f"  Current: Ctrl={result.current_controllable}, Obs={result.current_observable}")
+    print(f"  Speed:   Ctrl={result.speed_controllable}, Obs={result.speed_observable}")
 
     if report.simulation_validation:
         print("\nSimulation Validation:")
         for key, val in report.simulation_validation.items():
             if val.get("stable"):
-                print(f"  {key}: STABLE, "
-                      f"Speed Error={val.get('speed_error_pct', 0):.2f}%, "
-                      f"Orth Error={val.get('orthogonality_error_deg', 0):.2f}°")
+                print(
+                    f"  {key}: STABLE, "
+                    f"Speed Error={val.get('speed_error_pct', 0):.2f}%, "
+                    f"Orth Error={val.get('orthogonality_error_deg', 0):.2f}°"
+                )
             else:
                 print(f"  {key}: UNSTABLE")
 
@@ -182,7 +182,8 @@ def main() -> int:
 
     for result in results:
         status_str = (
-            "SUCCESS" if result["status"] == "SUCCESS"
+            "SUCCESS"
+            if result["status"] == "SUCCESS"
             else f"FAILED: {result.get('error', 'Unknown error')}"
         )
         print(f"  {result['profile']:40s} {status_str}")

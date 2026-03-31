@@ -7,8 +7,6 @@ wraps `pyttsx3` if installed, otherwise falls back to printing to console.
 :version: 0.8.0
 """
 
-from typing import Optional
-
 try:
     import pyttsx3
 except ImportError:  # pragma: no cover - optional dependency
@@ -29,7 +27,7 @@ def is_audio_assistance_enabled() -> bool:
     return _AUDIO_ASSISTANCE_ENABLED
 
 
-def speak(message: str, rate: Optional[int] = None) -> None:
+def speak(message: str, rate: int | None = None) -> None:
     """Announce a message vocally.
 
     :param message: Text to speak

@@ -236,6 +236,21 @@ All input fields have descriptive labels and help text for screen readers.
 - **Setup**: Use Tab to navigate to Monitoring tab for focus
 - **Listen**: Values announced automatically during updates
 
+### RK4 stability alerts (visual + voice)
+
+- The simulator continuously evaluates RK4 numerical stability from motor constants and ``dt``.
+- The Quick Info panel and status bar show severity: ``stable``, ``marginal``, ``unstable``, or ``unknown``.
+- With **Audio Assistance Enabled**, a spoken message is emitted when severity changes.
+
+Action policy for this advisory:
+
+- Adjust ``dt`` and/or PWM/switching frequency
+- Do not tune physical motor constants only to satisfy numerical stability
+
+To enable/disable voice alerts:
+
+- Menu: **Option -> Audio Assistance Enabled**
+
 ---
 
 ## Advanced: Programmatic Usage

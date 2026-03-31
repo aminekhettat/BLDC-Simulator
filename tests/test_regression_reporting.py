@@ -1,4 +1,4 @@
-﻿"""
+"""
 Atomic features tested in this module:
 - build drift report detects fail and pass
 - format drift report contains columns
@@ -6,11 +6,12 @@ Atomic features tested in this module:
 - startup transition thresholds support pass warn fail
 - startup transition threshold report format contains columns
 """
+
 from src.utils.regression_baseline import (
     build_drift_report,
     evaluate_startup_transition_thresholds,
-    format_startup_threshold_report,
     format_drift_report,
+    format_startup_threshold_report,
     run_foc_startup_transition_diagnostics,
 )
 
@@ -119,9 +120,3 @@ def test_startup_transition_threshold_report_format_contains_columns():
     assert "kpi | actual | warn_min | warn_max | fail_min | fail_max | status" in text
     assert "kpi_example" in text
     assert "warn" in text
-
-
-
-
-
-

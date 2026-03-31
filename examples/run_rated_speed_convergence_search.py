@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
@@ -355,9 +355,7 @@ def main() -> None:
                 json.dumps({"candidate": asdict(cand), "metrics": asdict(m)}, indent=2),
                 flush=True,
             )
-            out_path = (
-                PROJECT_ROOT / "data" / "logs" / "rated_speed_convergence_result.json"
-            )
+            out_path = PROJECT_ROOT / "data" / "logs" / "rated_speed_convergence_result.json"
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_text(
                 json.dumps({"candidate": asdict(cand), "metrics": asdict(m)}, indent=2),

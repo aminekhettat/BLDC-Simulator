@@ -69,6 +69,7 @@ User Interface
 
 - **Monitoring Dashboard**
   - Status bar with simulation parameters
+  - RK4 dt/PWM numerical-stability advisory with severity color coding
   - Real-time waveform plots
   - Phase current and voltage visualization
   - Torque and power monitoring

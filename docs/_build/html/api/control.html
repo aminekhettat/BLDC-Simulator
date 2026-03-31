@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Control Module &mdash; BLDC Motor Control 0.8.0 documentation</title>
+  <title>Control Module &mdash; BLDC Motor Control 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=486e5634"></script>
+      <script src="../_static/documentation_options.js?v=ec16d22d"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
@@ -75,6 +75,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_sensorless_blend"><code class="docutils literal notranslate"><span class="pre">FOCController.set_sensorless_blend()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_cascaded_speed_loop"><code class="docutils literal notranslate"><span class="pre">FOCController.set_cascaded_speed_loop()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_speed_pi_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_speed_pi_gains()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_speed_loop_divider"><code class="docutils literal notranslate"><span class="pre">FOCController.set_speed_loop_divider()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_fw_loop_divider"><code class="docutils literal notranslate"><span class="pre">FOCController.set_fw_loop_divider()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.configure_mcu_timing"><code class="docutils literal notranslate"><span class="pre">FOCController.configure_mcu_timing()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_decoupling"><code class="docutils literal notranslate"><span class="pre">FOCController.set_decoupling()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_current_pi_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_current_pi_gains()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_voltage_saturation"><code class="docutils literal notranslate"><span class="pre">FOCController.set_voltage_saturation()</span></code></a></li>
@@ -222,19 +225,19 @@ from use or misuse.</p>
 <h1>Control Module<a class="headerlink" href="#control-module" title="Link to this heading"></a></h1>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.base_controller.html#module-src.control.base_controller" title="src.control.base_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.base_controller</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#module-src.control.base_controller" title="src.control.base_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.base_controller</span></code></a></p></td>
 <td><p>Base Controller Module</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/src.control.foc_controller.html#module-src.control.foc_controller" title="src.control.foc_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.foc_controller</span></code></a></p></td>
 <td><p>Field-Oriented Control (FOC) Module</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.vf_controller.html#module-src.control.vf_controller" title="src.control.vf_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.vf_controller</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#module-src.control.vf_controller" title="src.control.vf_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.vf_controller</span></code></a></p></td>
 <td><p>V/f Controller Module</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/src.control.svm_generator.html#module-src.control.svm_generator" title="src.control.svm_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.svm_generator</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#module-src.control.svm_generator" title="src.control.svm_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.svm_generator</span></code></a></p></td>
 <td><p>SVM Generator Module</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.transforms.html#module-src.control.transforms" title="src.control.transforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.transforms</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#module-src.control.transforms" title="src.control.transforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.transforms</span></code></a></p></td>
 <td><p>Coordinate Transformations for Motor Control
 
 :2: (WARNING/2) Title underline too short.
@@ -332,7 +335,7 @@ transforms and running in either polar or Cartesian output modes.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.control.foc_controller.FOCController">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.foc_controller.</span></span><span class="sig-name descname"><span class="pre">FOCController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_concordia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_cartesian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_speed_loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="generated/src.control.base_controller.html#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
 <p>Basic Field-Oriented Controller supporting current loops and speed
 reference.  Designed for integration with SVM generator, returning either
 (magnitude, angle) or Cartesian (v_alpha, v_beta) depending on mode.</p>
@@ -451,6 +454,158 @@ magnitude/angle</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_speed_loop_divider">
+<span class="sig-name descname"><span class="pre">set_speed_loop_divider</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">divider</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_speed_loop_divider"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_speed_loop_divider" title="Link to this definition"></a></dt>
+<dd><p>Configure multi-rate speed loop decimation.</p>
+<p>Matches real MCU timing where the current loop (Clarke/Park + d/q PI)
+runs every PWM interrupt while the speed PI runs at a lower rate:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Real MCU example (Fpwm = 20 kHz, Ts = 50 µs):
+  Current PI + observer : every Ts        →  50 µs
+  Speed PI              : every 200 × Ts  →  10 ms
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>divider<span class="classifier">int</span></dt><dd><p>Number of current-loop steps between successive speed-PI updates.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">1</span></code>   — legacy/high-rate mode: speed PI executes every step</dt><dd><p>(same rate as current PI). Default, backward-compatible.</p>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">200</span></code> — speed PI at 1/200 of current-loop rate (10 ms at 20 kHz).</p></li>
+<li><p>Any positive integer is accepted.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading"></a></h2>
+<p>Between speed-PI firings the last Iq reference is held (zero-order hold),
+exactly as a real interrupt-driven implementation does.
+The effective integration step passed to the speed-PI integrator is
+<code class="docutils literal notranslate"><span class="pre">divider</span> <span class="pre">×</span> <span class="pre">dt</span></code>, so d/q PI gains tuned at <code class="docutils literal notranslate"><span class="pre">divider=1</span></code> remain valid.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_fw_loop_divider">
+<span class="sig-name descname"><span class="pre">set_fw_loop_divider</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">divider</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_fw_loop_divider"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_fw_loop_divider" title="Link to this definition"></a></dt>
+<dd><p>Configure multi-rate field-weakening integrator decimation.</p>
+<p>Sets how many current-loop steps elapse between successive executions
+of the FW headroom integrator.  On a real MCU the FW block runs inside
+the same slow interrupt as the speed PI (both at ~100 Hz), so the
+typical setting matches <code class="docutils literal notranslate"><span class="pre">speed_loop_divider</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+<section id="id1">
+<h2>Parameters<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>divider<span class="classifier">int</span></dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">1</span></code>   — FW integrator updates every current-loop step (default,</dt><dd><p>backward-compatible).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">N</span></code>   — FW integrator updates every N current steps; the</dt><dd><p>effective integration <code class="docutils literal notranslate"><span class="pre">dt</span></code> passed internally is
+<code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">×</span> <span class="pre">current_dt</span></code> so gain values remain unchanged.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<p>configure_mcu_timing : sets both speed and FW dividers together.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.configure_mcu_timing">
+<span class="sig-name descname"><span class="pre">configure_mcu_timing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pwm_freq_hz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_loop_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fw_loop_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.configure_mcu_timing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.configure_mcu_timing" title="Link to this definition"></a></dt>
+<dd><p>Configure all loop dividers to match a real MCU timing scheme.</p>
+<p>This is a single convenience call that replicates the two-rate ISR
+structure used in production single-shunt FOC firmware:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>┌──────────────────────────────────────────────────────┐
+│  PWM interrupt  (every T_pwm = 1/Fpwm)              │
+│    • ADC trigger / current reconstruction            │
+│    • Clarke / Park transform                         │
+│    • Angle observer  (SMO or PLL)                   │
+│    • d-axis PI  →  v_d_sat                          │
+│    • q-axis PI  →  v_q_sat                          │
+│    • Voltage saturation (d_priority)                 │
+├──────────────────────────────────────────────────────┤
+│  Slow ISR  (every T_slow = 1/F_speed = N × T_pwm)  │
+│    • Speed PI  →  Iq_ref  (ZOH between firings)    │
+│    • FW integrator  →  Id_fw  (ZOH between firings) │
+└──────────────────────────────────────────────────────┘
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+<section id="id2">
+<h2>Parameters<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pwm_freq_hz<span class="classifier">float</span></dt><dd><p>PWM (current-loop) frequency in Hz.  Corresponds directly to
+<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">dt</span></code> used when creating <code class="docutils literal notranslate"><span class="pre">BLDCMotor</span></code> / <code class="docutils literal notranslate"><span class="pre">SimulationEngine</span></code>.
+Example: 20 000 Hz → dt = 50 µs.</p>
+</dd>
+<dt>speed_loop_hz<span class="classifier">float, optional</span></dt><dd><p>Frequency of the slow ISR (speed PI + FW), default 100 Hz.
+Must satisfy <code class="docutils literal notranslate"><span class="pre">speed_loop_hz</span> <span class="pre">≤</span> <span class="pre">pwm_freq_hz</span></code>.</p>
+</dd>
+<dt>fw_loop_hz<span class="classifier">float or None, optional</span></dt><dd><p>Frequency of the FW integrator.  When <em>None</em> (default) the FW
+runs at the same rate as the speed PI (recommended — both in the
+same slow ISR).  Pass an explicit value only if a different rate
+is needed.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h2>Returns<a class="headerlink" href="#returns" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>dict</dt><dd><p>Resolved timing parameters: pwm_freq_hz, speed_loop_hz,
+fw_loop_hz, speed_divider, fw_divider.</p>
+</dd>
+</dl>
+</section>
+<section id="raises">
+<h2>Raises<a class="headerlink" href="#raises" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">speed_loop_hz</span> <span class="pre">&gt;</span> <span class="pre">pwm_freq_hz</span></code> or any frequency is non-positive.</p>
+</dd>
+</dl>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<p>Match a typical STM32 single-shunt FOC setup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ctrl</span><span class="o">.</span><span class="n">configure_mcu_timing</span><span class="p">(</span><span class="n">pwm_freq_hz</span><span class="o">=</span><span class="mi">20_000</span><span class="p">,</span> <span class="n">speed_loop_hz</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="c1"># → speed_divider = 200, fw_divider = 200</span>
+</pre></div>
+</div>
+<p>Higher-bandwidth speed loop (500 Hz):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ctrl</span><span class="o">.</span><span class="n">configure_mcu_timing</span><span class="p">(</span><span class="n">pwm_freq_hz</span><span class="o">=</span><span class="mi">20_000</span><span class="p">,</span> <span class="n">speed_loop_hz</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<span class="c1"># → speed_divider = 40, fw_divider = 40</span>
+</pre></div>
+</div>
+</section>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_decoupling">
 <span class="sig-name descname"><span class="pre">set_decoupling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable_d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_decoupling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_decoupling" title="Link to this definition"></a></dt>
 <dd><p>Enable/disable optional d/q decoupling feed-forward compensation.</p>
@@ -561,7 +716,7 @@ Ziegler–Nichols or IMC rules.</p>
 <dd class="field-odd"><p><strong>dt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Time step [s]</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Either (magnitude, angle) or (v_alpha, v_beta) depending on
@@ -620,7 +775,7 @@ desired frequency/speed.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.control.vf_controller.VFController">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.vf_controller.</span></span><span class="sig-name descname"><span class="pre">VFController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_startup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ramp_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="generated/src.control.base_controller.html#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
 <section id="voltage-to-frequency-v-f-controller">
 <h2>Voltage-to-Frequency (V/f) Controller<a class="headerlink" href="#voltage-to-frequency-v-f-controller" title="Link to this heading"></a></h2>
 <p>Implements V/f characteristic for open-loop motor control.</p>
@@ -1164,7 +1319,7 @@ disable each effect.</p>
 <dd><p>Return telemetry from the last modulation step.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1175,7 +1330,7 @@ disable each effect.</p>
 <dd><p>Return the complete inverter configuration and runtime state.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1196,7 +1351,7 @@ disable each effect.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.svm_generator.</span></span><span class="sig-name descname"><span class="pre">CartesianSVMGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#CartesianSVMGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.CartesianSVMGenerator" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="generated/src.control.svm_generator.html#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></p>
 <p>Extended SVM generator accepting Cartesian alpha-beta voltages.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator.modulate_cartesian">
@@ -1252,7 +1407,7 @@ assuming va + vb + vc = 0.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(v_alpha, v_beta)</p>
@@ -1272,7 +1427,7 @@ assuming va + vb + vc = 0.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(va, vb, vc)</p>
@@ -1293,7 +1448,7 @@ assuming va + vb + vc = 0.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(v_d, v_q)</p>
@@ -1314,7 +1469,7 @@ assuming va + vb + vc = 0.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(v_alpha, v_beta)</p>
@@ -1337,7 +1492,7 @@ when zero-sequence components are important.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(alpha, beta) in same units</p>
@@ -1357,7 +1512,7 @@ when zero-sequence components are important.</p>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>(va, vb, vc)</p>

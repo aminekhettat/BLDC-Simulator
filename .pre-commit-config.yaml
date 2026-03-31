@@ -1,0 +1,28 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check --fix .
+        language: python
+        additional_dependencies:
+          - ruff==0.15.8
+        pass_filenames: false
+
+      - id: mypy-src
+        name: mypy src
+        entry: mypy --config-file=mypy.ini src
+        language: python
+        additional_dependencies:
+          - mypy==1.19.1
+          - numpy
+          - types-setuptools
+        pass_filenames: false
+
+      - id: bandit-src
+        name: bandit src
+        entry: bandit -c bandit.yaml -r src
+        language: python
+        additional_dependencies:
+          - bandit==1.9.4
+        pass_filenames: false

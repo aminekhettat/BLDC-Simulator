@@ -4,8 +4,6 @@ Calibrates FW for motenergy_me1718_48v at rated speed with more forgiving criter
 This version relaxes the acceptance criteria to achieve practical convergence.
 """
 
-# ruff: noqa: E402
-
 import json
 import math
 import sys
@@ -33,9 +31,7 @@ SESSION_PATH = (
     / "until_converged"
     / "motenergy_me1718_48v_until_converged.json"
 )
-OUT_PATH = (
-    PROJECT_ROOT / "data" / "logs" / "calibration_me1718_fw_loaded_point_pragmatic.json"
-)
+OUT_PATH = PROJECT_ROOT / "data" / "logs" / "calibration_me1718_fw_loaded_point_pragmatic.json"
 
 
 class SmoothRampHoldLoad(LoadProfile):
@@ -122,9 +118,7 @@ def evaluate_case(
     controller = FOCController(motor=motor, enable_speed_loop=True)
 
     controller.set_cascaded_speed_loop(True, iq_limit_a=float(cand.iq_limit_a))
-    controller.set_speed_pi_gains(
-        kp=float(cand.speed_kp), ki=float(cand.speed_ki), kaw=0.05
-    )
+    controller.set_speed_pi_gains(kp=float(cand.speed_kp), ki=float(cand.speed_ki), kaw=0.05)
     controller.set_current_pi_gains(
         d_kp=float(cand.current_kp),
         d_ki=float(cand.current_ki),
@@ -321,12 +315,8 @@ def main() -> None:
 
     rated = profile.get("rated_info", {})
     rated_speed_rpm = float(rated.get("rated_speed_rpm", 4000.0))
-    rated_current = float(
-        rated.get("rated_current_a", rated.get("rated_current_a_rms", 100.0))
-    )
-    rated_torque = float(
-        rated.get("rated_torque_nm", params.torque_constant * rated_current)
-    )
+    rated_current = float(rated.get("rated_current_a", rated.get("rated_current_a_rms", 100.0)))
+    rated_torque = float(rated.get("rated_torque_nm", params.torque_constant * rated_current))
     plausible_upper = 0.70 * min(rated_torque, params.torque_constant * rated_current)
 
     session = json.loads(SESSION_PATH.read_text(encoding="utf-8"))
