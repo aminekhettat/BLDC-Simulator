@@ -3765,10 +3765,16 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.calib_session_label = QLabel("Session: (auto-detected)")
         self.calib_session_label.setAccessibleName("Tuning session file")
+        self.calib_session_label.setAccessibleDescription(
+            "Path to the tuning session file for the selected motor profile"
+        )
         pg_layout.addWidget(self.calib_session_label)
 
         self.calib_output_label = QLabel("Output: (auto)")
         self.calib_output_label.setAccessibleName("Calibration output file path")
+        self.calib_output_label.setAccessibleDescription(
+            "Path where calibration results will be saved"
+        )
         pg_layout.addWidget(self.calib_output_label)
 
         profile_group.setLayout(pg_layout)
@@ -3787,9 +3793,10 @@ class BLDCMotorControlGUI(QMainWindow):
         auto_btn_row = QHBoxLayout()
 
         self.btn_auto_calib_all = AccessibleButton(
-            "Auto-Calibrate All  (Analytic + Physics)",
-            "Stage 1 — analytic FOC PI gains for all profiles; "
-            "Stage 2 — physics-based field-weakening for all profiles",
+            "Auto-Calibrate",
+            "Run complete auto-calibration pipeline: "
+            "Stage 1 analytically computes FOC PI gains for all motor profiles; "
+            "Stage 2 derives physics-based field-weakening parameters for all profiles",
         )
         self.btn_auto_calib_all.clicked.connect(self._start_auto_calibrate_all)
         auto_btn_row.addWidget(self.btn_auto_calib_all)
@@ -3832,10 +3839,30 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         res_layout = QVBoxLayout()
         self.calib_result_status = QLabel("Status: Not run")
+        self.calib_result_status.setAccessibleName("Calibration Status")
+        self.calib_result_status.setAccessibleDescription(
+            "Overall status of the auto-calibration pipeline"
+        )
         self.calib_result_speed = QLabel("Achieved Speed: --")
+        self.calib_result_speed.setAccessibleName("Achieved Speed")
+        self.calib_result_speed.setAccessibleDescription(
+            "Maximum motor speed achieved during calibration in RPM"
+        )
         self.calib_result_load = QLabel("Load Torque: --")
+        self.calib_result_load.setAccessibleName("Load Torque")
+        self.calib_result_load.setAccessibleDescription(
+            "Applied load torque during the calibration run in Newton-meters"
+        )
         self.calib_result_efficiency = QLabel("Efficiency: --")
+        self.calib_result_efficiency.setAccessibleName("Efficiency")
+        self.calib_result_efficiency.setAccessibleDescription(
+            "Motor efficiency achieved at calibration operating point in percent"
+        )
         self.calib_result_fw = QLabel("FW Injection: --")
+        self.calib_result_fw.setAccessibleName("Field Weakening Injection")
+        self.calib_result_fw.setAccessibleDescription(
+            "Field weakening current injection at the calibrated high-speed point in amperes"
+        )
         for lbl in (
             self.calib_result_status,
             self.calib_result_speed,
@@ -3843,7 +3870,6 @@ class BLDCMotorControlGUI(QMainWindow):
             self.calib_result_efficiency,
             self.calib_result_fw,
         ):
-            lbl.setAccessibleName(lbl.text())
             res_layout.addWidget(lbl)
         res_layout.addStretch()
         result_group.setLayout(res_layout)
