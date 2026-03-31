@@ -1,0 +1,33 @@
+{
+  "schema": "bldc.motor_profile.v1",
+  "profile_name": "Nanotec DB57M012 12V (5 pole pairs)",
+  "motor_params": {
+    "nominal_voltage": 12.0,
+    "phase_resistance": 0.12,
+    "phase_inductance": 1.5e-4,
+    "back_emf_constant": 0.028,
+    "torque_constant": 0.028,
+    "rotor_inertia": 6.5e-6,
+    "friction_coefficient": 1e-4,
+    "num_poles": 10,
+    "poles_pairs": 5,
+    "ld": 1.5e-4,
+    "lq": 1.5e-4,
+    "model_type": "dq",
+    "emf_shape": "sinusoidal"
+  },
+  "rated_info": {
+    "rated_voltage_v": 12.0,
+    "rated_speed_rpm": 3500.0,
+    "rated_current_a": 5.0,
+    "rated_power_kw": 0.043,
+    "rated_torque_nm": 0.12,
+    "efficiency_pct": 84.0,
+    "pole_pairs": 5
+  },
+  "source": {
+    "provider": "Nanotec",
+    "url": "https://s3.amazonaws.com/www.motionusa.com/nanotec/DB_Brushless_DC_Motors.pdf",
+    "notes": "DB57M012 — 57mm BLDC, 12V winding, 5 pole pairs (10 poles). R=0.12 Ohm/phase (star), L=0.15 mH/phase. Ke=0.028 Vs/rad (KV≈320 RPM/V). Base speed at no load ≈2363 RPM; rated speed 3500 RPM requires field weakening. tau_e = L/R = 1.25 ms giving stable dt=100 µs simulation. Parameters represent a low-resistance 12V winding optimised for high-current operation at 12V DC."
+  }
+}
