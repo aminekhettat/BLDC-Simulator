@@ -1,4 +1,4 @@
-#!C:/PROGRA~1/Python314/python.exe
+#!/usr/bin/env python3
 import os
 import subprocess
 import sys
@@ -6,6 +6,16 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _resolve_python_executable() -> str:
+	venv_python = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
+	if venv_python.exists():
+		return str(venv_python)
+	return sys.executable
+
+
+PYTHON_EXE = _resolve_python_executable()
 
 DOC_PATHS = (
 	"README.md",
@@ -106,7 +116,7 @@ def run_mandatory_gates() -> int:
 		return doc_status
 
 	# 1) Ensure quality rules are green (ruff/mypy/bandit hooks).
-	probe = run([sys.executable, "-m", "pre_commit", "--version"], check=False)
+	probe = run([PYTHON_EXE, "-m", "pre_commit", "--version"], check=False)
 	if probe.returncode != 0:
 		print(
 			"pre-commit: python -m pre_commit is not available. "
@@ -117,7 +127,7 @@ def run_mandatory_gates() -> int:
 
 	quality_status = _run_step(
 		"quality checks",
-		[sys.executable, "-m", "pre_commit", "run", "--all-files"],
+		[PYTHON_EXE, "-m", "pre_commit", "run", "--all-files"],
 	)
 	if quality_status != 0:
 		return quality_status
@@ -125,7 +135,7 @@ def run_mandatory_gates() -> int:
 	# 2) Regenerate Sphinx HTML docs and fail if build breaks.
 	sphinx_status = _run_step(
 		"Sphinx HTML build",
-		[sys.executable, "-m", "sphinx", "-b", "html", "docs", "docs/_build/html"],
+		[PYTHON_EXE, "-m", "sphinx", "-b", "html", "docs", "docs/_build/html"],
 	)
 	if sphinx_status != 0:
 		return sphinx_status
@@ -134,7 +144,7 @@ def run_mandatory_gates() -> int:
 	coverage_status = _run_step(
 		"tests + 100% coverage",
 		[
-			sys.executable,
+			PYTHON_EXE,
 			"-m",
 			"pytest",
 			"tests/",
@@ -151,7 +161,7 @@ def run_mandatory_gates() -> int:
 	# 4) Ensure dependency vulnerabilities are clean (CI-equivalent security gate).
 	audit_status = _run_step(
 		"dependency vulnerability audit",
-		[sys.executable, "-m", "pip_audit", "-r", "requirements.txt"],
+		[PYTHON_EXE, "-m", "pip_audit", "-r", "requirements.txt"],
 	)
 	if audit_status != 0:
 		return audit_status
@@ -177,7 +187,7 @@ def main() -> int:
 		return 0
 
 	bump_cmd = [
-		sys.executable,
+		PYTHON_EXE,
 		"-m",
 		"bumpversion",
 		"--allow-dirty",
