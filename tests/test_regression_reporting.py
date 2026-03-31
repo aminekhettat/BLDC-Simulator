@@ -7,6 +7,7 @@ Atomic features tested in this module:
 - startup transition threshold report format contains columns
 """
 
+from src.utils.regression_baseline import DriftRow, ThresholdRow
 from src.utils.regression_baseline import (
     build_drift_report,
     evaluate_startup_transition_thresholds,
@@ -37,7 +38,7 @@ def test_build_drift_report_detects_fail_and_pass():
 
 
 def test_format_drift_report_contains_columns():
-    rows = [
+    rows: list[DriftRow] = [
         {
             "scenario": "s1",
             "kpi": "k1",
@@ -104,7 +105,7 @@ def test_startup_transition_thresholds_support_pass_warn_fail():
 
 
 def test_startup_transition_threshold_report_format_contains_columns():
-    rows = [
+    rows: list[ThresholdRow] = [
         {
             "kpi": "kpi_example",
             "actual": 0.42,

@@ -216,6 +216,7 @@ class TestLowPassFilter:
         for _ in range(n_steps):
             out = s.measure(i_step, dt=dt)
         # After 10Ï„ the backward-Euler output must be within 0.05 % of the step
+        assert out is not None
         assert out[0] == pytest.approx(1.0, abs=5e-4)
 
     def test_step_response_at_one_tau_below_63pct(self):
@@ -231,6 +232,7 @@ class TestLowPassFilter:
         for _ in range(n_steps):
             out = s.measure(i_step, dt=dt)
         # Theoretical: 1 - exp(-1) â‰ˆ 0.6321; backward Euler converges to this
+        assert out is not None
         assert 0.60 < out[0] < 0.66
 
     def test_filter_attenuates_signal_above_cutoff(self):
@@ -265,6 +267,7 @@ class TestLowPassFilter:
         out = None
         for _ in range(n_steps):
             out = s.measure(i_dc, dt=dt)
+        assert out is not None
         assert out[0] == pytest.approx(3.0, rel=1e-3)
 
 

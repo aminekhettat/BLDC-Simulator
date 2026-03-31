@@ -31,6 +31,7 @@ Atomic features tested in this module:
 import builtins
 import os
 import sys
+from typing import Any, cast
 
 import matplotlib
 import pytest
@@ -58,7 +59,7 @@ from src.core.load_model import ConstantLoad
 from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.power_model import ConstantSupply, PowerFactorController
 from src.core.simulation_engine import SimulationEngine
-from src.hardware.hardware_interface import MockDAQHardware
+from src.hardware.hardware_interface import HardwareInterface, MockDAQHardware
 from src.utils import compute_backend, motor_profiles, regression_baseline
 from src.visualization.visualization import SimulationPlotter
 
@@ -579,7 +580,7 @@ def test_motor_model_numba_fallback_and_validation_branches(monkeypatch):
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
-    module_ns = {"__name__": "_motor_model_no_numba_test"}
+    module_ns: dict[str, Any] = {"__name__": "_motor_model_no_numba_test"}
     exec(compile(code, str(src_path), "exec"), module_ns)
     assert module_ns["HAS_NUMBA"] is False
     assert callable(module_ns["njit"])
@@ -757,20 +758,23 @@ def test_motor_model_dq_flux_weakening_and_fast_torque_helper():
 
 
 def test_simulation_engine_runtime_hardware_feedback_and_reconnect_error():
-    class RuntimeHardware:
-        name = "runtime-hw"
-
+    class RuntimeHardware(HardwareInterface):
         def __init__(self):
-            self.is_connected = False
+            super().__init__(name="runtime-hw")
+            self._connected = False
             self.connect_should_fail = False
+
+        @property
+        def is_connected(self):
+            return self._connected
 
         def connect(self):
             if self.connect_should_fail:
                 raise RuntimeError("runtime connect failed")
-            self.is_connected = True
+            self._connected = True
 
         def disconnect(self):
-            self.is_connected = False
+            self._connected = False
 
         def write_phase_voltages(self, _voltages, _time_s):
             return None
@@ -801,7 +805,7 @@ def test_simulation_engine_runtime_hardware_feedback_and_reconnect_error():
     assert engine.get_history()["time"].size >= 2
 
     # Force runtime reconnect failure branch in configure_hardware_interface.
-    hw.is_connected = False
+    hw._connected = False
     hw.connect_should_fail = True
     engine.configure_hardware_interface(True)
     hw_state = engine.get_hardware_state()
@@ -833,7 +837,7 @@ def test_svm_generator_validation_and_runtime_branches():
     ]
     for kwargs in invalid_nonideal_kwargs:
         with pytest.raises(ValueError):
-            svm.set_nonidealities(**kwargs)
+            svm.set_nonidealities(**cast(Any, kwargs))
 
     with pytest.raises(ValueError, match="phase_currents must be a 3-element array"):
         svm.set_phase_currents(np.array([1.0, 2.0]))
@@ -1087,8 +1091,8 @@ def test_variable_load_clamps_to_last_defined_point():
     from src.core.load_model import VariableLoad
 
     load = VariableLoad(
-        time_points=np.array([0.0, 1.0], dtype=np.float64),
-        torque_points=np.array([2.0, 4.0], dtype=np.float64),
+        time_points=[0.0, 1.0],
+        torque_points=[2.0, 4.0],
     )
 
     assert load.get_torque(-1.0) == pytest.approx(2.0)
@@ -1348,6 +1352,7 @@ def test_calibrate_motor_runs_simulation_validation_loop(monkeypatch, tmp_path):
         enable_simulation_validation=True,
     )
 
+    assert report.simulation_validation is not None
     assert sorted(report.simulation_validation.keys()) == [
         "100pct_max",
         "70pct_max",

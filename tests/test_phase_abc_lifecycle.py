@@ -15,6 +15,7 @@ Atomic features tested in this module:
 import json
 import sys
 from pathlib import Path
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -215,7 +216,7 @@ class TestCloseEvent:
     def test_close_event_stops_running_simulation(self, qapp):
         window = BLDCMotorControlGUI()
         thread = _FakeSimThread(wait_returns=True)
-        window.sim_thread = thread
+        window.sim_thread = cast(Any, thread)
         window.is_running = True
         window.close()  # triggers closeEvent
         assert thread.stopped is True
@@ -225,7 +226,7 @@ class TestCloseEvent:
         monkeypatch.setattr("src.ui.main_window.speak", lambda *a: None)
         window = BLDCMotorControlGUI()
         fake_proc = _FakeQProcess(running=True, wait_for_finished=True)
-        window.calib_process = fake_proc
+        window.calib_process = cast(Any, fake_proc)
         window.close()
         assert fake_proc.terminated is True
 
@@ -239,7 +240,7 @@ class TestCloseEvent:
         monkeypatch.setattr("src.ui.main_window.speak", lambda *a: None)
         window = BLDCMotorControlGUI()
         fake_proc = _FakeQProcess(running=True, wait_for_finished=False)
-        window.calib_process = fake_proc
+        window.calib_process = cast(Any, fake_proc)
         window.close()
         assert fake_proc.terminated is True
         assert fake_proc.killed is True

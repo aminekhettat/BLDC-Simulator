@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 BASELINES = [
     Path("tests/baselines/reference_baseline.json"),
@@ -25,8 +26,10 @@ REQUIRED_KPIS = {
 }
 
 
-def _load_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+def _load_json(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    return cast(dict[str, Any], payload)
 
 
 def test_baseline_files_exist_and_non_empty():

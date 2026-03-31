@@ -91,7 +91,7 @@ def test_cyclic_load_validation_and_output():
 
 def test_constant_load_reset_is_noop():
     load = ConstantLoad(torque=3.0)
-    assert load.reset() is None
+    load.reset()
     assert load.get_torque(2.0) == pytest.approx(3.0)
 
 

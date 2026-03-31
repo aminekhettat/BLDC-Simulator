@@ -36,8 +36,9 @@ except Exception as e:
 # Test 2: Motor model with numba
 try:
     from src.core.motor_model import HAS_NUMBA, BLDCMotor
+    from src.core.motor_model import MotorParameters
 
-    motor = BLDCMotor()
+    motor = BLDCMotor(MotorParameters())
     print(f"âœ… Motor model with numba support: OK (HAS_NUMBA={HAS_NUMBA})")
 except Exception as e:
     print(f"âŒ Motor model test failed: {e}")
@@ -63,8 +64,8 @@ try:
     from src.utils.data_logger import DataLogger
 
     sig = inspect.signature(DataLogger.save_simulation_data)
-    params = list(sig.parameters.keys())
-    if "use_custom_path" in params:
+    param_names = list(sig.parameters.keys())
+    if "use_custom_path" in param_names:
         print("âœ… Data logger custom paths: OK")
     else:
         print("âŒ Data logger custom paths: MISSING")
@@ -75,8 +76,8 @@ except Exception as e:
 try:
     from src.core.motor_model import MotorParameters
 
-    params = MotorParameters()
-    if hasattr(params, "ld") and hasattr(params, "lq"):
+    motor_params = MotorParameters()
+    if hasattr(motor_params, "ld") and hasattr(motor_params, "lq"):
         print("âœ… Ld/Lq parameters: OK")
     else:
         print("âŒ Ld/Lq parameters: MISSING")

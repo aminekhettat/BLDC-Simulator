@@ -22,6 +22,7 @@ Atomic features tested in this module:
 
 import sys
 from pathlib import Path
+from typing import Callable, cast
 
 import numpy as np
 import pytest
@@ -29,6 +30,9 @@ from PyQt6.QtCore import QEvent, Qt
 from PyQt6.QtGui import QKeyEvent
 from PyQt6.QtWidgets import QApplication
 
+from src.control.base_controller import BaseController
+from src.control.svm_generator import SVMGenerator
+from src.core.simulation_engine import SimulationEngine
 from src.ui.main_window import AccessibleTextBlock, BLDCMotorControlGUI, SimulationThread
 
 
@@ -179,6 +183,7 @@ def test_save_motor_parameters_success(gui, monkeypatch, tmp_path):
 
     gui._save_motor_parameters()
 
+    assert saved["path"] is not None
     assert saved["path"].suffix == ".json"
     assert informed["called"] is True
 
@@ -377,11 +382,18 @@ def test_collect_and_save_simulation_parameters(gui, monkeypatch, tmp_path):
 
 
 def test_accessible_text_block_keyboard_navigation(qapp):
-    block = AccessibleTextBlock("Speed", "rpm", 0, 3)
-
     called = {"prev": 0, "next": 0}
-    block.focusPreviousChild = lambda: called.__setitem__("prev", called["prev"] + 1)
-    block.focusNextChild = lambda: called.__setitem__("next", called["next"] + 1)
+
+    class TrackingTextBlock(AccessibleTextBlock):
+        def focusPreviousChild(self) -> bool:
+            called["prev"] += 1
+            return True
+
+        def focusNextChild(self) -> bool:
+            called["next"] += 1
+            return True
+
+    block = TrackingTextBlock("Speed", "rpm", 0, 3)
 
     left = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Left, Qt.KeyboardModifier.NoModifier)
     down = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Down, Qt.KeyboardModifier.NoModifier)
@@ -414,6 +426,7 @@ class _DummyEngine:
         self.last_pwm_hz = None
         self.last_timing = None
         self.last_telemetry = None
+        self.after_step: Callable[[], None] | None = None
 
     def get_control_timing_state(self):
         return {"control_period_s": self.dt}
@@ -430,6 +443,8 @@ class _DummyEngine:
     def step(self, _voltages, log_data=True):
         assert log_data is True
         self.time += self.dt
+        if self.after_step is not None:
+            self.after_step()
 
     def get_current_state(self):
         return {"speed_rpm": 100.0, "time": self.time}
@@ -463,23 +478,41 @@ class _DummySVM:
         return {"effective_dc_voltage": 48.0}
 
 
-class _DummyController:
+class _DummyController(BaseController):
     output_cartesian = False
 
     def update(self, _period):
         return (5.0, 0.1)
 
+    def reset(self) -> None:
+        return None
 
-class _DummyCartesianController:
+    def get_state(self) -> dict[str, float]:
+        return {}
+
+
+class _DummyCartesianController(BaseController):
     output_cartesian = True
 
     def update(self, _period):
         return (1.0, -2.0)
 
+    def reset(self) -> None:
+        return None
 
-class _BadController:
+    def get_state(self) -> dict[str, float]:
+        return {}
+
+
+class _BadController(BaseController):
     def update(self, _period):
         return 1.23
+
+    def reset(self) -> None:
+        return None
+
+    def get_state(self) -> dict[str, float]:
+        return {}
 
 
 def test_simulation_thread_run_early_return_and_normal_iteration(monkeypatch):
@@ -489,17 +522,15 @@ def test_simulation_thread_run_early_return_and_normal_iteration(monkeypatch):
     engine = _DummyEngine()
     svm = _DummySVM()
     controller = _DummyController()
-    thread.set_simulation(engine, svm, controller, pwm_frequency_hz=20000.0)
+    thread.set_simulation(
+        cast(SimulationEngine, engine),
+        cast(SVMGenerator, svm),
+        controller,
+        pwm_frequency_hz=20000.0,
+    )
     thread.update_interval = 0.0
     thread.running = True
-
-    original_step = engine.step
-
-    def stop_after_one_step(volts, log_data=True):
-        original_step(volts, log_data=log_data)
-        thread.running = False
-
-    engine.step = stop_after_one_step
+    engine.after_step = lambda: setattr(thread, "running", False)
     thread.run()
 
     assert svm.sample_time == pytest.approx(engine.dt)
@@ -514,24 +545,25 @@ def test_simulation_thread_cartesian_fallback_and_bad_output():
 
     # Cartesian branch falls back to inverse_clarke when modulate_cartesian fails.
     t_cart = SimulationThread()
-    t_cart.set_simulation(engine, svm, _DummyCartesianController())
+    t_cart.set_simulation(
+        cast(SimulationEngine, engine),
+        cast(SVMGenerator, svm),
+        _DummyCartesianController(),
+    )
     t_cart.update_interval = 0.0
     t_cart.running = True
-
-    original_step = engine.step
-
-    def stop_after_one_step(_volts, log_data=True):
-        original_step(_volts, log_data=log_data)
-        t_cart.running = False
-
-    engine.step = stop_after_one_step
+    engine.after_step = lambda: setattr(t_cart, "running", False)
     t_cart.run()
 
     # Unexpected controller output should raise ValueError.
     t_bad = SimulationThread()
     engine_bad = _DummyEngine()
     svm_bad = _DummySVM()
-    t_bad.set_simulation(engine_bad, svm_bad, _BadController())
+    t_bad.set_simulation(
+        cast(SimulationEngine, engine_bad),
+        cast(SVMGenerator, svm_bad),
+        _BadController(),
+    )
     t_bad.running = True
 
     with pytest.raises(ValueError, match="unexpected output format"):
@@ -587,7 +619,12 @@ def test_simulation_thread_max_duration_break_and_missing_svm_io_methods():
     controller = _DummyController()
 
     thread = SimulationThread()
-    thread.set_simulation(engine, svm, controller, max_duration=engine.dt)
+    thread.set_simulation(
+        cast(SimulationEngine, engine),
+        cast(SVMGenerator, svm),
+        controller,
+        max_duration=engine.dt,
+    )
     thread.update_interval = 10.0
     thread.running = True
     thread.run()

@@ -3,6 +3,14 @@
 
 import xml.etree.ElementTree as ET
 
+
+def _float_attr(value: str | None, default: float = 0.0) -> float:
+    return default if value is None else float(value)
+
+
+def _int_attr(value: str | None, default: int = 0) -> int:
+    return default if value is None else int(value)
+
 # Parse the coverage XML
 tree = ET.parse("data/logs/coverage.xml")
 root = tree.getroot()
@@ -12,9 +20,9 @@ overall_rate = root.get("line-rate")
 lines_valid = root.get("lines-valid")
 lines_covered = root.get("lines-covered")
 
-print(f"\nOVERALL COVERAGE: {float(overall_rate) * 100:.2f}%")
+print(f"\nOVERALL COVERAGE: {_float_attr(overall_rate) * 100:.2f}%")
 print(f"Lines Covered: {lines_covered} / {lines_valid}")
-print(f"Lines Missed: {int(lines_valid) - int(lines_covered)}\n")
+print(f"Lines Missed: {_int_attr(lines_valid) - _int_attr(lines_covered)}\n")
 
 # Get per-module coverage
 print("=" * 80)

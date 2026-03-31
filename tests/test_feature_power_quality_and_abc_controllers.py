@@ -12,6 +12,7 @@ Atomic features tested in this module:
 """
 
 import sys
+from typing import cast
 
 import numpy as np
 import pytest
@@ -481,7 +482,7 @@ class TestAbstractBaseControllerCoverage:
         from src.control.base_controller import BaseController
 
         with pytest.raises(TypeError):
-            BaseController()
+            type.__call__(BaseController)
 
     def test_base_controller_subclass_must_implement_methods(self):
         """Verify subclass must implement all abstract methods."""
@@ -491,20 +492,20 @@ class TestAbstractBaseControllerCoverage:
             pass
 
         with pytest.raises(TypeError):
-            IncompleteController()
+            type.__call__(IncompleteController)
 
     def test_concrete_controller_implementation_works(self):
         """Verify concrete implementation satisfies abstract contract."""
         from src.control.base_controller import BaseController
 
         class ConcreteController(BaseController):
-            def update(self, dt: float):
-                pass
+            def update(self, dt: float) -> None:
+                _ = dt
 
             def reset(self) -> None:
-                pass
+                return None
 
-            def get_state(self) -> dict:
+            def get_state(self) -> dict[str, float]:
                 return {}
 
         # Should not raise
@@ -516,9 +517,9 @@ class TestSupplyProfilesAndAbstractPassLines:
     """Cover supply-profile abstract/base branches and variable/ramp paths."""
 
     def test_supply_profile_abstract_method_bodies_are_executable(self):
-        dummy = object()
+        dummy = cast(SupplyProfile, object())
         assert SupplyProfile.get_voltage(dummy, 0.0) is None
-        assert SupplyProfile.reset(dummy) is None
+        SupplyProfile.reset(dummy)
 
     def test_ramp_supply_validation_and_interpolation(self):
         with pytest.raises(ValueError, match="Duration must be positive"):
@@ -558,7 +559,7 @@ class TestLoadAndMotorProfilesRemainingBranches:
     """Cover remaining uncovered lines in load_model and motor_profiles."""
 
     def test_load_profile_abstract_get_torque_body_executes(self):
-        assert LoadProfile.get_torque(object(), 0.0) is None
+        assert LoadProfile.get_torque(cast(LoadProfile, object()), 0.0) is None
 
     def test_ramp_load_validation_and_branches(self):
         with pytest.raises(ValueError, match="Ramp duration must be positive"):

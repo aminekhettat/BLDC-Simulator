@@ -10,6 +10,7 @@ Atomic features tested in this module:
 """
 
 import math
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -23,6 +24,8 @@ from src.hardware import (
     MockDAQHardware,
     ShuntAmplifierChannel,
 )
+
+Topology = Literal["single", "double", "triple"]
 
 
 class FailingHardware(HardwareInterface):
@@ -84,7 +87,7 @@ def _error_channel(gain_error: float = 0.1) -> ShuntAmplifierChannel:
 
 
 def _make_engine_with_sense(
-    topology: str,
+    topology: Topology,
     channels,
     hardware: HardwareInterface | None = None,
 ) -> SimulationEngine:

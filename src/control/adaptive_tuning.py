@@ -28,6 +28,7 @@ import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict
 
 import numpy as np
 
@@ -68,6 +69,14 @@ class PIGainCandidate:
     controllable: bool
     observable: bool
     score: float
+
+
+class LoopAnalysisResult(TypedDict):
+    """Per-loop analysis payload returned by the tuner."""
+
+    margin: MarginResult
+    controllable: bool
+    observable: bool
 
 
 @dataclass(frozen=True)
@@ -271,7 +280,7 @@ class AdaptiveFOCTuner:
         c = np.array([[1.0, 0.0]], dtype=np.float64)
         return a, b, c
 
-    def analyze_current_loop(self, kp: float, ki: float) -> dict[str, object]:
+    def analyze_current_loop(self, kp: float, ki: float) -> LoopAnalysisResult:
         omega = np.logspace(0, 6, 2000)
         plant = self._first_order_frequency_response(
             num=1.0,
@@ -293,7 +302,7 @@ class AdaptiveFOCTuner:
             "observable": observable,
         }
 
-    def analyze_speed_loop(self, kp: float, ki: float) -> dict[str, object]:
+    def analyze_speed_loop(self, kp: float, ki: float) -> LoopAnalysisResult:
         omega = np.logspace(-1, 4, 2000)
         plant = self._first_order_frequency_response(
             num=max(self.params.torque_constant, 1e-12),

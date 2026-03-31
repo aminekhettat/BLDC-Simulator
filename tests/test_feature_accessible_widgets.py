@@ -141,6 +141,7 @@ def test_accessible_table_widget_click_selection_and_keyboard():
     assert "Row 1: RowA, Column 1: Value, Value: 42" in table.accessibleDescription()
 
     item = table.item(0, 0)
+    assert item is not None
     table.setCurrentItem(item)
     item.setSelected(False)
     space_event = QKeyEvent(
@@ -179,9 +180,13 @@ def test_accessible_list_widget_selection_and_keyboard_toggle():
     space_event = QKeyEvent(
         QKeyEvent.Type.KeyPress, Qt.Key.Key_Space, Qt.KeyboardModifier.NoModifier
     )
-    lst.currentItem().setSelected(False)
+    current_item = lst.currentItem()
+    assert current_item is not None
+    current_item.setSelected(False)
     lst.keyPressEvent(space_event)
-    assert lst.currentItem().isSelected() is True
+    selected_item = lst.currentItem()
+    assert selected_item is not None
+    assert selected_item.isSelected() is True
 
     arrow_event = QKeyEvent(
         QKeyEvent.Type.KeyPress, Qt.Key.Key_Down, Qt.KeyboardModifier.NoModifier

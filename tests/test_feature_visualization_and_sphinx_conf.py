@@ -10,6 +10,7 @@ Atomic features tested in this module:
 
 import logging
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -122,7 +123,7 @@ def test_save_plot_writes_file(tmp_path: Path):
 
 
 def test_base_controller_abstract_method_bodies():
-    dummy = object()
+    dummy = cast(BaseController, object())
     assert BaseController.update(dummy, 0.01) is None
     assert BaseController.reset(dummy) is None
     assert BaseController.get_state(dummy) is None

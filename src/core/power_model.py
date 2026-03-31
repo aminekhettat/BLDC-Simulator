@@ -15,8 +15,19 @@ AC ripple rectification, or other variations.
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from typing import TypedDict
 
 import numpy as np
+
+
+class EfficiencyAdjustmentRecommendation(TypedDict):
+    """Structured recommendation payload for efficiency heuristics."""
+
+    efficiency: float
+    power_factor: float
+    target_efficiency: float
+    needs_attention: bool
+    suggestions: list[str]
 
 
 def compute_power_metrics(
@@ -165,7 +176,7 @@ def recommend_efficiency_adjustments(
     switching_frequency_hz: float = 0.0,
     switching_loss_coeff_v_per_a_khz: float = 0.0,
     target_efficiency: float = 0.90,
-) -> dict[str, object]:
+) -> EfficiencyAdjustmentRecommendation:
     """Return simple heuristic suggestions for improving simulated efficiency."""
     eff = float(np.clip(efficiency, 0.0, 1.0))
     pf = float(np.clip(abs(power_factor), 0.0, 1.0))

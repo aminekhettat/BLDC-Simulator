@@ -8,6 +8,7 @@ Atomic features tested in this module:
 """
 
 import math
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -16,6 +17,8 @@ from src.core.load_model import ConstantLoad
 from src.core.motor_model import BLDCMotor, MotorParameters
 from src.core.simulation_engine import SimulationEngine
 from src.hardware import InverterCurrentSense, ShuntAmplifierChannel
+
+Topology = Literal["single", "double", "triple"]
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -35,7 +38,7 @@ def _ideal_channel(vcc: float = 3.3) -> ShuntAmplifierChannel:
     )
 
 
-def _make_motor_and_engine(topology: str) -> tuple[BLDCMotor, SimulationEngine]:
+def _make_motor_and_engine(topology: Topology) -> tuple[BLDCMotor, SimulationEngine]:
     params = MotorParameters(
         phase_resistance=0.5,
         phase_inductance=1e-3,
@@ -316,7 +319,7 @@ class TestSingleShuntSectorAwareReconstruction:
 
 
 class TestEngineHistoryTrueVsMeasured:
-    def _run_engine(self, topology: str, n_steps: int = 200) -> dict:
+    def _run_engine(self, topology: Topology, n_steps: int = 200) -> dict:
         _, engine = _make_motor_and_engine(topology)
         voltages = np.array([10.0, -5.0, -5.0])
         for _ in range(n_steps):

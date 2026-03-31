@@ -294,5 +294,7 @@ class TestMotorParametersLdLq:
             ld=0.003,
             lq=0.009,
         )
+        assert params.ld is not None
+        assert params.lq is not None
         assert params.ld != params.lq
         assert params.lq > params.ld  # typical salient-pole relationship

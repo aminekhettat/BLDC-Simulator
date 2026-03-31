@@ -58,6 +58,7 @@ Atomic features tested in this module:
 """
 
 import sys
+from typing import cast
 
 import numpy as np
 import pytest
@@ -951,12 +952,14 @@ def test_gui_supply_profile():
     gui.supply_ramp_final.setValue(20.0)
     gui.supply_ramp_duration.setValue(5.0)
     gui._apply_to_simulation()
+    assert gui.engine is not None
     assert isinstance(gui.engine.supply_profile, RampSupply)
     assert gui.engine.supply_profile.get_voltage(2.5) == pytest.approx(15.0)
 
     gui.supply_type.setCurrentText("Constant")
     gui.supply_constant_voltage.setValue(33.0)
     gui._apply_to_simulation()
+    assert gui.engine is not None
     assert isinstance(gui.engine.supply_profile, ConstantSupply)
     assert gui.engine.supply_profile.get_voltage(0) == pytest.approx(33.0)
 
@@ -1111,6 +1114,7 @@ def test_gui_pwm_frequency_default_and_engine_dt_sync():
     assert gui.inverter_switching_frequency.value() == pytest.approx(20000.0)
 
     gui._apply_to_simulation()
+    assert gui.engine is not None
     assert gui.engine.dt == pytest.approx(1.0 / 20000.0)
     timing = gui.engine.get_control_timing_state()
     assert timing["pwm_frequency_hz"] == pytest.approx(20000.0)
@@ -1153,6 +1157,7 @@ def test_gui_inverter_nonidealities_wiring():
     gui.inverter_phase_drop_scale_c.setValue(1.02)
     gui._apply_to_simulation()
 
+    assert gui.svm is not None
     assert gui.svm.device_drop_v == pytest.approx(0.8)
     assert gui.svm.dead_time_fraction == pytest.approx(0.015)
     assert gui.svm.conduction_resistance_ohm == pytest.approx(0.02)
@@ -1186,9 +1191,11 @@ def test_gui_pfc_wiring_to_engine_configuration():
     gui.pfc_window_samples.setValue(96)
     gui._apply_to_simulation()
 
+    assert gui.engine is not None
     pfc_state = gui.engine.get_power_factor_control_state()
     assert pfc_state["enabled"] is True
     assert pfc_state["target_pf"] == pytest.approx(0.98)
+    assert gui.engine.pfc_controller is not None
     assert gui.engine.pfc_controller.kp == pytest.approx(0.25)
     assert gui.engine.pfc_controller.ki == pytest.approx(1.8)
     assert gui.engine.pfc_controller.max_compensation_var == pytest.approx(4500.0)
@@ -1205,6 +1212,7 @@ def test_gui_hardware_backend_wiring_to_engine_configuration():
     gui.hardware_seed.setValue(42)
     gui._apply_to_simulation()
 
+    assert gui.engine is not None
     hw_state = gui.engine.get_hardware_state()
     assert hw_state["enabled"] is True
     assert hw_state["connected"] is True
@@ -1212,6 +1220,7 @@ def test_gui_hardware_backend_wiring_to_engine_configuration():
 
     gui.hardware_enable_backend.setChecked(False)
     gui._apply_to_simulation()
+    assert gui.engine is not None
     hw_state_disabled = gui.engine.get_hardware_state()
     assert hw_state_disabled["enabled"] is False
 
@@ -1315,6 +1324,7 @@ def test_gui_monitoring_updates_advanced_foc_status_blocks():
     gui._apply_to_simulation()
 
     assert isinstance(gui.controller, FOCController)
+    assert gui.engine is not None
 
     gui.engine.motor.state[0:3] = np.array([1.2, -0.6, -0.6])
     gui.engine.motor.state[3] = 90.0
