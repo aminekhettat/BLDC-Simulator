@@ -26,16 +26,21 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-ROOT = Path("/sessions/vibrant-kind-gates/mnt/BLDC-Simulator")
+ROOT = Path(__file__).resolve().parent
 PROFILE_PATH = ROOT / "data/motor_profiles/nanotec_db57m012_12v.json"
-OUT_DIR = Path("/sessions/vibrant-kind-gates/sim_results_observer")
+OUT_DIR = ROOT / "sim_results_observer"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-sys.path.insert(0, str(ROOT))
-
-from src.control import FOCController, SVMGenerator
-from src.control.field_weakening_calibrator import FieldWeakeningCalibrator
-from src.core import BLDCMotor, ConstantLoad, MotorParameters, SimulationEngine
+try:
+    from src.control import FOCController, SVMGenerator
+    from src.control.field_weakening_calibrator import FieldWeakeningCalibrator
+    from src.core import BLDCMotor, ConstantLoad, MotorParameters, SimulationEngine
+except ModuleNotFoundError:
+    # Support direct script execution when project root is not already on sys.path.
+    sys.path.insert(0, str(ROOT))
+    from src.control import FOCController, SVMGenerator
+    from src.control.field_weakening_calibrator import FieldWeakeningCalibrator
+    from src.core import BLDCMotor, ConstantLoad, MotorParameters, SimulationEngine
 
 # ── Motor profile ──────────────────────────────────────────────────────────────
 profile = json.loads(PROFILE_PATH.read_text())
