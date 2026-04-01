@@ -14,21 +14,24 @@ The list below highlights major capabilities. For the complete implemented featu
 see `docs/features.rst`.
 
 - BLDC/PMSM simulation with configurable motor, load, and supply models
-- V/f and FOC control paths with PI-based loop tuning
-- Space Vector Modulation (SVM) with inverter telemetry hooks
-- Standard startup sequencing (alignment/open-loop to closed-loop handoff)
+- FOC and V/f control, including sensored and sensorless FOC operation
+- Auto-calibration workflows grounded in analytic and physics-based methods
+- Field weakening for operation beyond base speed
+- Space Vector Modulation (SVM) with optional PWM-modulation effects
+- Inverter and power-stage realism with loss, ripple, thermal, and asymmetry modeling
+- Phase-current sensing with 1-, 2-, or 3-shunt reconstruction and injectable amplifier gain/offset errors
+- Star (wye) and delta motor topologies
+- Deterministic constant-step RK4 integration
+- NUMBA-accelerated compute paths with CPU/GPU backend selection and safe fallback behavior
+- Power-factor correction (PFC) compensation plus power-factor and efficiency telemetry
+- Standard startup sequencing from alignment to closed-loop handoff
+- Real-time monitoring, data logging, FFT analysis, and plotting
+- Control timing telemetry and MCU-load estimation helpers
+- Hardware backend abstraction with mock DAQ support for dry-run integration
+- Modular, scalable architecture across control, core, hardware, UI, and visualization layers
+- Motor profile import/export, regression baselines, and repeatable validation workflows
 - Accessibility-oriented PyQt6 interface (keyboard-first and screen-reader friendly)
 - Optional audio assistance for key status and workflow events
-- Real-time monitoring, data logging, FFT analysis, and plotting
-- RK4 numerical-stability advisory with dt/PWM recommendations for safe simulation settings
-- Current-sense realism (single/double/triple shunt) with true-vs-measured comparison
-- Power-factor and efficiency telemetry with tuning recommendations
-- Inverter realism blocks (drop/loss/ripple/thermal/asymmetry) and dedicated analysis plots
-- Hardware backend abstraction with mock DAQ support for dry-run integration
-- Control timing telemetry (calc duration, CPU load, MCU-load estimation helpers)
-- Compute backend policy (`auto`, `cpu`, `gpu`) with safe fallback behavior
-- Motor profile import/export and repeatable calibration workflows
-- Regression-oriented test suite and baseline validation
 
 ## Quick Start
 

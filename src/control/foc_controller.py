@@ -465,59 +465,63 @@ class FOCController(BaseController):
         else:
             self._enter_startup_phase("open_loop")
 
-    def _update_target_observer_theta(self, dt: float) -> tuple[float, float, float]:
-        """Update target observer states and return measured/target angles."""
-        theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (2 * np.pi)
-
-        # ── Sensorless or simulation-shortcut EMF source ──────────────────
+    def _get_observer_emf_components(self, dt: float) -> tuple[float, float, float]:
+        """Return observer EMF components in the selected stationary frame."""
         if self._sensorless_emf_enabled:
-            emf_alpha, emf_beta, emf_mag = self._reconstruct_emf_sensorless(dt)
+            return self._reconstruct_emf_sensorless(dt)
+
+        emf_a, emf_b, emf_c = self.motor.back_emf
+        if self.use_concordia:
+            emf_alpha, emf_beta = concordia_transform(emf_a, emf_b, emf_c)
         else:
-            emf_a, emf_b, emf_c = self.motor.back_emf
-            if self.use_concordia:
-                emf_alpha, emf_beta = concordia_transform(emf_a, emf_b, emf_c)
-            else:
-                emf_alpha, emf_beta = clarke_transform(emf_a, emf_b, emf_c)
-            emf_mag = float(np.hypot(emf_alpha, emf_beta))
-        # ─────────────────────────────────────────────────────────────────
+            emf_alpha, emf_beta = clarke_transform(emf_a, emf_b, emf_c)
+        emf_mag = float(np.hypot(emf_alpha, emf_beta))
+        return emf_alpha, emf_beta, emf_mag
 
-        self.emf_observer_mag = emf_mag
+    def _update_measured_observer_theta(self, emf_alpha: float, emf_beta: float) -> None:
+        """Update measured electrical angle from EMF components when available."""
+        if abs(emf_alpha) + abs(emf_beta) <= 1e-12:
+            return
 
-        if abs(emf_alpha) + abs(emf_beta) > 1e-12:
-            if self._sensorless_emf_enabled:
-                # Correct formula for this motor model:
-                # emf_alpha = Ke·ω·sin(θ_e), emf_beta = −Ke·ω·cos(θ_e)
-                # → arctan2(emf_alpha, −emf_beta) = arctan2(sin(θ_e), cos(θ_e)) = θ_e
-                self.theta_meas_emf = float(
-                    np.arctan2(emf_alpha, -emf_beta)
-                ) % (2 * np.pi)
-            else:
-                self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
+        if self._sensorless_emf_enabled:
+            # For the dq SPMSM model, EMF reconstruction from v_αβ and i_αβ gives:
+            #   e_α = v_α − R·iα − L·diα/dt  =  −Ke·ω·sin(θe)   (negative sign)
+            #   e_β = v_β − R·iβ − L·diβ/dt  =  +Ke·ω·cos(θe)   (positive sign)
+            # ∴ arctan2(−e_α, e_β) = arctan2(sin θe, cos θe) = θe  ✓
+            # (Using arctan2(e_α, −e_β) would give θe + π — 180° wrong.)
+            self.theta_meas_emf = float(np.arctan2(-emf_alpha, emf_beta)) % (2 * np.pi)
+            return
 
-        # Speed feedforward: use estimated ω when sensorless, else true motor.omega
+        self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
+
+    def _get_observer_speed_feedforward(self) -> float:
+        """Return electrical-speed feedforward for observer and decoupling paths."""
         if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
-            omega_ff = self._omega_elec_est
-        else:
-            omega_ff = self.motor.omega * self.motor.params.poles_pairs
+            return self._omega_elec_est
+        return self.motor.omega * self.motor.params.poles_pairs
 
-        # During open-loop phase the EMF signal is weak and noisy.  Running the
-        # observer in proportional-only mode lets it pre-converge on angle without
-        # accumulating integral windup that would cause a torque spike at the
-        # moment the closed-loop transition enables the integral.
-        _open_loop_freeze = (self.startup_phase == "open_loop")
+    def _update_target_observer_mode(
+        self,
+        theta_measured: float,
+        omega_ff: float,
+        dt: float,
+    ) -> float:
+        """Advance the configured target observer and return its angle."""
+        open_loop_freeze = self.startup_phase == "open_loop"
 
         if self.observer_target_mode == "PLL":
             err = _wrap_angle(self.theta_meas_emf - self.theta_est_pll)
             self.theta_error_pll = err
             self.theta_error_smo = 0.0
-            if not _open_loop_freeze:
+            if not open_loop_freeze:
                 self.pll["integral"] += err * dt
             omega_correction = self.pll["kp"] * err + self.pll["ki"] * self.pll["integral"]
             self.theta_est_pll = (self.theta_est_pll + (omega_ff + omega_correction) * dt) % (
                 2 * np.pi
             )
-            theta_target = self.theta_est_pll
-        elif self.observer_target_mode == "SMO":
+            return self.theta_est_pll
+
+        if self.observer_target_mode == "SMO":
             err = _wrap_angle(self.theta_meas_emf - self.theta_est_smo)
             self.theta_error_smo = err
             self.theta_error_pll = 0.0
@@ -525,23 +529,32 @@ class FOCController(BaseController):
             slide = float(np.tanh(err / boundary))
             omega_target = omega_ff + self.smo["k_slide"] * slide
             alpha = self.smo["lpf_alpha"]
-            # During open-loop, allow omega_est to track the EMF frequency but
-            # clamp at a multiple of the open-loop command speed so it cannot
-            # wind up far from the true operating point.
             self.smo["omega_est"] = (1.0 - alpha) * self.smo["omega_est"] + alpha * omega_target
             self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (2 * np.pi)
-            theta_target = self.theta_est_smo
-        else:
-            self.theta_error_pll = 0.0
-            self.theta_error_smo = 0.0
-            theta_target = theta_measured
+            return self.theta_est_smo
 
-        # Speed magnitude for confidence: use estimated speed when sensorless
+        self.theta_error_pll = 0.0
+        self.theta_error_smo = 0.0
+        return theta_measured
+
+    def _get_observer_speed_mag_rpm(self) -> float:
+        """Return observer speed magnitude in RPM for confidence metrics."""
         if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
             pp = float(self.motor.params.poles_pairs)
-            speed_mag_rpm = abs(self._omega_elec_est) / max(pp, 1.0) * 30.0 / np.pi
-        else:
-            speed_mag_rpm = abs(self.motor.speed_rpm)
+            return abs(self._omega_elec_est) / max(pp, 1.0) * 30.0 / np.pi
+        return abs(self.motor.speed_rpm)
+
+    def _update_target_observer_theta(self, dt: float) -> tuple[float, float, float]:
+        """Update target observer states and return measured/target angles."""
+        theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (2 * np.pi)
+
+        emf_alpha, emf_beta, emf_mag = self._get_observer_emf_components(dt)
+        self.emf_observer_mag = emf_mag
+
+        self._update_measured_observer_theta(emf_alpha, emf_beta)
+        omega_ff = self._get_observer_speed_feedforward()
+        theta_target = self._update_target_observer_mode(theta_measured, omega_ff, dt)
+        speed_mag_rpm = self._get_observer_speed_mag_rpm()
         speed_norm = min(speed_mag_rpm / max(self.startup_min_speed_rpm, 1e-9), 1.0)
         emf_norm = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
         phase_err = abs(_wrap_angle(self.theta_meas_emf - theta_target))
@@ -1075,7 +1088,11 @@ class FOCController(BaseController):
         self._i_alpha_prev = i_alpha
         self._i_beta_prev  = i_beta
 
-        # Estimate electrical speed from |E| = Ke × ω_mech
+        # Estimate electrical speed from back-EMF magnitude.
+        # In field-weakening, negative id reduces the effective flux linkage:
+        #   λ_eff = Ke/Pp + Ld·id   →   |E| = ω_e · λ_eff · Pp
+        # Using only Ke (no id correction) would under-estimate ω in FW zone,
+        # causing the feedforward to lag and inflating the observer angle error.
         emf_mag = float(np.hypot(self._e_alpha_obs, self._e_beta_obs))
         self.emf_reconstructed_mag = emf_mag
         ke = float(
@@ -1085,7 +1102,26 @@ class FOCController(BaseController):
             else getattr(self.motor.params, "torque_constant", 0.028)
         )
         pp = float(self.motor.params.poles_pairs)
-        omega_mech = emf_mag / max(ke, 1e-9)
+        lambda_pm = ke / max(pp, 1.0)          # nominal PM flux linkage [V·s/rad_e]
+        ld = float(getattr(self.motor.params, "ld", None) or
+                   getattr(self.motor.params, "phase_inductance", lambda_pm))
+
+        # id estimate: project measured α-β currents onto the d-axis using the
+        # last known EMF angle (theta_meas_emf).  Guarded against the startup
+        # transient where theta_meas_emf may still be 0.
+        if emf_mag > 1e-3:                     # only when EMF signal is valid
+            cos_th = float(np.cos(self.theta_meas_emf))
+            sin_th = float(np.sin(self.theta_meas_emf))
+            id_est = float(i_alpha * cos_th + i_beta * sin_th)
+        else:
+            id_est = 0.0
+
+        lambda_eff = lambda_pm + ld * id_est   # effective flux (negative id → smaller λ)
+        # Use nominal Ke as a floor so noise in id_est cannot drive λ_eff ≤ 0
+        lambda_floor = 0.3 * lambda_pm
+        lambda_eff = max(lambda_eff, lambda_floor)
+
+        omega_mech = emf_mag / (lambda_eff * max(pp, 1.0))
         self._omega_elec_est = omega_mech * pp
 
         return self._e_alpha_obs, self._e_beta_obs, emf_mag
@@ -1127,10 +1163,10 @@ class FOCController(BaseController):
 
         if abs(emf_alpha) + abs(emf_beta) > 1e-12:
             if self._sensorless_emf_enabled:
-                # Correct formula: emf_alpha = Ke·ω·sin(θ_e), emf_beta = −Ke·ω·cos(θ_e)
-                # arctan2(emf_alpha, −emf_beta) = arctan2(sin(θ_e), cos(θ_e)) = θ_e
+                # dq reconstruction: e_α = −Ke·ω·sin(θe), e_β = +Ke·ω·cos(θe)
+                # → arctan2(−e_α, e_β) = arctan2(sin θe, cos θe) = θe  ✓
                 self.theta_meas_emf = float(
-                    np.arctan2(emf_alpha, -emf_beta)
+                    np.arctan2(-emf_alpha, emf_beta)
                 ) % (2 * np.pi)
             else:
                 self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
@@ -1586,6 +1622,64 @@ class FOCController(BaseController):
 
         self.field_weakening_id_injection_a = -float(inj_mag)
 
+    def _get_feedback_phase_currents(self) -> tuple[float, float, float]:
+        """Return the active three-phase current feedback source."""
+        if self.use_external_current_feedback:
+            ia, ib, ic = self._external_phase_currents
+            return float(ia), float(ib), float(ic)
+        ia, ib, ic = self.motor.currents
+        return float(ia), float(ib), float(ic)
+
+    def _phase_currents_to_stationary(self, ia: float, ib: float, ic: float) -> tuple[float, float]:
+        """Project phase currents into the selected stationary reference frame."""
+        if self.use_concordia:
+            return concordia_transform(ia, ib, ic)
+        return clarke_transform(ia, ib, ic)
+
+    def _get_effective_inductances(self) -> tuple[float, float]:
+        """Return effective q- and d-axis inductances for decoupling."""
+        lq_eff = (
+            float(self.motor.params.lq)
+            if self.motor.params.lq is not None
+            else float(self.motor.params.phase_inductance)
+        )
+        ld_eff = (
+            float(self.motor.params.ld)
+            if self.motor.params.ld is not None
+            else float(self.motor.params.phase_inductance)
+        )
+        return lq_eff, ld_eff
+
+    def _compute_decoupling_feedforward(self, omega_elec: float) -> tuple[float, float]:
+        """Return d/q decoupling feedforward voltages from active references."""
+        lq_eff, ld_eff = self._get_effective_inductances()
+        v_d_ff = (
+            -omega_elec * lq_eff * float(self.iq_ref_command) if self.enable_decouple_d else 0.0
+        )
+        v_q_ff = omega_elec * ld_eff * float(self.id_ref_command) if self.enable_decouple_q else 0.0
+        return v_d_ff, v_q_ff
+
+    def _apply_voltage_saturation(
+        self,
+        v_d_unsat: float,
+        v_q_unsat: float,
+    ) -> tuple[float, float]:
+        """Clamp d/q voltage commands to the configured inverter limit."""
+        if self.voltage_saturation_mode == "d_priority":
+            v_d = float(np.clip(v_d_unsat, -self.vdq_limit, self.vdq_limit))
+            v_q_headroom = float(np.sqrt(max(self.vdq_limit * self.vdq_limit - v_d * v_d, 0.0)))
+            v_q = float(np.clip(v_q_unsat, -v_q_headroom, v_q_headroom))
+            return v_d, v_q
+
+        v_d = float(v_d_unsat)
+        v_q = float(v_q_unsat)
+        vdq_mag = np.hypot(v_d, v_q)
+        if vdq_mag > self.vdq_limit and vdq_mag > 1e-12:
+            scale = self.vdq_limit / vdq_mag
+            v_d *= scale
+            v_q *= scale
+        return v_d, v_q
+
     def auto_tune_pi(self, axis: str = "q", bandwidth: float = 50.0) -> None:
         """Auto-tune PI parameters for given axis ('d' or 'q').
 
@@ -1613,15 +1707,8 @@ class FOCController(BaseController):
         else:
             self.theta = self._estimate_theta_electrical(dt)
 
-        # Read phase currents from selected feedback source.
-        if self.use_external_current_feedback:
-            ia, ib, ic = self._external_phase_currents
-        else:
-            ia, ib, ic = self.motor.currents
-        if self.use_concordia:
-            v_alpha, v_beta = concordia_transform(ia, ib, ic)
-        else:
-            v_alpha, v_beta = clarke_transform(ia, ib, ic)
+        ia, ib, ic = self._get_feedback_phase_currents()
+        v_alpha, v_beta = self._phase_currents_to_stationary(ia, ib, ic)
 
         # park transform to get d/q currents
         id_val, iq_val = park_transform(v_alpha, v_beta, self.theta)
@@ -1637,20 +1724,7 @@ class FOCController(BaseController):
         v_q_pi = _pi_update_anti_windup(self.pi_q, error_q, dt, limit=self.vdq_limit)
 
         # Use estimated electrical speed for decoupling when sensorless mode active
-        if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
-            omega_elec = self._omega_elec_est
-        else:
-            omega_elec = self.motor.omega * self.motor.params.poles_pairs
-        lq_eff = (
-            float(self.motor.params.lq)
-            if self.motor.params.lq is not None
-            else float(self.motor.params.phase_inductance)
-        )
-        ld_eff = (
-            float(self.motor.params.ld)
-            if self.motor.params.ld is not None
-            else float(self.motor.params.phase_inductance)
-        )
+        omega_elec = self._get_observer_speed_feedforward()
         # Decoupling feedforward: use *reference* currents, not measured.
         #
         # Using measured id_val / iq_val for feedforward causes large-signal
@@ -1667,10 +1741,7 @@ class FOCController(BaseController):
         # linear operating range.  In steady-state the reference ≈ the
         # measured value, so the decoupling quality is unaffected.
         # id_ref_command / iq_ref_command are set just above (line 1177).
-        v_d_ff = (
-            -omega_elec * lq_eff * float(self.iq_ref_command) if self.enable_decouple_d else 0.0
-        )
-        v_q_ff = omega_elec * ld_eff * float(self.id_ref_command) if self.enable_decouple_q else 0.0
+        v_d_ff, v_q_ff = self._compute_decoupling_feedforward(omega_elec)
         v_d_unsat = v_d_pi + v_d_ff
         v_q_unsat = v_q_pi + v_q_ff
 
@@ -1684,18 +1755,7 @@ class FOCController(BaseController):
         # standard production-drive implementation (e.g. Kim & Sul 1997,
         # Bolognani 1999): the voltage regulator feedback is the actual
         # commanded voltage after hard-limiting, not the desired PI output.
-        if self.voltage_saturation_mode == "d_priority":
-            v_d = float(np.clip(v_d_unsat, -self.vdq_limit, self.vdq_limit))
-            v_q_headroom = float(np.sqrt(max(self.vdq_limit * self.vdq_limit - v_d * v_d, 0.0)))
-            v_q = float(np.clip(v_q_unsat, -v_q_headroom, v_q_headroom))
-        else:
-            v_d = float(v_d_unsat)
-            v_q = float(v_q_unsat)
-            vdq_mag = np.hypot(v_d, v_q)
-            if vdq_mag > self.vdq_limit and vdq_mag > 1e-12:
-                scale = self.vdq_limit / vdq_mag
-                v_d *= scale
-                v_q *= scale
+        v_d, v_q = self._apply_voltage_saturation(v_d_unsat, v_q_unsat)
 
         # FW headroom from SATURATED voltage: |v_sat| ≤ vdq_limit always,
         # so headroom = vdq_limit − |v_sat| ≥ 0 always.

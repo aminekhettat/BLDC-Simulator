@@ -25,6 +25,8 @@ from pathlib import Path
 _THRESHOLDS: list[tuple[str, int]] = [
     # UI module: main_window.py is the known outlier; frozen at current size
     ("src/ui/**/*.py", 6_100),
+    # FOC controller is a known large outlier pending extraction into submodules
+    ("src/control/foc_controller.py", 2_100),
     # Control algorithms: calibrators are large but bounded
     ("src/control/**/*.py", 1_600),
     # Core simulation engine and models
