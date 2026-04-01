@@ -1103,8 +1103,10 @@ class FOCController(BaseController):
         )
         pp = float(self.motor.params.poles_pairs)
         lambda_pm = ke / max(pp, 1.0)          # nominal PM flux linkage [V·s/rad_e]
-        ld = float(getattr(self.motor.params, "ld", None) or
-                   getattr(self.motor.params, "phase_inductance", lambda_pm))
+        ld_raw = getattr(self.motor.params, "ld", None)
+        if ld_raw is None:
+            ld_raw = getattr(self.motor.params, "phase_inductance", None)
+        ld = float(ld_raw) if ld_raw is not None else lambda_pm
 
         # id estimate: project measured α-β currents onto the d-axis using the
         # last known EMF angle (theta_meas_emf).  Guarded against the startup
