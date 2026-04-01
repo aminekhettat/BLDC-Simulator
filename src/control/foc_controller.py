@@ -155,6 +155,29 @@ class FOCController(BaseController):
         self.theta_error_smo = 0.0
         self.emf_observer_mag = 0.0
 
+        # ── Sensorless EMF reconstructor ──────────────────────────────────────
+        # When enabled, back-EMF is reconstructed from applied voltages and
+        # measured currents: e_αβ = v_αβ − R·i_αβ − L·Δi_αβ/dt
+        # This replaces the simulation shortcut of reading motor.back_emf and
+        # motor.omega directly, making the observers truly sensorless.
+        self._sensorless_emf_enabled = False   # enabled via enable_sensorless_emf_reconstruction()
+        self._emf_recon_R = float(motor.params.phase_resistance)
+        self._emf_recon_L = float(
+            motor.params.ld if motor.params.ld is not None
+            else motor.params.phase_inductance
+        )
+        _tau_e = self._emf_recon_L / max(self._emf_recon_R, 1e-9)
+        self._emf_recon_lpf_tau = 3.0 * _tau_e  # LPF time constant (default 3×τ_e)
+        self._e_alpha_obs  = 0.0    # reconstructed EMF state, α axis
+        self._e_beta_obs   = 0.0    # reconstructed EMF state, β axis
+        self._i_alpha_prev = 0.0    # previous-step α current for di/dt
+        self._i_beta_prev  = 0.0    # previous-step β current for di/dt
+        self._omega_elec_est = 0.0  # estimated ω_e from |E| = Ke·ω_mech
+        self.emf_reconstructed_mag = 0.0   # diagnostic
+        self._use_estimated_speed_ff = True  # use ω_est instead of motor.omega as FF
+        self._v_alpha_prev = 0.0  # applied α-voltage from previous step (for EMF recon)
+        self._v_beta_prev  = 0.0  # applied β-voltage from previous step (for EMF recon)
+
         # Sensorless startup transition (initial observer -> target observer).
         self.startup_transition_enabled = False
         self.startup_initial_mode = "Measured"
@@ -387,8 +410,44 @@ class FOCController(BaseController):
             self.startup_fallback_elapsed_s = 0.0
             self.startup_ready_to_switch = False
             self.startup_transition_done = False
+            # ── Reset current-PI integrals so the alignment→open-loop transition
+            # does not cause a torque spike.  During alignment the d-PI integral
+            # accumulates to hold id = align_current; if it is not reset it
+            # creates a large v_q spike on the first open-loop step that kicks
+            # the motor far ahead of the open-loop angle (≈180° slip), making
+            # _v_alpha_prev point in the wrong direction and corrupting the EMF
+            # reconstruction with a 180° phase error.
+            self.pi_d["integral"] = 0.0
+            self.pi_q["integral"] = 0.0
+            self._v_alpha_prev = 0.0
+            self._v_beta_prev  = 0.0
         else:
             self.angle_observer_mode = self.observer_target_mode
+            # ── Bumpless closed-loop transition ────────────────────────────
+            # During open-loop the observers ran in proportional-only mode and
+            # have been continuously tracking theta_meas_emf (the true motor
+            # electrical angle reconstructed from actual terminal voltages and
+            # measured currents).  By the time the transition fires, both
+            # theta_est_pll and theta_est_smo should be close to the true
+            # motor angle — DO NOT overwrite them with startup_open_loop_angle
+            # (which lags the motor when it overshoots the open-loop ramp).
+            #
+            # "j'aligne les angles et je lance l'integrateur" means:
+            #   • angles are already aligned by pre-convergence → no reset
+            #   • launch the integrator from zero → pll["integral"] = 0
+            #   • give SMO a sensible initial speed estimate
+            if not self._has_position_sensor():
+                # Keep theta_est_pll / theta_est_smo — already pre-converged.
+                self.pll["integral"] = 0.0
+                # Initialise SMO speed from the reconstructed electrical speed
+                # so the first closed-loop integration step is smooth.
+                self.smo["omega_est"] = self._omega_elec_est if self._omega_elec_est > 0.0 else (
+                    self.startup_open_loop_speed_rpm
+                    / 60.0
+                    * 2.0
+                    * float(np.pi)
+                    * float(self.motor.params.poles_pairs)
+                )
 
     def _reset_startup_sequence_runtime(self) -> None:
         """Reset phase runtime for the standard startup sequence."""
@@ -410,26 +469,51 @@ class FOCController(BaseController):
         """Update target observer states and return measured/target angles."""
         theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (2 * np.pi)
 
-        emf_a, emf_b, emf_c = self.motor.back_emf
-        if self.use_concordia:
-            emf_alpha, emf_beta = concordia_transform(emf_a, emf_b, emf_c)
+        # ── Sensorless or simulation-shortcut EMF source ──────────────────
+        if self._sensorless_emf_enabled:
+            emf_alpha, emf_beta, emf_mag = self._reconstruct_emf_sensorless(dt)
         else:
-            emf_alpha, emf_beta = clarke_transform(emf_a, emf_b, emf_c)
+            emf_a, emf_b, emf_c = self.motor.back_emf
+            if self.use_concordia:
+                emf_alpha, emf_beta = concordia_transform(emf_a, emf_b, emf_c)
+            else:
+                emf_alpha, emf_beta = clarke_transform(emf_a, emf_b, emf_c)
+            emf_mag = float(np.hypot(emf_alpha, emf_beta))
+        # ─────────────────────────────────────────────────────────────────
 
-        emf_mag = float(np.hypot(emf_alpha, emf_beta))
         self.emf_observer_mag = emf_mag
 
         if abs(emf_alpha) + abs(emf_beta) > 1e-12:
-            self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
+            if self._sensorless_emf_enabled:
+                # Correct formula for this motor model:
+                # emf_alpha = Ke·ω·sin(θ_e), emf_beta = −Ke·ω·cos(θ_e)
+                # → arctan2(emf_alpha, −emf_beta) = arctan2(sin(θ_e), cos(θ_e)) = θ_e
+                self.theta_meas_emf = float(
+                    np.arctan2(emf_alpha, -emf_beta)
+                ) % (2 * np.pi)
+            else:
+                self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
+
+        # Speed feedforward: use estimated ω when sensorless, else true motor.omega
+        if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
+            omega_ff = self._omega_elec_est
+        else:
+            omega_ff = self.motor.omega * self.motor.params.poles_pairs
+
+        # During open-loop phase the EMF signal is weak and noisy.  Running the
+        # observer in proportional-only mode lets it pre-converge on angle without
+        # accumulating integral windup that would cause a torque spike at the
+        # moment the closed-loop transition enables the integral.
+        _open_loop_freeze = (self.startup_phase == "open_loop")
 
         if self.observer_target_mode == "PLL":
             err = _wrap_angle(self.theta_meas_emf - self.theta_est_pll)
             self.theta_error_pll = err
             self.theta_error_smo = 0.0
-            self.pll["integral"] += err * dt
+            if not _open_loop_freeze:
+                self.pll["integral"] += err * dt
             omega_correction = self.pll["kp"] * err + self.pll["ki"] * self.pll["integral"]
-            omega_base = self.motor.omega * self.motor.params.poles_pairs
-            self.theta_est_pll = (self.theta_est_pll + (omega_base + omega_correction) * dt) % (
+            self.theta_est_pll = (self.theta_est_pll + (omega_ff + omega_correction) * dt) % (
                 2 * np.pi
             )
             theta_target = self.theta_est_pll
@@ -439,10 +523,11 @@ class FOCController(BaseController):
             self.theta_error_pll = 0.0
             boundary = self.smo["boundary"]
             slide = float(np.tanh(err / boundary))
-            omega_target = (
-                self.motor.omega * self.motor.params.poles_pairs + self.smo["k_slide"] * slide
-            )
+            omega_target = omega_ff + self.smo["k_slide"] * slide
             alpha = self.smo["lpf_alpha"]
+            # During open-loop, allow omega_est to track the EMF frequency but
+            # clamp at a multiple of the open-loop command speed so it cannot
+            # wind up far from the true operating point.
             self.smo["omega_est"] = (1.0 - alpha) * self.smo["omega_est"] + alpha * omega_target
             self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (2 * np.pi)
             theta_target = self.theta_est_smo
@@ -451,7 +536,13 @@ class FOCController(BaseController):
             self.theta_error_smo = 0.0
             theta_target = theta_measured
 
-        speed_norm = min(abs(self.motor.speed_rpm) / max(self.startup_min_speed_rpm, 1e-9), 1.0)
+        # Speed magnitude for confidence: use estimated speed when sensorless
+        if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
+            pp = float(self.motor.params.poles_pairs)
+            speed_mag_rpm = abs(self._omega_elec_est) / max(pp, 1.0) * 30.0 / np.pi
+        else:
+            speed_mag_rpm = abs(self.motor.speed_rpm)
+        speed_norm = min(speed_mag_rpm / max(self.startup_min_speed_rpm, 1e-9), 1.0)
         emf_norm = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
         phase_err = abs(_wrap_angle(self.theta_meas_emf - theta_target))
         coherence = 1.0 - min(phase_err / np.pi, 1.0)
@@ -806,6 +897,201 @@ class FOCController(BaseController):
         self.smo["lpf_alpha"] = float(lpf_alpha)
         self.smo["boundary"] = float(boundary)
 
+    # ── Sensorless EMF reconstructor public API ─────────────────────────────
+
+    def enable_sensorless_emf_reconstruction(
+        self,
+        R: float | None = None,
+        L: float | None = None,
+        lpf_tau_s: float | None = None,
+        use_estimated_speed_ff: bool = True,
+    ) -> None:
+        """Enable truly sensorless EMF reconstruction for both observers.
+
+        Once enabled, back-EMF is estimated from applied voltages and measured
+        phase currents: ``e_αβ = v_αβ − R·i_αβ − L·Δi_αβ/dt``, with a
+        first-order LPF.  The observers never read ``motor.back_emf`` or
+        ``motor.omega`` when this flag is set.
+
+        Parameters
+        ----------
+        R : float, optional
+            Phase resistance [Ω].  Defaults to motor parameter.
+        L : float, optional
+            Phase inductance [H].  Defaults to Ld (or phase_inductance).
+        lpf_tau_s : float, optional
+            LPF time constant [s].  Defaults to 3×τ_e = 3·L/R.
+        use_estimated_speed_ff : bool
+            Use ``ω_est`` instead of ``motor.omega`` for PLL/SMO feedforward
+            and decoupling.  Default True.
+        """
+        if R is not None:
+            self._emf_recon_R = float(R)
+        if L is not None:
+            self._emf_recon_L = float(L)
+        if lpf_tau_s is not None:
+            self._emf_recon_lpf_tau = float(lpf_tau_s)
+        else:
+            tau_e = self._emf_recon_L / max(self._emf_recon_R, 1e-9)
+            self._emf_recon_lpf_tau = 3.0 * tau_e
+        self._use_estimated_speed_ff = bool(use_estimated_speed_ff)
+        self._sensorless_emf_enabled = True
+
+    def calibrate_pll_gains_analytical(
+        self,
+        rated_rpm: float | None = None,
+        zeta: float = 0.9,
+        apply: bool = True,
+    ) -> dict:
+        """Compute PLL gains analytically from motor bandwidth target.
+
+        The PLL is a type-2 phase tracker:
+        ``H(s) = (kp·s + ki) / (s² + kp·s + ki)``.
+        With natural frequency ωn = √ki and damping ζ = kp/(2·√ki):
+
+        * ``ωn`` is chosen so the PLL bandwidth (≈ωn) is ≤ 1/5 of the
+          electrical bandwidth ``ω_e_max = rated_rpm × π/30 × Pp``.
+        * ``ki = ωn²``, ``kp = 2·ζ·ωn``
+
+        Parameters
+        ----------
+        rated_rpm : float, optional
+            Rated mechanical speed [RPM].  If None, uses motor rated_speed_rpm
+            or falls back to 3000 RPM.
+        zeta : float
+            Desired damping ratio (default 0.9 for slight overdamping).
+        apply : bool
+            If True, immediately calls ``set_pll_gains(kp, ki)`` with the result.
+
+        Returns
+        -------
+        dict with keys ``kp``, ``ki``, ``omega_n_rad_s``.
+        """
+        if rated_rpm is None:
+            rated_rpm = float(
+                getattr(self.motor.params, "rated_speed_rpm", None) or 3000.0
+            )
+        pp = float(self.motor.params.poles_pairs)
+        omega_e_max = rated_rpm * np.pi / 30.0 * pp  # max electrical rad/s
+        # PLL bandwidth = ωn ≤ ω_e_max / 5 to avoid phase lag at rated speed
+        omega_n = omega_e_max / 5.0
+        ki = omega_n ** 2
+        kp = 2.0 * float(zeta) * omega_n
+        if apply:
+            self.set_pll_gains(kp, ki)
+        return {"kp": kp, "ki": ki, "omega_n_rad_s": omega_n}
+
+    def calibrate_smo_gains_analytical(
+        self,
+        rated_rpm: float | None = None,
+        dt: float | None = None,
+        apply: bool = True,
+    ) -> dict:
+        """Compute SMO gains analytically from motor electrical time constant.
+
+        * ``k_slide = 5 × ω_e_max`` — gain high enough to pull the phase
+          trajectory to the sliding surface within a few electrical periods.
+        * ``lpf_alpha = dt / (dt + 3·τ_e)`` — LPF matched to electrical
+          bandwidth (3× electrical time constant).
+        * ``boundary = 0.04`` rad — tanh boundary layer (avoids chattering).
+
+        Parameters
+        ----------
+        rated_rpm : float, optional
+            Rated mechanical speed [RPM].  If None, uses motor parameter.
+        dt : float, optional
+            Current-loop time step [s].  If None, uses 100 µs.
+        apply : bool
+            If True, immediately calls ``set_smo_gains(k_slide, lpf_alpha, boundary)``.
+
+        Returns
+        -------
+        dict with keys ``k_slide``, ``lpf_alpha``, ``boundary``, ``tau_e_s``.
+        """
+        if rated_rpm is None:
+            rated_rpm = float(
+                getattr(self.motor.params, "rated_speed_rpm", None) or 3000.0
+            )
+        if dt is None:
+            dt = 100e-6  # 100 µs default (10 kHz current loop)
+        pp = float(self.motor.params.poles_pairs)
+        R = float(self.motor.params.phase_resistance)
+        L_val = float(
+            self.motor.params.ld
+            if self.motor.params.ld is not None
+            else self.motor.params.phase_inductance
+        )
+        tau_e = L_val / max(R, 1e-9)
+        omega_e_max = rated_rpm * np.pi / 30.0 * pp
+        k_slide = 5.0 * omega_e_max
+        # LPF alpha: matches electrical bandwidth (3·τ_e cut-off)
+        lpf_alpha = float(dt) / (float(dt) + 3.0 * tau_e)
+        lpf_alpha = float(np.clip(lpf_alpha, 1e-4, 0.5))  # safety clamp
+        boundary = 0.04  # rad — tanh boundary layer
+        if apply:
+            self.set_smo_gains(k_slide, lpf_alpha, boundary)
+        return {
+            "k_slide": k_slide,
+            "lpf_alpha": lpf_alpha,
+            "boundary": boundary,
+            "tau_e_s": tau_e,
+        }
+
+    def _reconstruct_emf_sensorless(
+        self, dt: float
+    ) -> tuple[float, float, float]:
+        """Reconstruct back-EMF from voltage commands and measured currents.
+
+        Formula: ``e_αβ = v_αβ[n-1] − R·i_αβ[n] − L·(i_αβ[n]−i_αβ[n-1])/dt``
+
+        Returns
+        -------
+        (e_alpha, e_beta, emf_mag) — filtered reconstructed EMF in α-β frame.
+        """
+        # Phase currents → Clarke/Concordia → α-β
+        ia, ib, ic = self.motor.currents
+        if self.use_concordia:
+            i_alpha, i_beta = concordia_transform(ia, ib, ic)
+        else:
+            i_alpha, i_beta = clarke_transform(ia, ib, ic)
+
+        dt_safe = max(dt, 1e-12)
+        di_alpha = (i_alpha - self._i_alpha_prev) / dt_safe
+        di_beta  = (i_beta  - self._i_beta_prev)  / dt_safe
+
+        R_val = self._emf_recon_R
+        L_val = self._emf_recon_L
+
+        # Raw EMF: e = v_prev − R·i − L·di/dt
+        e_alpha_raw = self._v_alpha_prev - R_val * i_alpha - L_val * di_alpha
+        e_beta_raw  = self._v_beta_prev  - R_val * i_beta  - L_val * di_beta
+
+        # First-order LPF
+        lpf_alpha = dt_safe / (dt_safe + self._emf_recon_lpf_tau)
+        self._e_alpha_obs = (1.0 - lpf_alpha) * self._e_alpha_obs + lpf_alpha * e_alpha_raw
+        self._e_beta_obs  = (1.0 - lpf_alpha) * self._e_beta_obs  + lpf_alpha * e_beta_raw
+
+        # Update current memory for next step
+        self._i_alpha_prev = i_alpha
+        self._i_beta_prev  = i_beta
+
+        # Estimate electrical speed from |E| = Ke × ω_mech
+        emf_mag = float(np.hypot(self._e_alpha_obs, self._e_beta_obs))
+        self.emf_reconstructed_mag = emf_mag
+        ke = float(
+            self.motor.params.back_emf_constant
+            if hasattr(self.motor.params, "back_emf_constant")
+            and self.motor.params.back_emf_constant
+            else getattr(self.motor.params, "torque_constant", 0.028)
+        )
+        pp = float(self.motor.params.poles_pairs)
+        omega_mech = emf_mag / max(ke, 1e-9)
+        self._omega_elec_est = omega_mech * pp
+
+        return self._e_alpha_obs, self._e_beta_obs, emf_mag
+
+    # ────────────────────────────────────────────────────────────────────────
+
     def set_sensorless_blend(
         self,
         enabled: bool = True,
@@ -825,19 +1111,37 @@ class FOCController(BaseController):
         """Estimate electrical angle from selected observer mode."""
         theta_measured = (self.motor.theta * self.motor.params.poles_pairs) % (2 * np.pi)
 
-        emf_a, emf_b, emf_c = self.motor.back_emf
-        if self.use_concordia:
-            emf_alpha, emf_beta = concordia_transform(emf_a, emf_b, emf_c)
+        # ── Sensorless or simulation-shortcut EMF source ──────────────────
+        if self._sensorless_emf_enabled:
+            emf_alpha, emf_beta, emf_mag = self._reconstruct_emf_sensorless(dt)
         else:
-            emf_alpha, emf_beta = clarke_transform(emf_a, emf_b, emf_c)
+            emf_a, emf_b, emf_c = self.motor.back_emf
+            if self.use_concordia:
+                emf_alpha, emf_beta = concordia_transform(emf_a, emf_b, emf_c)
+            else:
+                emf_alpha, emf_beta = clarke_transform(emf_a, emf_b, emf_c)
+            emf_mag = float(np.hypot(emf_alpha, emf_beta))
+        # ─────────────────────────────────────────────────────────────────
 
-        emf_mag = float(np.hypot(emf_alpha, emf_beta))
         self.emf_observer_mag = emf_mag
 
         if abs(emf_alpha) + abs(emf_beta) > 1e-12:
-            self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
+            if self._sensorless_emf_enabled:
+                # Correct formula: emf_alpha = Ke·ω·sin(θ_e), emf_beta = −Ke·ω·cos(θ_e)
+                # arctan2(emf_alpha, −emf_beta) = arctan2(sin(θ_e), cos(θ_e)) = θ_e
+                self.theta_meas_emf = float(
+                    np.arctan2(emf_alpha, -emf_beta)
+                ) % (2 * np.pi)
+            else:
+                self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
 
-        speed_norm = min(abs(self.motor.speed_rpm) / max(self.startup_min_speed_rpm, 1e-9), 1.0)
+        # Speed magnitude for confidence: use estimated speed when sensorless
+        if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
+            pp = float(self.motor.params.poles_pairs)
+            speed_mag_rpm = abs(self._omega_elec_est) / max(pp, 1.0) * 30.0 / np.pi
+        else:
+            speed_mag_rpm = abs(self.motor.speed_rpm)
+        speed_norm = min(speed_mag_rpm / max(self.startup_min_speed_rpm, 1e-9), 1.0)
         emf_norm = min(emf_mag / max(self.startup_min_emf_v, 1e-9), 1.0)
 
         if self.observer_target_mode == "PLL":
@@ -888,6 +1192,12 @@ class FOCController(BaseController):
             dt, emf_mag, self.observer_confidence
         )
 
+        # Speed feedforward: use estimated ω when sensorless, else true motor.omega
+        if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
+            omega_ff = self._omega_elec_est
+        else:
+            omega_ff = self.motor.omega * self.motor.params.poles_pairs
+
         mode = self.angle_observer_mode
         if mode == "Measured":
             self.theta_error_pll = 0.0
@@ -896,13 +1206,19 @@ class FOCController(BaseController):
             self.theta_sensorless_raw = theta_measured
             return theta_measured
 
+        # Freeze PLL integral during open-loop to prevent windup from noisy
+        # low-speed EMF.  The observer tracks angle proportionally during
+        # open-loop; the integral is enabled the moment the closed-loop
+        # transition fires (pll["integral"] is set to 0 at that transition).
+        _open_loop_freeze = (self.startup_phase == "open_loop")
+
         if mode == "PLL":
             err = _wrap_angle(self.theta_meas_emf - self.theta_est_pll)
             self.theta_error_pll = err
-            self.pll["integral"] += err * dt
+            if not _open_loop_freeze:
+                self.pll["integral"] += err * dt
             omega_correction = self.pll["kp"] * err + self.pll["ki"] * self.pll["integral"]
-            omega_base = self.motor.omega * self.motor.params.poles_pairs
-            self.theta_est_pll = (self.theta_est_pll + (omega_base + omega_correction) * dt) % (
+            self.theta_est_pll = (self.theta_est_pll + (omega_ff + omega_correction) * dt) % (
                 2 * np.pi
             )
             theta_obs = self.theta_est_pll
@@ -912,9 +1228,7 @@ class FOCController(BaseController):
             self.theta_error_smo = err
             boundary = self.smo["boundary"]
             slide = float(np.tanh(err / boundary))
-            omega_target = (
-                self.motor.omega * self.motor.params.poles_pairs + self.smo["k_slide"] * slide
-            )
+            omega_target = omega_ff + self.smo["k_slide"] * slide
             alpha = self.smo["lpf_alpha"]
             self.smo["omega_est"] = (1.0 - alpha) * self.smo["omega_est"] + alpha * omega_target
             self.theta_est_smo = (self.theta_est_smo + self.smo["omega_est"] * dt) % (2 * np.pi)
@@ -925,8 +1239,14 @@ class FOCController(BaseController):
             self.sensorless_blend_weight = 1.0
             return theta_obs
 
+        # Blend weight: use estimated speed when sensorless
+        if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
+            pp = float(self.motor.params.poles_pairs)
+            blend_speed_rpm = abs(self._omega_elec_est) / max(pp, 1.0) * 30.0 / np.pi
+        else:
+            blend_speed_rpm = abs(self.motor.speed_rpm)
         w_speed = np.clip(
-            abs(self.motor.speed_rpm) / max(self.sensorless_blend_min_speed_rpm, 1e-9),
+            blend_speed_rpm / max(self.sensorless_blend_min_speed_rpm, 1e-9),
             0.0,
             1.0,
         )
@@ -1316,7 +1636,11 @@ class FOCController(BaseController):
         v_d_pi = _pi_update_anti_windup(self.pi_d, error_d, dt, limit=self.vdq_limit)
         v_q_pi = _pi_update_anti_windup(self.pi_q, error_q, dt, limit=self.vdq_limit)
 
-        omega_elec = self.motor.omega * self.motor.params.poles_pairs
+        # Use estimated electrical speed for decoupling when sensorless mode active
+        if self._sensorless_emf_enabled and self._use_estimated_speed_ff:
+            omega_elec = self._omega_elec_est
+        else:
+            omega_elec = self.motor.omega * self.motor.params.poles_pairs
         lq_eff = (
             float(self.motor.params.lq)
             if self.motor.params.lq is not None
@@ -1402,6 +1726,10 @@ class FOCController(BaseController):
         # inverse park to alpha-beta voltages
         v_alpha_cmd, v_beta_cmd = inverse_park(v_d, v_q, self.theta)
 
+        # Store applied voltage vector for sensorless EMF reconstruction (next step)
+        self._v_alpha_prev = v_alpha_cmd
+        self._v_beta_prev  = v_beta_cmd
+
         if self.output_cartesian:
             return v_alpha_cmd, v_beta_cmd
         mag = np.hypot(v_alpha_cmd, v_beta_cmd)
@@ -1430,6 +1758,15 @@ class FOCController(BaseController):
         self.theta_error_pll = 0.0
         self.theta_error_smo = 0.0
         self.emf_observer_mag = 0.0
+        # Sensorless EMF reconstructor state
+        self._e_alpha_obs  = 0.0
+        self._e_beta_obs   = 0.0
+        self._i_alpha_prev = 0.0
+        self._i_beta_prev  = 0.0
+        self._omega_elec_est = 0.0
+        self.emf_reconstructed_mag = 0.0
+        self._v_alpha_prev = 0.0
+        self._v_beta_prev  = 0.0
         self.startup_elapsed_s = 0.0
         self.startup_confidence_elapsed_s = 0.0
         self.startup_fallback_elapsed_s = 0.0
@@ -1476,6 +1813,24 @@ class FOCController(BaseController):
         )
         self._reset_startup_sequence_runtime()
 
+    def update_applied_voltage(self, va: float, vb: float, vc: float) -> None:
+        """Store actual applied phase voltages for sensorless EMF reconstruction.
+
+        Call this *after* ``svm.modulate()`` and *before* the next
+        ``ctrl.update()`` so that :meth:`_reconstruct_emf_sensorless` uses the
+        true motor terminal voltage rather than the FOC-commanded inverse-Park
+        output.  The SVM output can deviate from the FOC command by ±15 %
+        (sector-dependent gain) and using the real applied vector eliminates
+        that systematic error from the EMF reconstruction.
+
+        Parameters
+        ----------
+        va, vb, vc:
+            Phase-to-neutral (or phase-to-virtual-neutral) voltages in volts,
+            as actually applied to the motor terminals by the inverter.
+        """
+        self._v_alpha_prev, self._v_beta_prev = clarke_transform(va, vb, vc)
+
     def get_state(self) -> dict:
         """Return controller state variables."""
         return {
@@ -1493,6 +1848,9 @@ class FOCController(BaseController):
             "theta_error_pll": self.theta_error_pll,
             "theta_error_smo": self.theta_error_smo,
             "emf_observer_mag": self.emf_observer_mag,
+            "emf_reconstructed_mag": self.emf_reconstructed_mag,
+            "omega_elec_est_rad_s": self._omega_elec_est,
+            "sensorless_emf_enabled": self._sensorless_emf_enabled,
             "observer_target_mode": self.observer_target_mode,
             "startup_transition_enabled": self.startup_transition_enabled,
             "startup_transition_done": self.startup_transition_done,
@@ -1577,4 +1935,3 @@ class FOCController(BaseController):
             "pll": self.pll,
             "smo": self.smo,
         }
-
