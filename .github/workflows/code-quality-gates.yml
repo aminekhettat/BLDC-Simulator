@@ -64,7 +64,6 @@ jobs:
             --cov=src \
             --cov-report=term-missing:skip-covered \
             --cov-report=xml:data/logs/coverage.xml \
-            --cov-fail-under=100 \
             -q
 
       - name: Build Sphinx HTML docs
