@@ -44,7 +44,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Ruff lint
-        run: ruff check .
+        run: python -m ruff check .
 
       - name: File-length gate
         run: python scripts/check_file_length.py
