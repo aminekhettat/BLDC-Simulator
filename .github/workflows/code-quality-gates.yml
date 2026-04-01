@@ -60,6 +60,7 @@ jobs:
           MPLBACKEND: Agg
           QT_QPA_PLATFORM: offscreen
         run: |
+          mkdir -p data/logs
           python -m pytest tests/ \
             --cov=src \
             --cov-report=term-missing:skip-covered \
