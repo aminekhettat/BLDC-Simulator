@@ -731,22 +731,22 @@ class FieldWeakeningCalibrator:
         # ── 1. Analytical FW parameters ──────────────────────────────
         physics = self.compute_physics_params()
         if self.verbose:
-            print(f"\n{'─' * 64}")
-            print(f"  Motor : {self.profile_name}")
-            print(
+            print(f"\n{'─' * 64}")  # noqa: T201
+            print(f"  Motor : {self.profile_name}")  # noqa: T201
+            print(  # noqa: T201
                 f"  Rated : {physics.rated_speed_rpm:.0f} RPM, "
                 f"{self._T_rated:.1f} Nm, {self._I_rated:.0f} A"
             )
-            print(f"  No-FW max speed : {physics.no_fw_max_rpm:.0f} RPM")
-            print(f"  FW needed       : {physics.fw_needed}")
+            print(f"  No-FW max speed : {physics.no_fw_max_rpm:.0f} RPM")  # noqa: T201
+            print(f"  FW needed       : {physics.fw_needed}")  # noqa: T201
             if physics.fw_needed:
-                print(f"  ratio_required  : {physics.ratio_required:.3f}")
-                print(f"  k_fw (initial)  : {physics.flux_weakening_id_coefficient:.5f}")
-                print(f"  fw_id_max       : {physics.fw_id_max_a:.1f} A")
-                print(f"  fw_start        : {physics.fw_start_rpm:.0f} RPM")
-                print(f"  fw_gain         : {physics.fw_gain:.2f}")
-                print(f"  headroom_target : {physics.fw_headroom_target_v:.3f} V")
-            print(f"{'─' * 64}")
+                print(f"  ratio_required  : {physics.ratio_required:.3f}")  # noqa: T201
+                print(f"  k_fw (initial)  : {physics.flux_weakening_id_coefficient:.5f}")  # noqa: T201
+                print(f"  fw_id_max       : {physics.fw_id_max_a:.1f} A")  # noqa: T201
+                print(f"  fw_start        : {physics.fw_start_rpm:.0f} RPM")  # noqa: T201
+                print(f"  fw_gain         : {physics.fw_gain:.2f}")  # noqa: T201
+                print(f"  headroom_target : {physics.fw_headroom_target_v:.3f} V")  # noqa: T201
+            print(f"{'─' * 64}")  # noqa: T201
 
         # ── 2. Fallback PI gains ──────────────────────────────────────
         omega_c = 30.0 * self._R / self._L
@@ -757,14 +757,14 @@ class FieldWeakeningCalibrator:
         iq_limit_a = iq_limit_a if iq_limit_a is not None else 2.0 * self._I_rated
 
         if self.verbose:
-            print(f"  PI gains  speed: kp={speed_kp:.4f}, ki={speed_ki:.4f}")
-            print(f"            curr : kp={current_kp:.4f}, ki={current_ki:.4f}")
-            print(f"  Iq limit  : {iq_limit_a:.1f} A")
+            print(f"  PI gains  speed: kp={speed_kp:.4f}, ki={speed_ki:.4f}")  # noqa: T201
+            print(f"            curr : kp={current_kp:.4f}, ki={current_ki:.4f}")  # noqa: T201
+            print(f"  Iq limit  : {iq_limit_a:.1f} A")  # noqa: T201
 
         # ── 3. Stable dt ─────────────────────────────────────────────
         dt = self._safe_dt()
         if self.verbose:
-            print(f"  Safe dt   : {dt * 1e6:.0f} µs")
+            print(f"  Safe dt   : {dt * 1e6:.0f} µs")  # noqa: T201
 
         # ── 4. If FW not needed → quick result ────────────────────────
         if not physics.fw_needed:
@@ -825,7 +825,7 @@ class FieldWeakeningCalibrator:
         fw_id_max_max = max(fw_id_frac_candidates) * self._I_rated
         iq_limit_fw = float(np.sqrt(max(self._I_rated**2 - fw_id_max_max**2, 1.0)))
         if self.verbose:
-            print(
+            print(  # noqa: T201
                 f"  Iq limit (FW current-circle): {iq_limit_fw:.1f} A "
                 f"(I_rated={self._I_rated:.0f} A, fw_id_max≤{fw_id_max_max:.0f} A)"
             )
@@ -843,7 +843,7 @@ class FieldWeakeningCalibrator:
 
         if self.verbose:
             total = len(gain_candidates) * len(fw_id_frac_candidates)
-            print(
+            print(  # noqa: T201
                 f"\n  Sweeping {total} FW gain × id_max combinations "
                 f"at {test_speed:.0f} RPM, {test_torque:.1f} Nm load …"
             )
@@ -884,7 +884,7 @@ class FieldWeakeningCalibrator:
 
                 if metrics is None:
                     if self.verbose:
-                        print(f"    gain={gain:5.1f}  fw_id={fw_id_max:5.1f}A  → UNSTABLE")
+                        print(f"    gain={gain:5.1f}  fw_id={fw_id_max:5.1f}A  → UNSTABLE")  # noqa: T201
                     continue
 
                 speed_err_pct = abs(metrics["speed_err_pct"])
@@ -893,7 +893,7 @@ class FieldWeakeningCalibrator:
                 score_val = speed_err_pct * 10.0 + max(0.0, 50.0 - metrics["efficiency"])
 
                 if self.verbose:
-                    print(
+                    print(  # noqa: T201
                         f"    gain={gain:5.1f}  fw_id={fw_id_max:5.1f}A  "
                         f"→ {metrics['speed_mean']:7.1f} RPM  "
                         f"err={metrics['speed_err_pct']:+6.2f}%  "
@@ -929,7 +929,7 @@ class FieldWeakeningCalibrator:
                 "Consider checking motor parameters or increasing sim_duration."
             )
             if self.verbose:
-                print(f"\n  ⚠  {note}")
+                print(f"\n  ⚠  {note}")  # noqa: T201
             return FWCalibrationResult(
                 motor_profile_name=self.profile_name,
                 motor_params_summary=self._params_summary(),
@@ -950,7 +950,7 @@ class FieldWeakeningCalibrator:
         motor_params.flux_weakening_min_ratio = physics.flux_weakening_min_ratio
 
         if self.verbose:
-            print(
+            print(  # noqa: T201
                 f"\n  Best  gain={sel_gain}, fw_id_max={sel_id_max:.1f} A — "
                 f"validating at multiple operating points …"
             )
@@ -972,7 +972,7 @@ class FieldWeakeningCalibrator:
 
         for tgt_rpm, tgt_torq, label in val_points:
             if self.verbose:
-                print(
+                print(  # noqa: T201
                     f"    [{label}]  target={tgt_rpm:.0f} RPM, load={tgt_torq:.1f} Nm …",
                     end=" ",
                     flush=True,
@@ -1047,9 +1047,9 @@ class FieldWeakeningCalibrator:
             op_results.append(vm)
             if self.verbose:
                 if status == "PASS":
-                    print(f"✓ {vm.achieved_rpm:.0f} RPM  err={vm.speed_error_pct:+.2f}%")
+                    print(f"✓ {vm.achieved_rpm:.0f} RPM  err={vm.speed_error_pct:+.2f}%")  # noqa: T201
                 else:
-                    print(
+                    print(  # noqa: T201
                         f"✗ {vm.achieved_rpm:.0f} RPM  err={vm.speed_error_pct:+.2f}%  [{status}]"
                     )
 
@@ -1064,7 +1064,7 @@ class FieldWeakeningCalibrator:
 
         if self.verbose:
             status_str = "✅ ALL PASS" if all_ok else "⚠  PARTIAL"
-            print(f"\n  {status_str}  — best achieved: {best_rpm:.0f} RPM ({elapsed:.1f} s)")
+            print(f"\n  {status_str}  — best achieved: {best_rpm:.0f} RPM ({elapsed:.1f} s)")  # noqa: T201
 
         return FWCalibrationResult(
             motor_profile_name=self.profile_name,
@@ -1101,26 +1101,26 @@ class FieldWeakeningCalibrator:
         """Pretty-print the physics-based FW parameter analysis."""
         p = self.compute_physics_params()
         V_ph = self._Vnom / math.sqrt(3.0)
-        print(f"\n{'=' * 64}")
-        print(f"  Field-Weakening Physics Analysis: {self.profile_name}")
-        print(f"{'=' * 64}")
-        print(f"  Supply: {self._Vnom:.0f} V DC  →  Vphase = {V_ph:.2f} V")
-        print(f"  Ke = {self._Ke:.4f} V·s/rad(mech),  pp = {self._pp}")
-        print(f"  Rated speed: {self._N_rated:.0f} RPM")
-        print(f"  Back-EMF at rated: {self._Ke * self._N_rated * 2 * math.pi / 60:.2f} V")
-        print(f"  No-FW max speed  : {p.no_fw_max_rpm:.0f} RPM")
-        print(f"  FW needed        : {p.fw_needed}")
+        print(f"\n{'=' * 64}")  # noqa: T201
+        print(f"  Field-Weakening Physics Analysis: {self.profile_name}")  # noqa: T201
+        print(f"{'=' * 64}")  # noqa: T201
+        print(f"  Supply: {self._Vnom:.0f} V DC  →  Vphase = {V_ph:.2f} V")  # noqa: T201
+        print(f"  Ke = {self._Ke:.4f} V·s/rad(mech),  pp = {self._pp}")  # noqa: T201
+        print(f"  Rated speed: {self._N_rated:.0f} RPM")  # noqa: T201
+        print(f"  Back-EMF at rated: {self._Ke * self._N_rated * 2 * math.pi / 60:.2f} V")  # noqa: T201
+        print(f"  No-FW max speed  : {p.no_fw_max_rpm:.0f} RPM")  # noqa: T201
+        print(f"  FW needed        : {p.fw_needed}")  # noqa: T201
         if p.fw_needed:
-            print(
+            print(  # noqa: T201
                 f"  Flux ratio needed: {p.ratio_required:.3f}  "
                 f"(factor {1 / p.ratio_required:.2f}× reduction)"
             )
-            print(f"  k_fw             : {p.flux_weakening_id_coefficient:.5f} A⁻¹")
-            print(
+            print(f"  k_fw             : {p.flux_weakening_id_coefficient:.5f} A⁻¹")  # noqa: T201
+            print(  # noqa: T201
                 f"  fw_id_max        : {p.fw_id_max_a:.1f} A  "
                 f"({p.fw_id_max_a / self._I_rated * 100:.0f}% of I_rated)"
             )
-            print(f"  fw_start_rpm     : {p.fw_start_rpm:.0f} RPM")
-            print(f"  fw_gain          : {p.fw_gain:.2f} A/(V·s)")
-            print(f"  headroom_target  : {p.fw_headroom_target_v:.3f} V")
-        print(f"{'=' * 64}\n")
+            print(f"  fw_start_rpm     : {p.fw_start_rpm:.0f} RPM")  # noqa: T201
+            print(f"  fw_gain          : {p.fw_gain:.2f} A/(V·s)")  # noqa: T201
+            print(f"  headroom_target  : {p.fw_headroom_target_v:.3f} V")  # noqa: T201
+        print(f"{'=' * 64}\n")  # noqa: T201
