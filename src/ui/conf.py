@@ -7,10 +7,10 @@ import sys
 sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
-project = "BLDC Motor Control Simulator"
-copyright = "2024, BLDC Control Team"
-author = "BLDC Control Team"
-release = "0.8.0"
+project = "SPINOTOR"
+copyright = "2026, Amine Khettat"
+author = "Amine Khettat"
+release = "0.9.4"
 
 # -- General configuration ---------------------------------------------------
 extensions = [

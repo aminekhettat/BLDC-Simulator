@@ -160,23 +160,22 @@ class FOCController(BaseController):
         # measured currents: e_αβ = v_αβ − R·i_αβ − L·Δi_αβ/dt
         # This replaces the simulation shortcut of reading motor.back_emf and
         # motor.omega directly, making the observers truly sensorless.
-        self._sensorless_emf_enabled = False   # enabled via enable_sensorless_emf_reconstruction()
+        self._sensorless_emf_enabled = False  # enabled via enable_sensorless_emf_reconstruction()
         self._emf_recon_R = float(motor.params.phase_resistance)
         self._emf_recon_L = float(
-            motor.params.ld if motor.params.ld is not None
-            else motor.params.phase_inductance
+            motor.params.ld if motor.params.ld is not None else motor.params.phase_inductance
         )
         _tau_e = self._emf_recon_L / max(self._emf_recon_R, 1e-9)
         self._emf_recon_lpf_tau = 3.0 * _tau_e  # LPF time constant (default 3×τ_e)
-        self._e_alpha_obs  = 0.0    # reconstructed EMF state, α axis
-        self._e_beta_obs   = 0.0    # reconstructed EMF state, β axis
-        self._i_alpha_prev = 0.0    # previous-step α current for di/dt
-        self._i_beta_prev  = 0.0    # previous-step β current for di/dt
+        self._e_alpha_obs = 0.0  # reconstructed EMF state, α axis
+        self._e_beta_obs = 0.0  # reconstructed EMF state, β axis
+        self._i_alpha_prev = 0.0  # previous-step α current for di/dt
+        self._i_beta_prev = 0.0  # previous-step β current for di/dt
         self._omega_elec_est = 0.0  # estimated ω_e from |E| = Ke·ω_mech
-        self.emf_reconstructed_mag = 0.0   # diagnostic
+        self.emf_reconstructed_mag = 0.0  # diagnostic
         self._use_estimated_speed_ff = True  # use ω_est instead of motor.omega as FF
         self._v_alpha_prev = 0.0  # applied α-voltage from previous step (for EMF recon)
-        self._v_beta_prev  = 0.0  # applied β-voltage from previous step (for EMF recon)
+        self._v_beta_prev = 0.0  # applied β-voltage from previous step (for EMF recon)
 
         # Sensorless startup transition (initial observer -> target observer).
         self.startup_transition_enabled = False
@@ -253,6 +252,7 @@ class FOCController(BaseController):
         self.field_weakening_enabled = False
         self.field_weakening_start_speed_rpm = 0.0
         self.field_weakening_gain = 1.0
+        self.field_weakening_speed_ki_per_rpm = 0.0
         self.field_weakening_max_negative_id_a = 0.0
         self.field_weakening_headroom_target_v = 0.08 * self.vdq_limit
         self.field_weakening_headroom_v = self.vdq_limit
@@ -420,7 +420,7 @@ class FOCController(BaseController):
             self.pi_d["integral"] = 0.0
             self.pi_q["integral"] = 0.0
             self._v_alpha_prev = 0.0
-            self._v_beta_prev  = 0.0
+            self._v_beta_prev = 0.0
         else:
             self.angle_observer_mode = self.observer_target_mode
             # ── Bumpless closed-loop transition ────────────────────────────
@@ -441,12 +441,16 @@ class FOCController(BaseController):
                 self.pll["integral"] = 0.0
                 # Initialise SMO speed from the reconstructed electrical speed
                 # so the first closed-loop integration step is smooth.
-                self.smo["omega_est"] = self._omega_elec_est if self._omega_elec_est > 0.0 else (
-                    self.startup_open_loop_speed_rpm
-                    / 60.0
-                    * 2.0
-                    * float(np.pi)
-                    * float(self.motor.params.poles_pairs)
+                self.smo["omega_est"] = (
+                    self._omega_elec_est
+                    if self._omega_elec_est > 0.0
+                    else (
+                        self.startup_open_loop_speed_rpm
+                        / 60.0
+                        * 2.0
+                        * float(np.pi)
+                        * float(self.motor.params.poles_pairs)
+                    )
                 )
 
     def _reset_startup_sequence_runtime(self) -> None:
@@ -774,7 +778,9 @@ class FOCController(BaseController):
         tuned with ``speed_loop_divider=1`` remain valid; only the update
         cadence changes.
         """
-        id_ref = self.id_ref + self.field_weakening_id_injection_a
+        fw_id_injection_a = min(float(self.field_weakening_id_injection_a), 0.0)
+        self.field_weakening_id_injection_a = fw_id_injection_a
+        id_ref = self.id_ref + fw_id_injection_a
 
         if self.enable_speed_loop:
             speed_ref_rad_s = (self.speed_ref / 60.0) * (2 * np.pi)
@@ -981,14 +987,12 @@ class FOCController(BaseController):
         dict with keys ``kp``, ``ki``, ``omega_n_rad_s``.
         """
         if rated_rpm is None:
-            rated_rpm = float(
-                getattr(self.motor.params, "rated_speed_rpm", None) or 3000.0
-            )
+            rated_rpm = float(getattr(self.motor.params, "rated_speed_rpm", None) or 3000.0)
         pp = float(self.motor.params.poles_pairs)
         omega_e_max = rated_rpm * np.pi / 30.0 * pp  # max electrical rad/s
         # PLL bandwidth = ωn ≤ ω_e_max / 5 to avoid phase lag at rated speed
         omega_n = omega_e_max / 5.0
-        ki = omega_n ** 2
+        ki = omega_n**2
         kp = 2.0 * float(zeta) * omega_n
         if apply:
             self.set_pll_gains(kp, ki)
@@ -1022,9 +1026,7 @@ class FOCController(BaseController):
         dict with keys ``k_slide``, ``lpf_alpha``, ``boundary``, ``tau_e_s``.
         """
         if rated_rpm is None:
-            rated_rpm = float(
-                getattr(self.motor.params, "rated_speed_rpm", None) or 3000.0
-            )
+            rated_rpm = float(getattr(self.motor.params, "rated_speed_rpm", None) or 3000.0)
         if dt is None:
             dt = 100e-6  # 100 µs default (10 kHz current loop)
         pp = float(self.motor.params.poles_pairs)
@@ -1050,9 +1052,7 @@ class FOCController(BaseController):
             "tau_e_s": tau_e,
         }
 
-    def _reconstruct_emf_sensorless(
-        self, dt: float
-    ) -> tuple[float, float, float]:
+    def _reconstruct_emf_sensorless(self, dt: float) -> tuple[float, float, float]:
         """Reconstruct back-EMF from voltage commands and measured currents.
 
         Formula: ``e_αβ = v_αβ[n-1] − R·i_αβ[n] − L·(i_αβ[n]−i_αβ[n-1])/dt``
@@ -1070,23 +1070,23 @@ class FOCController(BaseController):
 
         dt_safe = max(dt, 1e-12)
         di_alpha = (i_alpha - self._i_alpha_prev) / dt_safe
-        di_beta  = (i_beta  - self._i_beta_prev)  / dt_safe
+        di_beta = (i_beta - self._i_beta_prev) / dt_safe
 
         R_val = self._emf_recon_R
         L_val = self._emf_recon_L
 
         # Raw EMF: e = v_prev − R·i − L·di/dt
         e_alpha_raw = self._v_alpha_prev - R_val * i_alpha - L_val * di_alpha
-        e_beta_raw  = self._v_beta_prev  - R_val * i_beta  - L_val * di_beta
+        e_beta_raw = self._v_beta_prev - R_val * i_beta - L_val * di_beta
 
         # First-order LPF
         lpf_alpha = dt_safe / (dt_safe + self._emf_recon_lpf_tau)
         self._e_alpha_obs = (1.0 - lpf_alpha) * self._e_alpha_obs + lpf_alpha * e_alpha_raw
-        self._e_beta_obs  = (1.0 - lpf_alpha) * self._e_beta_obs  + lpf_alpha * e_beta_raw
+        self._e_beta_obs = (1.0 - lpf_alpha) * self._e_beta_obs + lpf_alpha * e_beta_raw
 
         # Update current memory for next step
         self._i_alpha_prev = i_alpha
-        self._i_beta_prev  = i_beta
+        self._i_beta_prev = i_beta
 
         # Estimate electrical speed from back-EMF magnitude.
         # In field-weakening, negative id reduces the effective flux linkage:
@@ -1102,7 +1102,7 @@ class FOCController(BaseController):
             else getattr(self.motor.params, "torque_constant", 0.028)
         )
         pp = float(self.motor.params.poles_pairs)
-        lambda_pm = ke / max(pp, 1.0)          # nominal PM flux linkage [V·s/rad_e]
+        lambda_pm = ke / max(pp, 1.0)  # nominal PM flux linkage [V·s/rad_e]
         ld_raw = getattr(self.motor.params, "ld", None)
         if ld_raw is None:
             ld_raw = getattr(self.motor.params, "phase_inductance", None)
@@ -1111,14 +1111,14 @@ class FOCController(BaseController):
         # id estimate: project measured α-β currents onto the d-axis using the
         # last known EMF angle (theta_meas_emf).  Guarded against the startup
         # transient where theta_meas_emf may still be 0.
-        if emf_mag > 1e-3:                     # only when EMF signal is valid
+        if emf_mag > 1e-3:  # only when EMF signal is valid
             cos_th = float(np.cos(self.theta_meas_emf))
             sin_th = float(np.sin(self.theta_meas_emf))
             id_est = float(i_alpha * cos_th + i_beta * sin_th)
         else:
             id_est = 0.0
 
-        lambda_eff = lambda_pm + ld * id_est   # effective flux (negative id → smaller λ)
+        lambda_eff = lambda_pm + ld * id_est  # effective flux (negative id → smaller λ)
         # Use nominal Ke as a floor so noise in id_est cannot drive λ_eff ≤ 0
         lambda_floor = 0.3 * lambda_pm
         lambda_eff = max(lambda_eff, lambda_floor)
@@ -1167,9 +1167,7 @@ class FOCController(BaseController):
             if self._sensorless_emf_enabled:
                 # dq reconstruction: e_α = −Ke·ω·sin(θe), e_β = +Ke·ω·cos(θe)
                 # → arctan2(−e_α, e_β) = arctan2(sin θe, cos θe) = θe  ✓
-                self.theta_meas_emf = float(
-                    np.arctan2(-emf_alpha, emf_beta)
-                ) % (2 * np.pi)
+                self.theta_meas_emf = float(np.arctan2(-emf_alpha, emf_beta)) % (2 * np.pi)
             else:
                 self.theta_meas_emf = float(np.arctan2(emf_beta, emf_alpha)) % (2 * np.pi)
 
@@ -1248,7 +1246,7 @@ class FOCController(BaseController):
         # low-speed EMF.  The observer tracks angle proportionally during
         # open-loop; the integral is enabled the moment the closed-loop
         # transition fires (pll["integral"] is set to 0 at that transition).
-        _open_loop_freeze = (self.startup_phase == "open_loop")
+        _open_loop_freeze = self.startup_phase == "open_loop"
 
         if mode == "PLL":
             err = _wrap_angle(self.theta_meas_emf - self.theta_est_pll)
@@ -1436,28 +1434,24 @@ class FOCController(BaseController):
         if pwm_freq_hz <= 0:
             raise ValueError("pwm_freq_hz must be positive")
         if speed_loop_hz <= 0 or speed_loop_hz > pwm_freq_hz:
-            raise ValueError(
-                f"speed_loop_hz must be in (0, pwm_freq_hz={pwm_freq_hz}]"
-            )
+            raise ValueError(f"speed_loop_hz must be in (0, pwm_freq_hz={pwm_freq_hz}]")
         if fw_loop_hz is None:
             fw_loop_hz = speed_loop_hz
         if fw_loop_hz <= 0 or fw_loop_hz > pwm_freq_hz:
-            raise ValueError(
-                f"fw_loop_hz must be in (0, pwm_freq_hz={pwm_freq_hz}]"
-            )
+            raise ValueError(f"fw_loop_hz must be in (0, pwm_freq_hz={pwm_freq_hz}]")
 
         speed_divider = max(1, round(pwm_freq_hz / speed_loop_hz))
-        fw_divider    = max(1, round(pwm_freq_hz / fw_loop_hz))
+        fw_divider = max(1, round(pwm_freq_hz / fw_loop_hz))
 
         self.set_speed_loop_divider(speed_divider)
         self.set_fw_loop_divider(fw_divider)
 
         return {
-            "pwm_freq_hz":    pwm_freq_hz,
-            "speed_loop_hz":  pwm_freq_hz / speed_divider,
-            "fw_loop_hz":     pwm_freq_hz / fw_divider,
-            "speed_divider":  speed_divider,
-            "fw_divider":     fw_divider,
+            "pwm_freq_hz": pwm_freq_hz,
+            "speed_loop_hz": pwm_freq_hz / speed_divider,
+            "fw_loop_hz": pwm_freq_hz / fw_divider,
+            "speed_divider": speed_divider,
+            "fw_divider": fw_divider,
         }
 
     def set_decoupling(self, enable_d: bool = False, enable_q: bool = False) -> None:
@@ -1519,14 +1513,22 @@ class FOCController(BaseController):
         enabled: bool,
         start_speed_rpm: float = 0.0,
         gain: float = 1.0,
+        speed_ki_per_rpm: float = 0.0,
         max_negative_id_a: float = 0.0,
         headroom_target_v: float | None = None,
     ) -> None:
-        """Configure voltage-headroom-based field-weakening d-axis current injection."""
+        """Configure voltage-headroom-based field-weakening d-axis current injection.
+
+        ``start_speed_rpm`` is retained for compatibility with existing UI/state
+        serialization, but FW arming is driven by dq-voltage headroom rather than
+        a speed threshold.
+        """
         if start_speed_rpm < 0.0:
             raise ValueError("start_speed_rpm must be non-negative")
         if gain < 0.0:
             raise ValueError("gain must be non-negative")
+        if speed_ki_per_rpm < 0.0:
+            raise ValueError("speed_ki_per_rpm must be non-negative")
         if max_negative_id_a < 0.0:
             raise ValueError("max_negative_id_a must be non-negative")
         if headroom_target_v is not None and headroom_target_v < 0.0:
@@ -1535,6 +1537,7 @@ class FOCController(BaseController):
         self.field_weakening_enabled = bool(enabled)
         self.field_weakening_start_speed_rpm = float(start_speed_rpm)
         self.field_weakening_gain = float(gain)
+        self.field_weakening_speed_ki_per_rpm = float(speed_ki_per_rpm)
         self.field_weakening_max_negative_id_a = float(max_negative_id_a)
         self.field_weakening_headroom_target_v = (
             float(headroom_target_v)
@@ -1606,7 +1609,6 @@ class FOCController(BaseController):
             self.field_weakening_enabled
             and self.field_weakening_max_negative_id_a > 0.0
             and self.field_weakening_gain > 0.0
-            and abs(self.motor.speed_rpm) > self.field_weakening_start_speed_rpm
         )
 
         inj_mag = max(-float(self.field_weakening_id_injection_a), 0.0)
@@ -1619,10 +1621,13 @@ class FOCController(BaseController):
         else:
             headroom_error_v = target_headroom - self.field_weakening_headroom_v
             self.field_weakening_voltage_error_v = float(headroom_error_v)
-            inj_mag += self.field_weakening_gain * headroom_error_v * dt
+            effective_ki = self.field_weakening_gain + (
+                self.field_weakening_speed_ki_per_rpm * abs(float(self.motor.speed_rpm))
+            )
+            inj_mag += effective_ki * headroom_error_v * dt
             inj_mag = float(np.clip(inj_mag, 0.0, self.field_weakening_max_negative_id_a))
 
-        self.field_weakening_id_injection_a = -float(inj_mag)
+        self.field_weakening_id_injection_a = min(-float(inj_mag), 0.0)
 
     def _get_feedback_phase_currents(self) -> tuple[float, float, float]:
         """Return the active three-phase current feedback source."""
@@ -1790,7 +1795,7 @@ class FOCController(BaseController):
 
         # Store applied voltage vector for sensorless EMF reconstruction (next step)
         self._v_alpha_prev = v_alpha_cmd
-        self._v_beta_prev  = v_beta_cmd
+        self._v_beta_prev = v_beta_cmd
 
         if self.output_cartesian:
             return v_alpha_cmd, v_beta_cmd
@@ -1821,14 +1826,14 @@ class FOCController(BaseController):
         self.theta_error_smo = 0.0
         self.emf_observer_mag = 0.0
         # Sensorless EMF reconstructor state
-        self._e_alpha_obs  = 0.0
-        self._e_beta_obs   = 0.0
+        self._e_alpha_obs = 0.0
+        self._e_beta_obs = 0.0
         self._i_alpha_prev = 0.0
-        self._i_beta_prev  = 0.0
+        self._i_beta_prev = 0.0
         self._omega_elec_est = 0.0
         self.emf_reconstructed_mag = 0.0
         self._v_alpha_prev = 0.0
-        self._v_beta_prev  = 0.0
+        self._v_beta_prev = 0.0
         self.startup_elapsed_s = 0.0
         self.startup_confidence_elapsed_s = 0.0
         self.startup_fallback_elapsed_s = 0.0
@@ -1979,6 +1984,7 @@ class FOCController(BaseController):
             "field_weakening_enabled": self.field_weakening_enabled,
             "field_weakening_start_speed_rpm": self.field_weakening_start_speed_rpm,
             "field_weakening_gain": self.field_weakening_gain,
+            "field_weakening_speed_ki_per_rpm": self.field_weakening_speed_ki_per_rpm,
             "field_weakening_max_negative_id_a": self.field_weakening_max_negative_id_a,
             "field_weakening_headroom_target_v": self.field_weakening_headroom_target_v,
             "field_weakening_headroom_v": self.field_weakening_headroom_v,

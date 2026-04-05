@@ -38,7 +38,7 @@ This document compiles the 10+ most significant academic and technical papers on
 - **Source**: Texas Instruments (SPRAC55)
 - **URL**: https://www.ti.com/lit/pdf/sprac55
 - **Key Contribution**: Details high-bandwidth current control design with frequency sweep correction methodology. Achieves 5+ kHz bandwidth with careful gain tuning and compensation.
-- **Relevance**: Demonstrates advanced current loop design for the demanding 4000 RPM motors (Motenergy series) in the BLDC-Simulator project.
+- **Relevance**: Demonstrates advanced current loop design for the demanding 4000 RPM motors (Motenergy series) in the SPINOTOR project.
 
 ### 6. **Simplified Gain and Phase Margin PI Tuning Method for SPMSM Control**
 - **Source**: IEEE Xplore Conference Publication (2023)
@@ -224,7 +224,7 @@ This document compiles the 10+ most significant academic and technical papers on
 - **Source**: MathWorks Documentation
 - **URL**: https://www.mathworks.com/help/reinforcement-learning/ug/tune-pi-controller-using-td3.html
 - **Key Contribution**: Describes Twin-Delayed DDPG (TD3) algorithm for learning PI gains directly from simulation/experiment without tuning rules.
-- **Relevance**: Demonstrates practical implementation of learning-based PI autotuning in MATLAB environment (compatible with BLDC-Simulator workflow).
+- **Relevance**: Demonstrates practical implementation of learning-based PI autotuning in MATLAB environment (compatible with SPINOTOR workflow).
 
 ### 33. **Adaptive PI Controller Based on Reinforcement Learning for DC Motor Speed Control**
 - **Source**: PMC/MDPI (2023)
@@ -399,4 +399,4 @@ This document compiles the 10+ most significant academic and technical papers on
 - Motenergy ME1719 (48V, 4000rpm, 14.3Nm)
 - Innotec 255-EZS48-160 (48V, 3000rpm, 26.5Nm)
 
-This bibliography provides a comprehensive foundation for improving the FOC auto-calibration module in the BLDC-Simulator project, with particular emphasis on bandwidth-based PI tuning, anti-windup strategies, robustness validation, and integration with online parameter identification.
+This bibliography provides a comprehensive foundation for improving the FOC auto-calibration module in the SPINOTOR project, with particular emphasis on bandwidth-based PI tuning, anti-windup strategies, robustness validation, and integration with online parameter identification.

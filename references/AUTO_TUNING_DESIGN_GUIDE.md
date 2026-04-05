@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This guide synthesizes research from 45+ academic papers and industry documentation to provide practical design methodology for improving the FOC auto-calibration module in the BLDC-Simulator project. The guide focuses on analytical, model-based tuning rather than grid search approaches.
+This guide synthesizes research from 45+ academic papers and industry documentation to provide practical design methodology for improving the FOC auto-calibration module in the SPINOTOR project. The guide focuses on analytical, model-based tuning rather than grid search approaches.
 
 **Target Motors:**
 - Motenergy ME1718: 48V, 4000 RPM, 14.3 Nm
@@ -843,14 +843,14 @@ class FOCAutoTuner:
 
 ---
 
-## Part 7: Integration with BLDC-Simulator Project
+## Part 7: Integration with SPINOTOR Project
 
 ### 7.1 Replacement for `adaptive_tuning.py`
 
 Current implementation uses grid search. Proposed replacement:
 
 ```python
-# File: BLDC-Simulator/foc_control/analytical_autotuner.py
+# File: SPINOTOR/foc_control/analytical_autotuner.py
 
 import numpy as np
 from scipy.signal import TransferFunction, step, bode, dB
@@ -874,7 +874,7 @@ class AnalyticalFOCAutoTuner:
 ### 7.2 Configuration for Target Motors
 
 ```yaml
-# File: BLDC-Simulator/config/motor_autotuning_config.yaml
+# File: SPINOTOR/config/motor_autotuning_config.yaml
 
 motors:
   motenergy_me1718:

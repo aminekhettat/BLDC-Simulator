@@ -11,9 +11,9 @@ Requirements:
     See requirements.txt
 
 :author: BLDC Control Team
-:version: 0.9.3
+:version: 0.9.4
 
-.. versionadded:: 0.9.3
+.. versionadded:: 0.9.4
     Initial application release
 """
 
@@ -41,7 +41,7 @@ def main():
     Initializes PyQt6 application and launches the main GUI window.
     """
     logger.info("=" * 60)
-    logger.info("BLIND SYSTEMS BLDC Simulator v0.9.3")
+    logger.info("BLIND SYSTEMS SPINOTOR v0.9.4")
     logger.info("=" * 60)
 
     try:
@@ -56,8 +56,8 @@ def main():
         app = QApplication(sys.argv)
 
         # Set application info
-        app.setApplicationName("BLIND SYSTEMS BLDC Simulator")
-        app.setApplicationVersion("0.9.3")
+        app.setApplicationName("BLIND SYSTEMS SPINOTOR")
+        app.setApplicationVersion("0.9.4")
 
         # Create and show main window
         window = BLDCMotorControlGUI()

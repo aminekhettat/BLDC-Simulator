@@ -8,10 +8,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # -- Project information -----
 
-project = "BLDC Motor Control"
-copyright = "2026, Amine Khettat"
+project = "SPINOTOR"
+copyright = "2026, BLIND SYSTEMS"
 author = "Amine Khettat"
-release = "0.9.3"
+release = "0.9.4"
 
 # -- General configuration ---
 

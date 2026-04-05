@@ -6,8 +6,8 @@ Installation
 
 1. Clone the repository::
 
-    git clone https://github.com/aminekhettat/BLDC_motor_control.git
-    cd BLDC_motor_control
+    git clone https://github.com/aminekhettat/SPINOTOR.git
+    cd SPINOTOR
 
 2. Create a virtual environment::
 
@@ -40,7 +40,7 @@ Start the main application::
 
     python main.py
 
-This will launch the BLDC Motor Control GUI with:
+This will launch the SPINOTOR GUI with:
 - Real-time motor simulation
 - Interactive control modes (FOC/V/F)
 - Parameter monitoring and adjustment

@@ -12,7 +12,7 @@ Provides comprehensive GUI for:
 - Data export
 
 :author: BLDC Control Team
-:version: 0.9.3
+:version: 0.9.4
 """
 
 import csv
@@ -778,14 +778,14 @@ class BLDCMotorControlGUI(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        APP_NAME = "BLIND SYSTEMS BLDC Simulator"
-        APP_VERSION = "0.9.3"
+        APP_NAME = "BLIND SYSTEMS SPINOTOR"
+        APP_VERSION = "0.9.4"
 
-        self.setWindowTitle(f"{APP_NAME} - BLDC Motor Control Simulator (v{APP_VERSION})")
+        self.setWindowTitle(f"{APP_NAME} (v{APP_VERSION})")
         self.setGeometry(100, 100, 1500, 950)
 
         # Accessibility
-        self.setAccessibleName("BLIND SYSTEMS BLDC Simulator")
+        self.setAccessibleName("BLIND SYSTEMS SPINOTOR")
         self.setAccessibleDescription(
             "Comprehensive BLDC motor simulator with V/f and FOC control. "
             "Use Tab to navigate between sections, arrow keys in list views."
@@ -846,7 +846,7 @@ class BLDCMotorControlGUI(QMainWindow):
         # Left column: title, tabs, buttons
         left_layout = QVBoxLayout()
 
-        title = QLabel("BLIND SYSTEMS BLDC Simulator - Advanced Motor Control")
+        title = QLabel("BLIND SYSTEMS SPINOTOR - Advanced Motor Control")
         title_font = QFont()
         title_font.setPointSize(14)
         title_font.setBold(True)
@@ -1214,8 +1214,8 @@ class BLDCMotorControlGUI(QMainWindow):
             return pdf_path
 
         html = (
-            "<h1>BLIND SYSTEMS BLDC Simulator - User Manual</h1>"
-            "<p><b>Version:</b> 0.9.3</p>"
+            "<h1>BLIND SYSTEMS SPINOTOR - User Manual</h1>"
+            "<p><b>Version:</b> 0.9.4</p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<h2>1. Getting Started</h2>"
             "<p>Configure motor, load and controller parameters, then start simulation.</p>"
@@ -1609,7 +1609,7 @@ class BLDCMotorControlGUI(QMainWindow):
     def _show_about(self):
         """Show about dialog."""
         about_text = (
-            "<h2>BLIND SYSTEMS BLDC Simulator v0.9.3</h2>"
+            "<h2>BLIND SYSTEMS SPINOTOR v0.9.4</h2>"
             "<p><b>Advanced BLDC Motor Control Simulator</b></p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<p><b>Copyright:</b> 2026 BLIND SYSTEMS</p>"
@@ -1649,7 +1649,7 @@ class BLDCMotorControlGUI(QMainWindow):
     def _show_guide(self):
         """Show quick start guide."""
         guide_text = (
-            "<h3>Quick Start Guide - BLIND SYSTEMS BLDC Simulator</h3>"
+            "<h3>Quick Start Guide - BLIND SYSTEMS SPINOTOR</h3>"
             "<p><b>1. Configure Motor Parameters:</b></p>"
             "<ul><li>Set nominal voltage, resistance, inductance, pole pairs, Back-EMF constant</li></ul>"  # noqa: E501
             "<p><b>2. Set Load Profile:</b></p>"
@@ -3947,8 +3947,7 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.calib_log.clear()
         self.calib_log.append(
-            "Starting single-profile field-weakening calibration for "
-            f"{profile_name}."
+            f"Starting single-profile field-weakening calibration for {profile_name}."
         )
 
         script_path = (
@@ -4065,10 +4064,6 @@ class BLDCMotorControlGUI(QMainWindow):
         self.status_bar_task.setText("Task: None")
         self.status_bar_time_remaining.setText("Remaining: -- s")
         self._mark_task_finished("calibration")
-
-
-
-
 
     # ------------------------------------------------------------------
     # Auto-Calibrate All (Analytic + Physics) — two-stage pipeline
@@ -4189,9 +4184,7 @@ class BLDCMotorControlGUI(QMainWindow):
                     "Auto-calibration complete — all motor profiles updated.", 10000
                 )
         else:
-            self.calib_log.append(
-                f"\n[Stage 2 FAILED — exit code {exit_code}]\n"
-            )
+            self.calib_log.append(f"\n[Stage 2 FAILED — exit code {exit_code}]\n")
             self.calib_result_status.setText(f"Status: Failed at Stage 2 (exit {exit_code})")
             speak("Auto-calibration stage two failed.")
 
@@ -5931,9 +5924,7 @@ class BLDCMotorControlGUI(QMainWindow):
             for i, k in enumerate(keys):
                 item = QTableWidgetItem(k)
                 item.setFlags(
-                    item.flags()
-                    | Qt.ItemFlag.ItemIsSelectable
-                    | Qt.ItemFlag.ItemIsEnabled
+                    item.flags() | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
                 )
                 self.plot_var_list.setItem(i, 0, item)
         selected = [item.text() for item in self.plot_var_list.selectedItems()]

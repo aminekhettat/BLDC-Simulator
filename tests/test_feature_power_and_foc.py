@@ -649,6 +649,74 @@ def test_foc_field_weakening_is_independent_toggle():
     assert ctrl.field_weakening_headroom_v < ctrl.field_weakening_headroom_target_v
 
 
+def test_foc_field_weakening_activates_from_voltage_headroom_not_speed():
+    motor = BLDCMotor(MotorParameters())
+    ctrl = FOCController(motor=motor, enable_speed_loop=False)
+    ctrl.set_speed_reference(2000.0)
+    ctrl.set_current_references(id_ref=0.0, iq_ref=12.0)
+    ctrl.vdq_limit = 1.0
+
+    # Keep the rotor speed far below the configured legacy start speed.
+    motor.state[3] = 50.0
+
+    ctrl.set_field_weakening(
+        enabled=True,
+        start_speed_rpm=5000.0,
+        gain=1.2,
+        max_negative_id_a=3.0,
+    )
+    for _ in range(25):
+        ctrl.update(1e-3)
+
+    id_enabled, _ = ctrl._get_active_references(1e-3)
+    assert id_enabled < 0.0
+    assert ctrl.field_weakening_id_injection_a < 0.0
+    assert ctrl.field_weakening_headroom_v < ctrl.field_weakening_headroom_target_v
+
+
+def test_foc_field_weakening_output_is_never_positive():
+    motor = BLDCMotor(MotorParameters())
+    ctrl = FOCController(motor=motor, enable_speed_loop=False)
+    ctrl.set_current_references(id_ref=0.25, iq_ref=0.0)
+
+    # Even if an invalid positive internal value is introduced, the controller
+    # must clamp FW injection to 0 A before applying references.
+    ctrl.field_weakening_id_injection_a = 1.5
+    id_ref, _ = ctrl._get_active_references(1e-3)
+
+    assert ctrl.field_weakening_id_injection_a == pytest.approx(0.0)
+    assert id_ref == pytest.approx(0.25)
+
+
+def test_foc_field_weakening_speed_ki_per_rpm_increases_injection_with_speed():
+    motor = BLDCMotor(MotorParameters())
+    ctrl = FOCController(motor=motor, enable_speed_loop=False)
+    ctrl.vdq_limit = 1.0
+
+    ctrl.set_field_weakening(
+        enabled=True,
+        gain=0.2,
+        speed_ki_per_rpm=0.01,
+        max_negative_id_a=5.0,
+        headroom_target_v=0.1,
+    )
+
+    motor.state[3] = 50.0
+    for _ in range(10):
+        ctrl._update_field_weakening_from_voltage(0.0, 2.0, 1e-3)
+    low_speed_inj = ctrl.field_weakening_id_injection_a
+
+    ctrl.field_weakening_id_injection_a = 0.0
+    motor.state[3] = 500.0
+    for _ in range(10):
+        ctrl._update_field_weakening_from_voltage(0.0, 2.0, 1e-3)
+    high_speed_inj = ctrl.field_weakening_id_injection_a
+
+    assert low_speed_inj <= 0.0
+    assert high_speed_inj <= 0.0
+    assert abs(high_speed_inj) > abs(low_speed_inj)
+
+
 def test_foc_standard_startup_sequence_skips_open_loop_when_measured_angle_exists():
     motor = BLDCMotor(MotorParameters())
     ctrl = FOCController(motor=motor)

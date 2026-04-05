@@ -138,4 +138,4 @@ def test_ui_conf_setup_adds_css_file():
 
     ui_conf.setup(DummyApp())
     assert called == ["custom.css"]
-    assert ui_conf.project == "BLDC Motor Control Simulator"
+    assert ui_conf.project == "SPINOTOR"
