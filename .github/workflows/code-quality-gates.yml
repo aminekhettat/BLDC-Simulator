@@ -29,6 +29,7 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}
       MPLBACKEND: Agg
       QT_QPA_PLATFORM: offscreen
+      NUMBA_DISABLE_JIT: "1"
 
     steps:
       - name: Checkout
