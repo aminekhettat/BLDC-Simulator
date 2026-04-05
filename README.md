@@ -2,7 +2,7 @@
 
 Advanced BLDC and PMSM motor-control simulator with a desktop GUI, accessibility-first workflows, and repeatable calibration pipelines.
 
-Current Version: 0.9.4
+Current Version: 0.9.5
 
 ## Why This Project
 

@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "SPINOTOR"
 copyright = "2026, Amine Khettat"
 author = "Amine Khettat"
-release = "0.9.4"
+release = "0.9.5"
 
 # -- General configuration ---------------------------------------------------
 extensions = [

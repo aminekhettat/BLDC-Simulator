@@ -55,7 +55,7 @@ jobs:
             --cov-report=term-missing:skip-covered \
             --cov-report=xml:data/logs/coverage.xml \
             -q 2>&1 | tee data/logs/coverage_report.txt
-          PYTEST_EXIT=$?
+          PYTEST_EXIT=${PIPESTATUS[0]}
           echo "$PYTEST_EXIT" > data/logs/pytest_exit_code.txt
           if [ "$PYTEST_EXIT" -ne 0 ]; then
             echo "pytest exited with code $PYTEST_EXIT. Coverage report tail:"

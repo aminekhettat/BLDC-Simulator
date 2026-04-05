@@ -12,7 +12,7 @@ Provides comprehensive GUI for:
 - Data export
 
 :author: BLDC Control Team
-:version: 0.9.4
+:version: 0.9.5
 """
 
 import csv
@@ -779,7 +779,7 @@ class BLDCMotorControlGUI(QMainWindow):
         super().__init__()
 
         APP_NAME = "BLIND SYSTEMS SPINOTOR"
-        APP_VERSION = "0.9.4"
+        APP_VERSION = "0.9.5"
 
         self.setWindowTitle(f"{APP_NAME} (v{APP_VERSION})")
         self.setGeometry(100, 100, 1500, 950)
@@ -1215,7 +1215,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         html = (
             "<h1>BLIND SYSTEMS SPINOTOR - User Manual</h1>"
-            "<p><b>Version:</b> 0.9.4</p>"
+            "<p><b>Version:</b> 0.9.5</p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<h2>1. Getting Started</h2>"
             "<p>Configure motor, load and controller parameters, then start simulation.</p>"
@@ -1609,7 +1609,7 @@ class BLDCMotorControlGUI(QMainWindow):
     def _show_about(self):
         """Show about dialog."""
         about_text = (
-            "<h2>BLIND SYSTEMS SPINOTOR v0.9.4</h2>"
+            "<h2>BLIND SYSTEMS SPINOTOR v0.9.5</h2>"
             "<p><b>Advanced BLDC Motor Control Simulator</b></p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<p><b>Copyright:</b> 2026 BLIND SYSTEMS</p>"
