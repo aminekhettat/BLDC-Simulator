@@ -34,7 +34,7 @@ widgets appear automatically depending on the active mode.
      - Disturbance-robust operation
    * - STSMO
      - Super-Twisting SMO (backward-Euler, SOGI post-filter)
-     - Chattering-free, wide speed range
+     - **SPM motors (Ld≈Lq) only** — chattering-free, wide speed range
    * - ActiveFlux
      - Active Flux observer (Boldea 2009)
      - IPM motors with d/q saliency
@@ -238,6 +238,32 @@ resistance drift (temperature-related):
 
 When active, :math:`R` in the estimator is updated online from the real–model
 current divergence.
+
+Motor Compatibility — SPM Only
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+   The STSMO uses a **single-inductance model** (:math:`L = L_d`).  This
+   assumption is exact for SPM motors (:math:`L_d = L_q`) but **invalid for
+   salient IPMSM** (:math:`L_d \neq L_q`).
+
+   On an IPM motor with strong saliency (e.g. :math:`L_q/L_d = 2`), the
+   missing saliency term :math:`(L_q - L_d)\,i_d\,\omega_e` introduces a
+   systematic bias on the sliding surface :math:`\sigma`.  In field-weakening
+   (where :math:`i_d \ll 0`) this bias grows unboundedly, causing :math:`z_1`
+   drift and eventual angle divergence.
+
+**Recommended alternatives for salient IPMSM:**
+
+- **ActiveFlux** (Section above) — the active-flux transformation
+  :math:`\vec\psi_a = \vec\psi_s - L_d\,\vec i_s` is saliency-immune by
+  construction and is the preferred observer for IPM drives and
+  field-weakening studies.
+- **EEMF-STSMO** (Wang et al. 2022, reference [11]) — extends the
+  Super-Twisting algorithm with the :math:`L_q \cdot di/dt` correction term
+  used in the EEMF model, making arctan2 extraction valid for
+  :math:`L_d \neq L_q`.  This variant is not yet implemented in SPINOTOR.
 
 ActiveFlux — Active Flux Observer
 -----------------------------------

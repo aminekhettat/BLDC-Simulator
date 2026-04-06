@@ -42,7 +42,7 @@ All modes are selectable from the **Observer & Startup** tab with context-sensit
 | **Measured** | True simulation angle (reference) | Controller tuning and debug |
 | **PLL** | Back-EMF phase-locked loop | Simple bring-up, SPM motors |
 | **SMO** | First-order sliding-mode | Disturbance-robust operation |
-| **STSMO** | Super-Twisting (2nd order), backward-Euler + SOGI filter | Chattering-free, wide speed range |
+| **STSMO** | Super-Twisting (2nd order), backward-Euler + SOGI filter | **SPM motors (Ld≈Lq)** — chattering-free, wide speed range |
 | **ActiveFlux** | Active flux vector ψa = ψs − Ld·is (Boldea 2009) | IPM motors, field-weakening |
 
 → Full mathematical derivations and tuning guide: [`docs/sensorless_observers.rst`](docs/sensorless_observers.rst)

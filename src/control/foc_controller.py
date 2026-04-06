@@ -215,6 +215,12 @@ class FOCController(BaseController):
         # Replaces standard sign()+LPF with ST algorithm that converges to
         # back-EMF in finite time without requiring a subsequent LPF.
         # The integral state z→ê at steady state → zero phase lag.
+        #
+        # ⚠️  MOTOR COMPATIBILITY: SPM only (Ld ≈ Lq).
+        # The current model uses a single inductance L = Ld.  On a salient
+        # IPMSM (Lq ≠ Ld), the missing term (Lq−Ld)·id·ωe biases σ
+        # unboundedly in field-weakening → z1 drift → divergence.
+        # For salient IPMSM use ActiveFlux or EEMF-STSMO (Wang 2022).
         self._use_stsmo        = False
         self.stsmo             = {"k1": 100.0, "k2": 2000.0}
         self._stsmo_i_alpha    = 0.0   # ST-SMO estimated current, α [A]
