@@ -1,7 +1,7 @@
 """
 Main Source Package Module
 
-This is the main source code package for BLDC motor control simulator.
+This is the main source code package for SPINOTOR — BLDC motor control simulator.
 
 Includes:
 - core: Motor model, simulation engine, load profiles
@@ -10,8 +10,8 @@ Includes:
 - utils: Configuration and utilities
 - visualization: Plotting and data export
 
-:author: BLDC Control Team
-:version: 0.9.3
+:author: Amine Khettat — Blind Systems
+:version: 0.10.0
 """
 
 from importlib import import_module

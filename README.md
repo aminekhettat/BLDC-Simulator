@@ -1,8 +1,8 @@
-# BLDC Simulator
+# SPINOTOR
 
 Advanced BLDC and PMSM motor-control simulator with a desktop GUI, accessibility-first workflows, and repeatable calibration pipelines.
 
-Current Version: 0.9.3
+Current Version: 0.10.0
 
 ## Why This Project
 

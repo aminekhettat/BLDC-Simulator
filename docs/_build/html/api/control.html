@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Control Module &mdash; BLDC Motor Control 0.9.1 documentation</title>
+  <title>Control Module &mdash; BLDC Motor Control 0.9.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=9dc39874"></script>
+      <script src="../_static/documentation_options.js?v=0e439607"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
@@ -72,6 +72,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_startup_sequence"><code class="docutils literal notranslate"><span class="pre">FOCController.set_startup_sequence()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_pll_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_pll_gains()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_smo_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_smo_gains()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.enable_sensorless_emf_reconstruction"><code class="docutils literal notranslate"><span class="pre">FOCController.enable_sensorless_emf_reconstruction()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.calibrate_pll_gains_analytical"><code class="docutils literal notranslate"><span class="pre">FOCController.calibrate_pll_gains_analytical()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.calibrate_smo_gains_analytical"><code class="docutils literal notranslate"><span class="pre">FOCController.calibrate_smo_gains_analytical()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_sensorless_blend"><code class="docutils literal notranslate"><span class="pre">FOCController.set_sensorless_blend()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_cascaded_speed_loop"><code class="docutils literal notranslate"><span class="pre">FOCController.set_cascaded_speed_loop()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.set_speed_pi_gains"><code class="docutils literal notranslate"><span class="pre">FOCController.set_speed_pi_gains()</span></code></a></li>
@@ -89,6 +92,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.auto_tune_pi"><code class="docutils literal notranslate"><span class="pre">FOCController.auto_tune_pi()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.update"><code class="docutils literal notranslate"><span class="pre">FOCController.update()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.reset"><code class="docutils literal notranslate"><span class="pre">FOCController.reset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.update_applied_voltage"><code class="docutils literal notranslate"><span class="pre">FOCController.update_applied_voltage()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#src.control.foc_controller.FOCController.get_state"><code class="docutils literal notranslate"><span class="pre">FOCController.get_state()</span></code></a></li>
 </ul>
 </li>
@@ -225,19 +229,19 @@ from use or misuse.</p>
 <h1>Control Module<a class="headerlink" href="#control-module" title="Link to this heading"></a></h1>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.base_controller.html#module-src.control.base_controller" title="src.control.base_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.base_controller</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#module-src.control.base_controller" title="src.control.base_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.base_controller</span></code></a></p></td>
 <td><p>Base Controller Module</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/src.control.foc_controller.html#module-src.control.foc_controller" title="src.control.foc_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.foc_controller</span></code></a></p></td>
 <td><p>Field-Oriented Control (FOC) Module</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.vf_controller.html#module-src.control.vf_controller" title="src.control.vf_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.vf_controller</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#module-src.control.vf_controller" title="src.control.vf_controller"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.vf_controller</span></code></a></p></td>
 <td><p>V/f Controller Module</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/src.control.svm_generator.html#module-src.control.svm_generator" title="src.control.svm_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.svm_generator</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#module-src.control.svm_generator" title="src.control.svm_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.svm_generator</span></code></a></p></td>
 <td><p>SVM Generator Module</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/src.control.transforms.html#module-src.control.transforms" title="src.control.transforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.transforms</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#module-src.control.transforms" title="src.control.transforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.control.transforms</span></code></a></p></td>
 <td><p>Coordinate Transformations for Motor Control
 
 :2: (WARNING/2) Title underline too short.
@@ -335,7 +339,7 @@ transforms and running in either polar or Cartesian output modes.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.control.foc_controller.FOCController">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.foc_controller.</span></span><span class="sig-name descname"><span class="pre">FOCController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_concordia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_cartesian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_speed_loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="generated/src.control.base_controller.html#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
 <p>Basic Field-Oriented Controller supporting current loops and speed
 reference.  Designed for integration with SVM generator, returning either
 (magnitude, angle) or Cartesian (v_alpha, v_beta) depending on mode.</p>
@@ -421,6 +425,103 @@ magnitude/angle</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.enable_sensorless_emf_reconstruction">
+<span class="sig-name descname"><span class="pre">enable_sensorless_emf_reconstruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">R</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lpf_tau_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_estimated_speed_ff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.enable_sensorless_emf_reconstruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.enable_sensorless_emf_reconstruction" title="Link to this definition"></a></dt>
+<dd><p>Enable truly sensorless EMF reconstruction for both observers.</p>
+<p>Once enabled, back-EMF is estimated from applied voltages and measured
+phase currents: <code class="docutils literal notranslate"><span class="pre">e_αβ</span> <span class="pre">=</span> <span class="pre">v_αβ</span> <span class="pre">−</span> <span class="pre">R·i_αβ</span> <span class="pre">−</span> <span class="pre">L·Δi_αβ/dt</span></code>, with a
+first-order LPF.  The observers never read <code class="docutils literal notranslate"><span class="pre">motor.back_emf</span></code> or
+<code class="docutils literal notranslate"><span class="pre">motor.omega</span></code> when this flag is set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>R<span class="classifier">float, optional</span></dt><dd><p>Phase resistance [Ω].  Defaults to motor parameter.</p>
+</dd>
+<dt>L<span class="classifier">float, optional</span></dt><dd><p>Phase inductance [H].  Defaults to Ld (or phase_inductance).</p>
+</dd>
+<dt>lpf_tau_s<span class="classifier">float, optional</span></dt><dd><p>LPF time constant [s].  Defaults to 3×τ_e = 3·L/R.</p>
+</dd>
+<dt>use_estimated_speed_ff<span class="classifier">bool</span></dt><dd><p>Use <code class="docutils literal notranslate"><span class="pre">ω_est</span></code> instead of <code class="docutils literal notranslate"><span class="pre">motor.omega</span></code> for PLL/SMO feedforward
+and decoupling.  Default True.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.calibrate_pll_gains_analytical">
+<span class="sig-name descname"><span class="pre">calibrate_pll_gains_analytical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rated_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zeta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.calibrate_pll_gains_analytical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.calibrate_pll_gains_analytical" title="Link to this definition"></a></dt>
+<dd><p>Compute PLL gains analytically from motor bandwidth target.</p>
+<p>The PLL is a type-2 phase tracker:
+<code class="docutils literal notranslate"><span class="pre">H(s)</span> <span class="pre">=</span> <span class="pre">(kp·s</span> <span class="pre">+</span> <span class="pre">ki)</span> <span class="pre">/</span> <span class="pre">(s²</span> <span class="pre">+</span> <span class="pre">kp·s</span> <span class="pre">+</span> <span class="pre">ki)</span></code>.
+With natural frequency ωn = √ki and damping ζ = kp/(2·√ki):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ωn</span></code> is chosen so the PLL bandwidth (≈ωn) is ≤ 1/5 of the
+electrical bandwidth <code class="docutils literal notranslate"><span class="pre">ω_e_max</span> <span class="pre">=</span> <span class="pre">rated_rpm</span> <span class="pre">×</span> <span class="pre">π/30</span> <span class="pre">×</span> <span class="pre">Pp</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ki</span> <span class="pre">=</span> <span class="pre">ωn²</span></code>, <code class="docutils literal notranslate"><span class="pre">kp</span> <span class="pre">=</span> <span class="pre">2·ζ·ωn</span></code></p></li>
+</ul>
+<section id="id1">
+<h2>Parameters<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>rated_rpm<span class="classifier">float, optional</span></dt><dd><p>Rated mechanical speed [RPM].  If None, uses motor rated_speed_rpm
+or falls back to 3000 RPM.</p>
+</dd>
+<dt>zeta<span class="classifier">float</span></dt><dd><p>Desired damping ratio (default 0.9 for slight overdamping).</p>
+</dd>
+<dt>apply<span class="classifier">bool</span></dt><dd><p>If True, immediately calls <code class="docutils literal notranslate"><span class="pre">set_pll_gains(kp,</span> <span class="pre">ki)</span></code> with the result.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h2>Returns<a class="headerlink" href="#returns" title="Link to this heading"></a></h2>
+<p>dict with keys <code class="docutils literal notranslate"><span class="pre">kp</span></code>, <code class="docutils literal notranslate"><span class="pre">ki</span></code>, <code class="docutils literal notranslate"><span class="pre">omega_n_rad_s</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">rtype<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.calibrate_smo_gains_analytical">
+<span class="sig-name descname"><span class="pre">calibrate_smo_gains_analytical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rated_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.calibrate_smo_gains_analytical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.calibrate_smo_gains_analytical" title="Link to this definition"></a></dt>
+<dd><p>Compute SMO gains analytically from motor electrical time constant.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">k_slide</span> <span class="pre">=</span> <span class="pre">5</span> <span class="pre">×</span> <span class="pre">ω_e_max</span></code> — gain high enough to pull the phase
+trajectory to the sliding surface within a few electrical periods.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lpf_alpha</span> <span class="pre">=</span> <span class="pre">dt</span> <span class="pre">/</span> <span class="pre">(dt</span> <span class="pre">+</span> <span class="pre">3·τ_e)</span></code> — LPF matched to electrical
+bandwidth (3× electrical time constant).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">boundary</span> <span class="pre">=</span> <span class="pre">0.04</span></code> rad — tanh boundary layer (avoids chattering).</p></li>
+</ul>
+<section id="id2">
+<h2>Parameters<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>rated_rpm<span class="classifier">float, optional</span></dt><dd><p>Rated mechanical speed [RPM].  If None, uses motor parameter.</p>
+</dd>
+<dt>dt<span class="classifier">float, optional</span></dt><dd><p>Current-loop time step [s].  If None, uses 100 µs.</p>
+</dd>
+<dt>apply<span class="classifier">bool</span></dt><dd><p>If True, immediately calls <code class="docutils literal notranslate"><span class="pre">set_smo_gains(k_slide,</span> <span class="pre">lpf_alpha,</span> <span class="pre">boundary)</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id3">
+<h2>Returns<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<p>dict with keys <code class="docutils literal notranslate"><span class="pre">k_slide</span></code>, <code class="docutils literal notranslate"><span class="pre">lpf_alpha</span></code>, <code class="docutils literal notranslate"><span class="pre">boundary</span></code>, <code class="docutils literal notranslate"><span class="pre">tau_e_s</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">rtype<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="src.control.foc_controller.FOCController.set_sensorless_blend">
 <span class="sig-name descname"><span class="pre">set_sensorless_blend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_speed_rpm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">250.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.65</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.set_sensorless_blend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.set_sensorless_blend" title="Link to this definition"></a></dt>
 <dd><p>Configure low-speed sensorless angle blending behavior.</p>
@@ -469,8 +570,8 @@ runs every PWM interrupt while the speed PI runs at a lower rate:</p>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
 </dd>
 </dl>
-<section id="parameters">
-<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<section id="id4">
+<h2>Parameters<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
 <dl class="simple">
 <dt>divider<span class="classifier">int</span></dt><dd><p>Number of current-loop steps between successive speed-PI updates.</p>
 <ul class="simple">
@@ -507,8 +608,8 @@ typical setting matches <code class="docutils literal notranslate"><span class="
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
 </dd>
 </dl>
-<section id="id1">
-<h2>Parameters<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<section id="id5">
+<h2>Parameters<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
 <dl class="simple">
 <dt>divider<span class="classifier">int</span></dt><dd><ul class="simple">
 <li><dl class="simple">
@@ -558,8 +659,8 @@ structure used in production single-shunt FOC firmware:</p>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
 </dd>
 </dl>
-<section id="id2">
-<h2>Parameters<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<section id="id6">
+<h2>Parameters<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
 <dl class="simple">
 <dt>pwm_freq_hz<span class="classifier">float</span></dt><dd><p>PWM (current-loop) frequency in Hz.  Corresponds directly to
 <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">dt</span></code> used when creating <code class="docutils literal notranslate"><span class="pre">BLDCMotor</span></code> / <code class="docutils literal notranslate"><span class="pre">SimulationEngine</span></code>.
@@ -575,8 +676,8 @@ is needed.</p>
 </dd>
 </dl>
 </section>
-<section id="returns">
-<h2>Returns<a class="headerlink" href="#returns" title="Link to this heading"></a></h2>
+<section id="id7">
+<h2>Returns<a class="headerlink" href="#id7" title="Link to this heading"></a></h2>
 <dl class="simple">
 <dt>dict</dt><dd><p>Resolved timing parameters: pwm_freq_hz, speed_loop_hz,
 fw_loop_hz, speed_divider, fw_divider.</p>
@@ -737,6 +838,31 @@ Ziegler–Nichols or IMC rules.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="src.control.foc_controller.FOCController.update_applied_voltage">
+<span class="sig-name descname"><span class="pre">update_applied_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">va</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.update_applied_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.update_applied_voltage" title="Link to this definition"></a></dt>
+<dd><p>Store actual applied phase voltages for sensorless EMF reconstruction.</p>
+<p>Call this <em>after</em> <code class="docutils literal notranslate"><span class="pre">svm.modulate()</span></code> and <em>before</em> the next
+<code class="docutils literal notranslate"><span class="pre">ctrl.update()</span></code> so that <code class="xref py py-meth docutils literal notranslate"><span class="pre">_reconstruct_emf_sensorless()</span></code> uses the
+true motor terminal voltage rather than the FOC-commanded inverse-Park
+output.  The SVM output can deviate from the FOC command by ±15 %
+(sector-dependent gain) and using the real applied vector eliminates
+that systematic error from the EMF reconstruction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+<section id="id8">
+<h2>Parameters<a class="headerlink" href="#id8" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>va, vb, vc:</dt><dd><p>Phase-to-neutral (or phase-to-virtual-neutral) voltages in volts,
+as actually applied to the motor terminals by the inverter.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="src.control.foc_controller.FOCController.get_state">
 <span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/foc_controller.html#FOCController.get_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.foc_controller.FOCController.get_state" title="Link to this definition"></a></dt>
 <dd><p>Return controller state variables.</p>
@@ -775,7 +901,7 @@ desired frequency/speed.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.control.vf_controller.VFController">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.vf_controller.</span></span><span class="sig-name descname"><span class="pre">VFController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_nominal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_startup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ramp_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/vf_controller.html#VFController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.vf_controller.VFController" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="generated/src.control.base_controller.html#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#src.control.base_controller.BaseController" title="src.control.base_controller.BaseController"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseController</span></code></a></p>
 <section id="voltage-to-frequency-v-f-controller">
 <h2>Voltage-to-Frequency (V/f) Controller<a class="headerlink" href="#voltage-to-frequency-v-f-controller" title="Link to this heading"></a></h2>
 <p>Implements V/f characteristic for open-loop motor control.</p>
@@ -1351,7 +1477,7 @@ disable each effect.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.control.svm_generator.</span></span><span class="sig-name descname"><span class="pre">CartesianSVMGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dc_voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_drop_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduction_resistance_ohm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_frequency_hz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switching_loss_coeff_v_per_a_khz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/control/svm_generator.html#CartesianSVMGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.control.svm_generator.CartesianSVMGenerator" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="generated/src.control.svm_generator.html#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#src.control.svm_generator.SVMGenerator" title="src.control.svm_generator.SVMGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">SVMGenerator</span></code></a></p>
 <p>Extended SVM generator accepting Cartesian alpha-beta voltages.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="src.control.svm_generator.CartesianSVMGenerator.modulate_cartesian">

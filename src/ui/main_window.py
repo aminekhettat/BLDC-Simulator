@@ -12,7 +12,7 @@ Provides comprehensive GUI for:
 - Data export
 
 :author: BLDC Control Team
-:version: 0.9.3
+:version: 0.10.0
 """
 
 import csv
@@ -762,7 +762,7 @@ class CurrentSpectrumWindow(QMainWindow):
 
 class BLDCMotorControlGUI(QMainWindow):
     """
-    Main BLDC Motor Control GUI
+    Main SPINOTOR GUI
     ===========================
 
     Comprehensive application for BLDC motor simulation and control.
@@ -778,14 +778,14 @@ class BLDCMotorControlGUI(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        APP_NAME = "BLIND SYSTEMS BLDC Simulator"
-        APP_VERSION = "0.9.3"
+        APP_NAME = "BLIND SYSTEMS SPINOTOR"
+        APP_VERSION = "0.10.0"
 
-        self.setWindowTitle(f"{APP_NAME} - BLDC Motor Control Simulator (v{APP_VERSION})")
+        self.setWindowTitle(f"{APP_NAME} - SPINOTOR (v{APP_VERSION})")
         self.setGeometry(100, 100, 1500, 950)
 
         # Accessibility
-        self.setAccessibleName("BLIND SYSTEMS BLDC Simulator")
+        self.setAccessibleName("BLIND SYSTEMS SPINOTOR")
         self.setAccessibleDescription(
             "Comprehensive BLDC motor simulator with V/f and FOC control. "
             "Use Tab to navigate between sections, arrow keys in list views."
@@ -846,7 +846,7 @@ class BLDCMotorControlGUI(QMainWindow):
         # Left column: title, tabs, buttons
         left_layout = QVBoxLayout()
 
-        title = QLabel("BLIND SYSTEMS BLDC Simulator - Advanced Motor Control")
+        title = QLabel("BLIND SYSTEMS SPINOTOR - Advanced Motor Control")
         title_font = QFont()
         title_font.setPointSize(14)
         title_font.setBold(True)
@@ -1214,8 +1214,8 @@ class BLDCMotorControlGUI(QMainWindow):
             return pdf_path
 
         html = (
-            "<h1>BLIND SYSTEMS BLDC Simulator - User Manual</h1>"
-            "<p><b>Version:</b> 0.9.3</p>"
+            "<h1>BLIND SYSTEMS SPINOTOR - User Manual</h1>"
+            "<p><b>Version:</b> 0.10.0</p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<h2>1. Getting Started</h2>"
             "<p>Configure motor, load and controller parameters, then start simulation.</p>"
@@ -1609,8 +1609,8 @@ class BLDCMotorControlGUI(QMainWindow):
     def _show_about(self):
         """Show about dialog."""
         about_text = (
-            "<h2>BLIND SYSTEMS BLDC Simulator v0.9.3</h2>"
-            "<p><b>Advanced BLDC Motor Control Simulator</b></p>"
+            "<h2>BLIND SYSTEMS SPINOTOR v0.10.0</h2>"
+            "<p><b>Advanced SPINOTOR</b></p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<p><b>Copyright:</b> 2026 BLIND SYSTEMS</p>"
             "<p>Includes accessible audio assistance and real-time control diagnostics.</p>"
@@ -1649,7 +1649,7 @@ class BLDCMotorControlGUI(QMainWindow):
     def _show_guide(self):
         """Show quick start guide."""
         guide_text = (
-            "<h3>Quick Start Guide - BLIND SYSTEMS BLDC Simulator</h3>"
+            "<h3>Quick Start Guide - BLIND SYSTEMS SPINOTOR</h3>"
             "<p><b>1. Configure Motor Parameters:</b></p>"
             "<ul><li>Set nominal voltage, resistance, inductance, pole pairs, Back-EMF constant</li></ul>"  # noqa: E501
             "<p><b>2. Set Load Profile:</b></p>"

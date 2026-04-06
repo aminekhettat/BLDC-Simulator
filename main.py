@@ -1,5 +1,5 @@
 """
-    BLDC Motor Control Application - Main Entry Point
+    SPINOTOR Application - Main Entry Point
 ==================================================
 
 Launches the GUI application for BLDC motor simulation with V/f control.
@@ -10,10 +10,10 @@ Usage:
 Requirements:
     See requirements.txt
 
-:author: BLDC Control Team
-:version: 0.9.3
+:author: Amine Khettat — Blind Systems
+:version: 0.10.0
 
-.. versionadded:: 0.9.3
+.. versionadded:: 0.10.0
     Initial application release
 """
 
@@ -41,7 +41,7 @@ def main():
     Initializes PyQt6 application and launches the main GUI window.
     """
     logger.info("=" * 60)
-    logger.info("BLIND SYSTEMS BLDC Simulator v0.9.3")
+    logger.info("BLIND SYSTEMS SPINOTOR v0.10.0")
     logger.info("=" * 60)
 
     try:
@@ -56,8 +56,8 @@ def main():
         app = QApplication(sys.argv)
 
         # Set application info
-        app.setApplicationName("BLIND SYSTEMS BLDC Simulator")
-        app.setApplicationVersion("0.9.3")
+        app.setApplicationName("BLIND SYSTEMS SPINOTOR")
+        app.setApplicationVersion("0.10.0")
 
         # Create and show main window
         window = BLDCMotorControlGUI()

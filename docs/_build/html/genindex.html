@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; BLDC Motor Control 0.9.1 documentation</title>
+  <title>Index &mdash; BLDC Motor Control 0.9.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=9dc39874"></script>
+      <script src="_static/documentation_options.js?v=0e439607"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -244,6 +244,10 @@
 </li>
       <li><a href="api/generated/src.ui.main_window.html#src.ui.main_window.BLDCMotorControlGUI.calib_process">calib_process (src.ui.main_window.BLDCMotorControlGUI attribute)</a>, <a href="api/ui.html#src.ui.main_window.BLDCMotorControlGUI.calib_process">[1]</a>
 </li>
+      <li><a href="api/control.html#src.control.foc_controller.FOCController.calibrate_pll_gains_analytical">calibrate_pll_gains_analytical() (src.control.foc_controller.FOCController method)</a>, <a href="api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.calibrate_pll_gains_analytical">[1]</a>
+</li>
+      <li><a href="api/control.html#src.control.foc_controller.FOCController.calibrate_smo_gains_analytical">calibrate_smo_gains_analytical() (src.control.foc_controller.FOCController method)</a>, <a href="api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.calibrate_smo_gains_analytical">[1]</a>
+</li>
       <li><a href="api/control.html#src.control.svm_generator.CartesianSVMGenerator.cartesian_to_threephase">cartesian_to_threephase() (src.control.svm_generator.CartesianSVMGenerator method)</a>, <a href="api/generated/src.control.svm_generator.html#src.control.svm_generator.CartesianSVMGenerator.cartesian_to_threephase">[1]</a>
 </li>
       <li><a href="api/control.html#src.control.svm_generator.CartesianSVMGenerator">CartesianSVMGenerator (class in src.control.svm_generator)</a>, <a href="api/generated/src.control.svm_generator.html#src.control.svm_generator.CartesianSVMGenerator">[1]</a>
@@ -274,10 +278,10 @@
 </li>
       <li><a href="api/control.html#src.control.foc_controller.FOCController.configure_mcu_timing">configure_mcu_timing() (src.control.foc_controller.FOCController method)</a>, <a href="api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.configure_mcu_timing">[1]</a>
 </li>
-      <li><a href="api/core.html#src.core.simulation_engine.SimulationEngine.configure_power_factor_control">configure_power_factor_control() (src.core.simulation_engine.SimulationEngine method)</a>, <a href="api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.configure_power_factor_control">[1]</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/core.html#src.core.simulation_engine.SimulationEngine.configure_power_factor_control">configure_power_factor_control() (src.core.simulation_engine.SimulationEngine method)</a>, <a href="api/generated/src.core.simulation_engine.html#src.core.simulation_engine.SimulationEngine.configure_power_factor_control">[1]</a>
+</li>
       <li><a href="api/core.html#src.core.load_model.ConstantLoad">ConstantLoad (class in src.core.load_model)</a>, <a href="api/generated/src.core.load_model.html#src.core.load_model.ConstantLoad">[1]</a>
 </li>
       <li><a href="api/core.html#src.core.power_model.ConstantSupply">ConstantSupply (class in src.core.power_model)</a>, <a href="api/generated/src.core.power_model.html#src.core.power_model.ConstantSupply">[1]</a>
@@ -375,6 +379,8 @@
       <li><a href="api/control.html#src.control.svm_generator.InverterRealismConfig.enable_min_pulse">enable_min_pulse (src.control.svm_generator.InverterRealismConfig attribute)</a>, <a href="api/generated/src.control.svm_generator.html#src.control.svm_generator.InverterRealismConfig.enable_min_pulse">[1]</a>
 </li>
       <li><a href="api/control.html#src.control.svm_generator.InverterRealismConfig.enable_phase_asymmetry">enable_phase_asymmetry (src.control.svm_generator.InverterRealismConfig attribute)</a>, <a href="api/generated/src.control.svm_generator.html#src.control.svm_generator.InverterRealismConfig.enable_phase_asymmetry">[1]</a>
+</li>
+      <li><a href="api/control.html#src.control.foc_controller.FOCController.enable_sensorless_emf_reconstruction">enable_sensorless_emf_reconstruction() (src.control.foc_controller.FOCController method)</a>, <a href="api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.enable_sensorless_emf_reconstruction">[1]</a>
 </li>
       <li><a href="api/control.html#src.control.vf_controller.VFController.enable_startup_boost">enable_startup_boost() (src.control.vf_controller.VFController method)</a>, <a href="api/generated/src.control.vf_controller.html#src.control.vf_controller.VFController.enable_startup_boost">[1]</a>
 </li>
@@ -976,6 +982,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/control.html#src.control.foc_controller.FOCController.update_applied_voltage">update_applied_voltage() (src.control.foc_controller.FOCController method)</a>, <a href="api/generated/src.control.foc_controller.html#src.control.foc_controller.FOCController.update_applied_voltage">[1]</a>
+</li>
       <li><a href="api/generated/src.ui.main_window.html#src.ui.main_window.SimulationThread.update_signal">update_signal (src.ui.main_window.SimulationThread attribute)</a>, <a href="api/ui.html#src.ui.main_window.SimulationThread.update_signal">[1]</a>
 </li>
       <li><a href="api/generated/src.ui.main_window.html#src.ui.main_window.AccessibleTextBlock.update_value">update_value() (src.ui.main_window.AccessibleTextBlock method)</a>, <a href="api/ui.html#src.ui.main_window.AccessibleTextBlock.update_value">[1]</a>
