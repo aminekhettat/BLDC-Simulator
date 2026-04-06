@@ -795,18 +795,39 @@ Available feature toggles:
 Observer mode selection
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-- `Measured`: Uses model rotor angle directly. Best for reference simulations and debugging.
-- `PLL`: Uses back-EMF angle tracking. Good first sensorless-like observer mode.
-- `SMO`: Sliding-mode-inspired variant with robust error sign action and filtered speed estimate.
+Five angle observer modes are available, selectable from the **Observer & Startup** tab.
+
+- ``Measured``: Uses the true simulation rotor angle directly.  Best for reference
+  simulations and controller tuning.  Not a sensorless mode.
+- ``PLL``: Back-EMF Phase-Locked Loop.  Reconstructs the α–β back-EMF from the
+  voltage model, then uses a PLL to extract angle and speed.  Good first sensorless
+  mode; simple Kp/Ki structure.
+- ``SMO``: First-order Sliding-Mode Observer.  Adds a sign-action correction on the
+  current error with a boundary-layer softening and LPF smoothing.  Better
+  disturbance rejection than PLL.
+- ``STSMO``: Super-Twisting SMO (second-order).  Backward-Euler implicit integration
+  for unconditional stability; speed-adaptive k2 satisfying the Levant rotating-EMF
+  tracking condition; SOGI post-filter to suppress chattering.  Supports analytical
+  gain calibration and optional MRAS resistance drift correction.
+- ``ActiveFlux``: Active Flux observer (Boldea 2009).  Tracks the active flux vector
+  ``ψa = ψs − Ld·is``, always aligned with the rotor d-axis.  Particularly suited
+  to IPM motors with significant d/q saliency and field-weakening operation.
+
+For full mathematical derivations, API reference, and step-by-step tuning guidance
+see ``docs/sensorless_observers.rst``.
 
 Suggested initial observer gains
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- PLL Kp: `50` to `150`
-- PLL Ki: `1000` to `5000`
-- SMO Kslide: `300` to `1000`
-- SMO LPF Alpha: `0.05` to `0.2`
-- SMO Boundary: `0.03` to `0.12` rad
+- PLL Kp: ``50`` to ``150``
+- PLL Ki: ``1000`` to ``5000``
+- SMO Kslide: ``300`` to ``1000``
+- SMO LPF Alpha: ``0.05`` to ``0.2``
+- SMO Boundary: ``0.03`` to ``0.12`` rad
+- STSMO k1: use **Auto-Calibrate** button (analytical result ≈ 18 for a 3500 RPM / 0.1 V·s/rad motor)
+- STSMO k2_min: ``500`` V/s (floor at standstill)
+- STSMO k2_factor: ``1.0`` (Levant theoretical minimum; increase only if z1 lags)
+- ActiveFlux dc_cutoff_hz: ``0.3`` to ``1.0`` Hz (must be well below minimum electrical frequency)
 
 Suggested inverter non-ideality starting points
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -828,14 +849,24 @@ Suggested inverter non-ideality starting points
 Tuning workflow (recommended)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- Start with `Measured` observer and all inverter non-idealities at zero.
+- Start with ``Measured`` observer and all inverter non-idealities at zero.
 - Tune d/q current loops and cascaded speed loop first.
-- Switch to `PLL`, tune Kp then Ki to remove steady-state phase error.
-- Switch to `SMO` if robust disturbance rejection is needed, then tune `Kslide` and `LPF Alpha`.
-- Introduce inverter non-idealities one at a time: device drop, dead-time, then conduction resistance.
+- Switch to ``PLL``, tune Kp then Ki to remove steady-state phase error.
+- Switch to ``SMO`` if robust disturbance rejection is needed; tune Kslide,
+  then LPF Alpha, then Boundary.
+- Switch to ``STSMO`` for best chattering suppression or wide speed range.
+  Use the **Auto-Calibrate** button first, then adjust k2_min for low-speed
+  stability margin.
+- Switch to ``ActiveFlux`` for IPM motors or field-weakening studies where
+  d/q saliency is significant.
+- Enable the sensorless blend (``set_sensorless_blend()``) before switching
+  from Measured to any sensorless mode to avoid abrupt angle steps.
+- Introduce inverter non-idealities one at a time: device drop, dead-time,
+  then conduction resistance.
 - Add switching and diode losses after the base current-loop tuning is stable.
-- Enable DC-link ripple only after voltage-loop behavior is understood, because it couples supply and modulation limits.
-- Enable thermal coupling for long-duration sweeps, not for first-pass controller tuning.
+- Enable DC-link ripple only after voltage-loop behavior is understood,
+  because it couples supply and modulation limits.
+- Enable thermal coupling for long-duration sweeps, not first-pass tuning.
 - Use phase asymmetry only when studying mismatch sensitivity or fault-like drift.
 - Re-freeze baseline only after expected drift is verified and documented.
 

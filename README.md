@@ -30,7 +30,7 @@ see `docs/features.rst`.
 - Hardware backend abstraction with mock DAQ support for dry-run integration
 - Modular, scalable architecture across control, core, hardware, UI, and visualization layers
 - Motor profile import/export, regression baselines, and repeatable validation workflows
-- Accessibility-oriented PyQt6 interface (keyboard-first and screen-reader friendly)
+- Accessibility-oriented PySide6 interface (keyboard-first and screen-reader friendly)
 - Optional audio assistance for key status and workflow events
 
 ## Quick Start
@@ -151,6 +151,77 @@ Before merging or publishing a release:
 4. Follow `.github/RELEASE_CHECKLIST.md`.
 5. Update release notes using `RELEASE_NOTES_TEMPLATE.md`.
 6. Push only after local checks are green.
+
+## Sensorless Angle Observers
+
+SPINOTOR implements five observer modes selectable from the **Observer & Startup** tab.
+All sensorless modes reconstruct the electrical angle from terminal voltages and
+currents without requiring a rotor position sensor.
+
+### Measured (reference mode)
+
+Uses the true rotor angle directly from the simulation model. No estimation is
+performed. This is the ideal reference mode for controller tuning and debugging
+before enabling sensorless operation.
+
+### PLL — Phase-Locked Loop
+
+Reconstructs back-EMF in the stationary (α–β) frame from the stator voltage
+equation and applies a phase-locked loop to extract electrical angle and speed.
+Good first sensorless mode; simple gain structure (Kp, Ki).
+
+Suggested gains: Kp 50–150, Ki 1000–5000.
+
+### SMO — Sliding-Mode Observer
+
+Sliding-mode-inspired observer with a sign-action error correction and a
+low-pass filter (LPF) on the estimated EMF. More robust than PLL against supply
+disturbances and load steps.
+
+Suggested gains: Kslide 300–1000, LPF Alpha 0.05–0.2, Boundary 0.03–0.12 rad.
+
+### STSMO — Super-Twisting Sliding-Mode Observer
+
+Second-order Super-Twisting algorithm (Levant 1993) with a fully implicit
+backward-Euler integrator for unconditional numerical stability at any time-step.
+Key features:
+
+- Gain k1 sets convergence speed (analytical calibration via `calibrate_stsmo_gains_analytical()`).
+- Gain k2 adapts with electrical speed: `k2_eff = max(k2_min, k2_factor · ke · ωm · ωe)`,
+  satisfying the Levant rotating-EMF tracking condition at all speeds.
+- A Second-Order Generalized Integrator (SOGI) post-filter at the electrical
+  frequency suppresses chattering before angle extraction; bypassed below 5 rad/s.
+- z1 warm-start seeding from EMF at speed prevents startup transients.
+- MRAS-based stator resistance drift correction is available as an optional add-on.
+
+Typical calibration entry point:
+
+```python
+ctrl.calibrate_stsmo_gains_analytical(rated_rpm=3500.0)
+```
+
+Manual override parameters: k1 (default 18), k2_min (default 500 V/s),
+k2_factor (default 1.0×), rated_rpm.
+
+### ActiveFlux — Active Flux Observer
+
+Based on the Active Flux concept (Boldea 2009). Defines the active flux vector
+`ψa = ψs − Ld·is`, which is always aligned with the rotor d-axis regardless of
+field-weakening id injection. Angle is extracted as `θe = arctan2(ψa_β, ψa_α)`.
+Stator flux is integrated with a leaky (drift-correcting) pole at `dc_cutoff_hz`
+(default 0.5 Hz) to suppress integrator offset. Particularly well-suited for
+interior PM motors with significant saliency.
+
+Manual override parameter: dc_cutoff_hz (default 0.5 Hz).
+
+### Choosing an observer
+
+For a clean bring-up path: start with **Measured**, tune d/q loops and speed
+loop, then switch to **PLL**, then **SMO** if disturbance rejection is needed,
+then **STSMO** for best chattering suppression and quantitative gain calibration.
+Use **ActiveFlux** for IPM (interior PM) motors where d/q saliency is significant.
+
+Full observer tuning guidance is in `docs/advanced.rst` and `docs/sensorless_observers.rst`.
 
 ## References
 

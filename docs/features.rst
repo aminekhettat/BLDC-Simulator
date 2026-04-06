@@ -16,6 +16,8 @@ Control Algorithms
    - Decoupled torque and flux control
    - Park and Clarke transformations
    - PI compensators for current control
+   - Sensored and sensorless operation with five selectable angle observers:
+     Measured (reference), PLL, SMO, STSMO (Super-Twisting), and ActiveFlux
    - Superior performance and efficiency
 
 2. **Voltage-Frequency Control (V/F)**
@@ -27,6 +29,33 @@ Control Algorithms
    - PWM generation for 3-phase inverter
    - Near-sinusoidal current output
    - Optimized voltage utilization
+
+Sensorless Angle Observers
+--------------------------
+
+FOC sensorless operation is supported through five selectable observer modes.
+
+- **Measured** — True simulation angle; reference mode for controller tuning.
+- **PLL** — Phase-Locked Loop on the reconstructed back-EMF vector; simple Kp/Ki
+  gain structure; suited to surface-PM motors at medium and high speed.
+- **SMO** — First-order Sliding-Mode Observer with boundary-layer softening and
+  LPF smoothing; better disturbance rejection than PLL.
+- **STSMO** — Super-Twisting SMO (second order):
+
+  - Backward-Euler implicit integration — unconditionally stable at any time-step
+    or gain value.
+  - Speed-adaptive k2 satisfying the Levant rotating-EMF tracking condition
+    ``k2 ≥ ke·ωm·ωe`` at all operating points.
+  - SOGI post-filter at the electrical frequency to suppress chattering.
+  - Analytical gain calibration from rated speed and back-EMF constant.
+  - Optional MRAS resistance drift correction for thermal robustness.
+
+- **ActiveFlux** — Tracks the active flux vector ``ψa = ψs − Ld·is`` (Boldea 2009);
+  angle extraction is saliency-independent, making it naturally suited to IPM
+  motors and field-weakening operation.
+
+All sensorless modes participate in a confidence-weighted blend with the open-loop
+angle for smooth low-speed handoff.  Detailed documentation: ``docs/sensorless_observers.rst``.
 
 Advanced Features
 -----------------
@@ -53,11 +82,12 @@ Advanced Features
 User Interface
 --------------
 
-- **Accessible PyQt6 GUI**
-  - Screen reader support (NVDA, JAWS compatible)
+- **Accessible PySide6 GUI** (LGPL, enhanced accessibility event propagation)
+  - Screen reader support (NVDA, JAWS, Orca compatible)
   - Keyboard-only navigation
   - High contrast display support
   - Spoken status updates and narrated plot/export workflow hooks
+  - All interactive widgets carry accessible names and descriptions
 
 - **Interactive Controls**
   - Real-time parameter adjustment

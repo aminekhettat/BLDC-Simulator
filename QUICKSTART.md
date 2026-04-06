@@ -49,78 +49,88 @@ GPU support is optional and safely falls back to CPU.
 
 ---
 
+## Main Window Tab Layout
+
+The application window has five tabs:
+
+| Tab | Contents |
+|-----|----------|
+| **Motor & Drive** | Motor parameters, load profile, supply profile (sub-tabs) |
+| **Control** | Control mode (FOC / V/f), d/q references, PI auto-tune, inverter realism |
+| **Observer & Startup** | Angle observer selection and parameters, startup sequencing |
+| **Advanced Settings** | Inverter blocks, current sensing, MCU timing, hardware backend |
+| **Analysis** | Monitoring dashboard, plotting, calibration tools (sub-tabs) |
+
 ## Your First Simulation (5 minutes)
 
-### Step 1: Motor Parameters (Tab 1)
+### Step 1: Motor & Drive tab
 
 Accept all defaults or modify:
 
-- **Nominal Voltage**: 48V
-- **Phase Resistance**: 2.5Ω
+- **Nominal Voltage**: 48 V
+- **Phase Resistance**: 2.5 Ω
 - **Back-EMF Constant**: 0.1 V·s/rad
 - **Torque Constant**: 0.1 N·m/A
 
-These are typical values for a small hobby BLDC motor.
+Switch to the **Load** sub-tab and set:
 
-### Step 2: Load Profile (Tab 2)
-
-- **Load Type**: Select "Constant"
+- **Load Type**: Constant
 - **Constant Load Torque**: 0.5 N·m
 
-On this tab you can also configure a **Supply Profile** (constant or ramp) which
-models the DC bus voltage feeding the inverter. This value is logged with the
-motor data.
+The **Supply** sub-tab models the DC bus voltage (constant or ramp profile).
 
-This simulates a constant mechanical load on the motor shaft.
+### Step 2: Control tab
 
-### Step 3: Controller (Tab 3)
+- Select **Control Mode**: "V/f" for open-loop speed control or "FOC" for
+  field-oriented control.
 
-- Select **Control Mode**: choose "V/f" for open-loop speed control or "FOC" for
-  field‑oriented control.
+For V/f mode set Nominal Voltage, Nominal Frequency, Startup Voltage, and Speed
+Reference.
 
-For V/f mode:
+For FOC mode set d/q current references and use the auto-tune buttons for PI
+gains.
 
-- **Nominal Voltage**: 48V
-- **Nominal Frequency**: 100 Hz
-- **Startup Voltage**: 1V
-- **Speed Reference**: 50 Hz (half speed)
+Inverter realism blocks (device drop, dead-time, losses, ripple, thermal) and
+control-loop timing (switching frequency, MCU budget) are also on this tab.
 
-For FOC mode you can set d/q current references, choose output mode (polar vs
-Cartesian) and auto‑tune the PI controllers with the provided buttons.
+### Step 3: Observer & Startup tab
 
-You can also enable startup sequencing for both modes:
+This tab controls **sensorless angle estimation** and the startup sequence.
 
-- V/f: alignment + open-loop ramp + run
-- FOC: alignment + forced open-loop ramp + observer handoff
+**Angle Observer** dropdown — choose one of:
 
-These startup options are useful for robust low-speed behavior and reproducible
-sensorless bring-up studies.
+- **Measured** — uses true simulation angle (reference / debug mode).
+- **PLL** — Phase-Locked Loop; tune Kp and Ki.
+- **SMO** — Sliding-Mode Observer; tune Kslide, LPF Alpha, Boundary.
+- **STSMO** — Super-Twisting SMO; click **Auto-Calibrate** to set gains
+  analytically from rated RPM, then adjust k2_min if needed.
+- **ActiveFlux** — Active Flux observer; set dc_cutoff_hz (default 0.5 Hz).
 
-### Step 3b: Inverter and Timing (Control Tab)
+Parameter widgets appear and hide automatically depending on the selected mode.
 
-Configure inverter realism and control-loop timing from the same tab:
+**Integration Solver** — Backward Euler (default, unconditionally stable) or
+Forward Euler.
 
-- Enable/disable each inverter realism block independently.
-- Set switching frequency (also defines control update period).
-- Use MCU budget estimator fields to map host compute time to target MCU load.
+**Startup sequence** — enable alignment pulse and open-loop ramp before
+observer handoff for robust sensorless bring-up.
 
-These set up the voltage-to-frequency characteristic.
+For detailed observer tuning guidance see `docs/sensorless_observers.rst`.
 
 ### Step 4: Start Simulation
 
-- Press **F5** or click "Start Simulation"
-- Watch the Monitoring tab (Tab 4) for real-time values
+- Press **F5** or click "Start Simulation".
+- Go to the **Analysis → Monitoring** sub-tab for real-time values.
 
 ### Step 5: Export Results
 
-- Press **Ctrl+S** or click "Export Data"
-- Data is saved as CSV in `data/logs/`
+- Press **Ctrl+S** or click "Export Data".
+- Data is saved as CSV in `data/logs/`.
 
 ### Step 6: View Plots
 
-- Go to Plotting tab (Tab 5)
-- Click "Plot 3-Phase Overview" or "Plot Currents"
-- Plots open in new windows
+- Go to **Analysis → Plotting** sub-tab.
+- Click "Plot 3-Phase Overview" or "Plot Currents".
+- Plots open in new windows.
 
 ---
 
@@ -219,14 +229,14 @@ All input fields have descriptive labels and help text for screen readers.
 
 ### Simulation runs but motor doesn't accelerate
 
-- **Check**: Speed reference > 0 (Tab 3)
-- **Check**: DC voltage is sufficient (Tab 3)
-- **Check**: Load torque isn't too high (Tab 2)
+- **Check**: Speed reference > 0 (Control tab)
+- **Check**: DC voltage is sufficient (Control tab)
+- **Check**: Load torque isn't too high (Motor & Drive → Load sub-tab)
 
 ### Values all show zero
 
 - **Check**: Has simulation started? (Press F5)
-- **Check**: Look in Monitoring tab (Tab 4)
+- **Check**: Look in Analysis → Monitoring sub-tab
 
 ### Can't export data
 
