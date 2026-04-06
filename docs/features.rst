@@ -100,10 +100,26 @@ User Interface
 - **Monitoring Dashboard**
   - Status bar with simulation parameters
   - RK4 dt/PWM numerical-stability advisory with severity color coding
-  - Real-time waveform plots
+  - Real-time multi-channel oscilloscope (``OscilloscopeWidget``) with up to
+    4 independently selectable signal strips; zoom/pan via pyqtgraph or
+    matplotlib NavigationToolbar fallback; scrolling time-window selector
+    (1 s / 5 s / 10 s / 30 s / All); Pause/Resume; Reset-Axes; ghost-run
+    comparison overlay (previous run shown as translucent dashed trace)
   - Phase current and voltage visualization
   - Torque and power monitoring
   - True-versus-measured current comparison for current-sense validation
+
+- **Post-Simulation Plot Customizer** (``PlotCustomizerDialog``)
+  - Opens from "Customize …" buttons next to every post-sim plot button
+  - Six tabs: Figure (title, size, DPI), Typography (font sizes), Traces
+    (per-trace color-picker, line width, line style), Grid, Legend, Export
+  - Publication-quality export presets: Screen, IEEE 2-col, IEEE 1-col,
+    A4 Report, Presentation 16:9, High-DPI Print (600 dpi)
+  - Live preview canvas inside the dialog; "Apply to original" propagates
+    changes back to the figure shown in the separate matplotlib window
+  - PNG / PDF / SVG / EPS save with configurable DPI via file dialog
+  - ``PlotStyle`` dataclass is fully serializable (``to_dict()``) and
+    injectable into any ``SimulationPlotter.create_*()`` call
 
 Data & Export
 -------------

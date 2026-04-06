@@ -814,9 +814,21 @@ class BLDCMotorControlGUI(QMainWindow):
         self.is_running = False
         self._last_stability_severity_announced: str | None = None
 
-        # Speed curve history for live plotting
-        self.speed_history_time = []
-        self.speed_history_rpm = []
+        # Speed curve history for live plotting / CSV export compatibility
+        self.speed_history_time: list[float] = []
+        self.speed_history_rpm: list[float] = []
+
+        # Real-time oscilloscope widget (created in _create_monitoring_tab)
+        self.oscilloscope = None  # type: ignore[assignment]
+
+        # Last generated post-sim figures — used by the Customize buttons
+        self._last_fig_3phase = None
+        self._last_fig_currents = None
+        self._last_fig_pfc = None
+        self._last_fig_efficiency = None
+        self._last_fig_inverter = None
+        self._last_fig_measured_vs_true = None
+        self._last_fig_custom = None
 
         # Optional FFT analysis window for measured currents.
         self.current_fft_window: CurrentSpectrumWindow | None = None
@@ -3802,23 +3814,17 @@ class BLDCMotorControlGUI(QMainWindow):
         scroll.setWidget(scroll_widget)
         group_layout.addWidget(scroll, 1)
 
-        # Right side: Speed curve display (using matplotlib)
-        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-        from matplotlib.figure import Figure
+        # Right side: Real-time multi-channel oscilloscope
+        from src.ui.widgets.oscilloscope_widget import OscilloscopeWidget
 
-        self.speed_figure = Figure(figsize=(5, 4), dpi=80)
-        self.speed_canvas = FigureCanvas(self.speed_figure)
-        self.speed_ax = self.speed_figure.add_subplot(111)
-        self.speed_ax.set_xlabel("Time (s)")
-        self.speed_ax.set_ylabel("Speed (RPM)")
-        self.speed_ax.set_title("Rotor Speed Profile")
-        self.speed_ax.grid(True, alpha=0.3)
-        self.speed_line = None
-        self.speed_canvas.setAccessibleName("Speed Profile Graph")
-        self.speed_canvas.setAccessibleDescription(
-            "Real-time plot of motor rotor speed vs simulation time"
+        self.oscilloscope = OscilloscopeWidget()
+        self.oscilloscope.setAccessibleName("Real-time Oscilloscope")
+        self.oscilloscope.setAccessibleDescription(
+            "Multi-channel live oscilloscope. "
+            "Select signal channels from the drop-downs, choose a time window, "
+            "pause/resume the display, or reset the Y-axis scale at any time."
         )
-        group_layout.addWidget(self.speed_canvas, 1)
+        group_layout.addWidget(self.oscilloscope, 2)
 
         group.setLayout(group_layout)
         layout.addWidget(group)
@@ -3956,6 +3962,35 @@ class BLDCMotorControlGUI(QMainWindow):
         button_layout.addWidget(btn_plot_custom)
 
         group_layout.addLayout(button_layout)
+
+        # ── Customize buttons (post-sim plot style editor) ─────────────
+        customize_info = QLabel(
+            "After generating a plot, click the matching Customize button to open the "
+            "style editor (font sizes, colors, line widths, DPI, export presets)."
+        )
+        customize_info.setWordWrap(True)
+        customize_info.setAccessibleName("Customize plots information")
+        group_layout.addWidget(customize_info)
+
+        customize_layout = QHBoxLayout()
+
+        _cust_specs = [
+            ("Customize 3-Phase", "_last_fig_3phase", "Open style editor for the 3-phase overview plot"),
+            ("Customize Currents", "_last_fig_currents", "Open style editor for the current analysis plot"),
+            ("Customize PFC", "_last_fig_pfc", "Open style editor for the PFC analysis plot"),
+            ("Customize Efficiency", "_last_fig_efficiency", "Open style editor for the efficiency analysis plot"),
+            ("Customize Inverter", "_last_fig_inverter", "Open style editor for the inverter analysis plot"),
+            ("Customize Meas/True", "_last_fig_measured_vs_true", "Open style editor for the measured-vs-true current plot"),
+            ("Customize Selected", "_last_fig_custom", "Open style editor for the custom multi-axis plot"),
+        ]
+        for _label, _attr, _desc in _cust_specs:
+            _btn = AccessibleButton(_label, _desc)
+            _btn.clicked.connect(
+                lambda _checked=False, _a=_attr: self._open_plot_customizer(_a)
+            )
+            customize_layout.addWidget(_btn)
+
+        group_layout.addLayout(customize_layout)
         group_layout.addStretch()
 
         group.setLayout(group_layout)
@@ -3963,6 +3998,26 @@ class BLDCMotorControlGUI(QMainWindow):
 
         widget.setLayout(layout)
         return widget  # Analysis tab picks this up
+
+    def _open_plot_customizer(self, fig_attr: str) -> None:
+        """Open PlotCustomizerDialog for the figure stored in *fig_attr*."""
+        fig = getattr(self, fig_attr, None)
+        if fig is None:
+            from PySide6.QtWidgets import QMessageBox as _QMB
+
+            _QMB.information(
+                self,
+                "No Plot Available",
+                "Generate the corresponding plot first, then click Customize.",
+            )
+            return
+        try:
+            from src.ui.widgets.plot_customizer_dialog import PlotCustomizerDialog
+
+            dlg = PlotCustomizerDialog(figure=fig, parent=self)
+            dlg.exec()
+        except Exception as _exc:
+            logger.error("PlotCustomizerDialog error: %s", _exc)
 
     # ------------------------------------------------------------------
     # Calibration tab
@@ -5150,6 +5205,10 @@ class BLDCMotorControlGUI(QMainWindow):
         self.speed_history_time = []
         self.speed_history_rpm = []
 
+        # Notify oscilloscope: ghost previous run's traces, clear live buffers
+        if self.oscilloscope is not None:
+            self.oscilloscope.start_new_run()
+
         # Create and start simulation thread
         assert self.engine is not None
         assert self.svm is not None
@@ -5796,27 +5855,43 @@ class BLDCMotorControlGUI(QMainWindow):
         except Exception as exc:
             logger.debug("Permanent info panel update skipped: %s", exc)
 
-        # Update speed curve
-        self.speed_history_time.append(time_val)
-        self.speed_history_rpm.append(speed_val)
+        # Keep speed history for CSV export / backward compatibility
+        self.speed_history_time.append(float(time_val))
+        self.speed_history_rpm.append(float(speed_val))
 
-        # Every 10 updates, redraw the curve (to avoid too frequent redraws)
-        if len(self.speed_history_time) % 10 == 0:
-            self.speed_ax.clear()
-            self.speed_ax.plot(
-                self.speed_history_time,
-                self.speed_history_rpm,
-                color=PLOT_STYLE.get("live_speed_color", "#FF6B9D"),
-                linewidth=2,
-                label="Speed",
-            )
-            self.speed_ax.set_xlabel("Time (s)")
-            self.speed_ax.set_ylabel("Speed (RPM)")
-            self.speed_ax.set_title("⚡ Rotor Speed Profile")
-            self.speed_ax.grid(True, alpha=0.3)
-            self.speed_ax.legend()
-            self.speed_figure.tight_layout()
-            self.speed_canvas.draw()
+        # Push live sample to the oscilloscope panel
+        if self.oscilloscope is not None:
+            try:
+                _osc_values: dict[str, float] = {
+                    "speed_rpm": float(speed_val),
+                    "speed": float(state.get("omega", 0.0)),
+                    "torque": float(state.get("torque", 0.0)),
+                    "load_torque": float(state.get("load_torque", 0.0)),
+                    "currents_a": float(state.get("currents_a", 0.0)),
+                    "currents_b": float(state.get("currents_b", 0.0)),
+                    "currents_c": float(state.get("currents_c", 0.0)),
+                    "voltages_a": float(state.get("voltages_a", 0.0)),
+                    "voltages_b": float(state.get("voltages_b", 0.0)),
+                    "voltages_c": float(state.get("voltages_c", 0.0)),
+                    "emf_a": float(state.get("emf_a", 0.0)),
+                    "emf_b": float(state.get("emf_b", 0.0)),
+                    "emf_c": float(state.get("emf_c", 0.0)),
+                    "theta": float(state.get("theta", 0.0)),
+                    "theta_electrical": float(state.get("theta_electrical", 0.0)),
+                    "observer_confidence": float(state.get("observer_confidence", 0.0)),
+                    "efficiency": float(efficiency_state.get("efficiency", 0.0)),
+                    "input_power": float(efficiency_state.get("input_power", 0.0)),
+                    "mechanical_output_power": float(
+                        efficiency_state.get("mechanical_output_power_w", 0.0)
+                    ),
+                    "effective_dc_voltage": float(
+                        inverter_state.get("effective_dc_voltage", 0.0)
+                    ),
+                    "dc_link_ripple_v": float(inverter_state.get("dc_link_ripple_v", 0.0)),
+                }
+                self.oscilloscope.push_sample(float(time_val), _osc_values)
+            except Exception as _osc_exc:
+                logger.debug("Oscilloscope push_sample skipped: %s", _osc_exc)
 
     def _update_display(self):
         """Update display (for manual updates)."""
@@ -6256,6 +6331,7 @@ class BLDCMotorControlGUI(QMainWindow):
             minor_grid=minor_grid,
             grid_spacing_y=grid_spacing_y,
         )
+        self._last_fig_3phase = figure
         figure.show()
         speak("3-phase plot generated.")
 
@@ -6284,6 +6360,7 @@ class BLDCMotorControlGUI(QMainWindow):
             minor_grid=minor_grid,
             grid_spacing_y=grid_spacing_y,
         )
+        self._last_fig_currents = figure
         figure.show()
         speak("Current plot generated.")
 
@@ -6312,6 +6389,7 @@ class BLDCMotorControlGUI(QMainWindow):
             minor_grid=minor_grid,
             grid_spacing_y=grid_spacing_y,
         )
+        self._last_fig_pfc = figure
         figure.show()
         speak("PFC analysis plot generated.")
 
@@ -6340,6 +6418,7 @@ class BLDCMotorControlGUI(QMainWindow):
             minor_grid=minor_grid,
             grid_spacing_y=grid_spacing_y,
         )
+        self._last_fig_efficiency = figure
         figure.show()
         speak("Efficiency analysis plot generated.")
 
@@ -6368,6 +6447,7 @@ class BLDCMotorControlGUI(QMainWindow):
             minor_grid=minor_grid,
             grid_spacing_y=grid_spacing_y,
         )
+        self._last_fig_inverter = figure
         figure.show()
         speak("Inverter analysis plot generated.")
 
@@ -6397,6 +6477,7 @@ class BLDCMotorControlGUI(QMainWindow):
             minor_grid=minor_grid,
             grid_spacing_y=grid_spacing_y,
         )
+        self._last_fig_measured_vs_true = figure
         figure.show()
         if has_true:
             # Compute and narrate summary RMS errors
@@ -6486,5 +6567,6 @@ class BLDCMotorControlGUI(QMainWindow):
             minor_grid=minor_grid,
             grid_spacing_y=grid_spacing_y,
         )
+        self._last_fig_custom = figure
         figure.show()
         speak("Custom plot generated for variables: " + ", ".join(selected))

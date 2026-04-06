@@ -4,20 +4,60 @@ Visualization Module
 
 Handles plotting and visualization of simulation results.
 
-Uses matplotlib for real-time and saved plots.
+Uses matplotlib for real-time and saved plots.  Every ``create_*`` method
+accepts an optional *style* argument (:class:`PlotStyle`) that is applied
+after the figure is built, enabling publication-quality export or custom
+branding without re-running the simulation.
 
 :author: BLDC Control Team
-:version: 0.8.0
+:version: 0.9.0
 """
+
+from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
+if TYPE_CHECKING:
+    from src.ui.widgets.plot_customizer_dialog import PlotStyle
+
 logger = logging.getLogger(__name__)
+
+
+def _apply_style(fig: Figure, style: "PlotStyle | None") -> None:
+    """Apply *style* to *fig* in-place; no-op when *style* is ``None``.
+
+    The module is loaded directly from its file path (bypassing the package
+    ``__init__.py``) so that PySide6 is not required at import time.
+    """
+    if style is None:
+        return
+    try:
+        import importlib.util as _ilu
+        import pathlib as _pl
+        import sys as _sys
+
+        _key = "plot_customizer_dialog"
+        if _key not in _sys.modules:
+            _path = (
+                _pl.Path(__file__).parent.parent
+                / "ui"
+                / "widgets"
+                / "plot_customizer_dialog.py"
+            )
+            _spec = _ilu.spec_from_file_location(_key, _path)
+            _mod = _ilu.module_from_spec(_spec)  # type: ignore[arg-type]
+            _sys.modules[_key] = _mod
+            _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
+        _applicator = _sys.modules[_key].PlotStyleApplicator
+        _applicator.apply(fig, style)
+    except Exception as exc:  # pragma: no cover
+        logger.debug("PlotStyleApplicator skipped: %s", exc)
 
 
 class SimulationPlotter:
@@ -40,6 +80,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
+        style: "PlotStyle | None" = None,
     ) -> Figure:
         """
         Create figure with 3-phase motor variables.
@@ -206,6 +247,7 @@ class SimulationPlotter:
             ax6.yaxis.set_major_locator(MultipleLocator(grid_spacing_y))
 
         plt.tight_layout()
+        _apply_style(fig, style)
         return fig
 
     @staticmethod
@@ -215,6 +257,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
+        style: "PlotStyle | None" = None,
     ) -> Figure:
         """
         Create dedicated current analysis plot.
@@ -263,6 +306,7 @@ class SimulationPlotter:
         ax.legend(loc="best", fontsize=10)
 
         plt.tight_layout()
+        _apply_style(fig, style)
         return fig
 
     @staticmethod
@@ -273,6 +317,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
+        style: "PlotStyle | None" = None,
     ) -> Figure:
         """Create a dedicated PFC telemetry plot with PF, power, and command trends."""
         from matplotlib.ticker import MultipleLocator
@@ -329,6 +374,7 @@ class SimulationPlotter:
         _style_axis(axes[3])
 
         plt.tight_layout()
+        _apply_style(fig, style)
         return fig
 
     @staticmethod
@@ -339,6 +385,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
+        style: "PlotStyle | None" = None,
     ) -> Figure:
         """Create a dedicated efficiency plot with input/output/loss power trends."""
         from matplotlib.ticker import MultipleLocator
@@ -395,6 +442,7 @@ class SimulationPlotter:
         _style_axis(axes[3])
 
         plt.tight_layout()
+        _apply_style(fig, style)
         return fig
 
     @staticmethod
@@ -405,6 +453,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
+        style: "PlotStyle | None" = None,
     ) -> Figure:
         """Create a dedicated inverter-realism telemetry plot."""
         from matplotlib.ticker import MultipleLocator
@@ -507,6 +556,7 @@ class SimulationPlotter:
         _style_axis(axes[4])
 
         plt.tight_layout()
+        _apply_style(fig, style)
         return fig
 
     @staticmethod
@@ -518,6 +568,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
+        style: "PlotStyle | None" = None,
     ) -> Figure:
         """
         Create a multi-axis plot for an arbitrary list of variables.
@@ -598,6 +649,7 @@ class SimulationPlotter:
         if handles:
             axes[0].legend(handles, labels, loc="best")
         plt.tight_layout()
+        _apply_style(fig, style)
         return fig
 
     @staticmethod
@@ -608,6 +660,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
+        style: "PlotStyle | None" = None,
     ) -> Figure:
         """Create a 4-panel overlay plot comparing measured vs true phase currents.
 
@@ -723,12 +776,17 @@ class SimulationPlotter:
             y=1.01,
         )
         plt.tight_layout()
+        _apply_style(fig, style)
         return fig
 
     @staticmethod
     def save_plot(fig: Figure, filepath: Path, dpi: int = 100) -> None:
         """
         Save figure to file.
+
+        Delegates to :class:`PlotStyleApplicator` when available so that
+        export settings embedded in a :class:`PlotStyle` are respected.
+        Falls back to a direct ``fig.savefig`` call otherwise.
 
         :param fig: Matplotlib figure
         :type fig: Figure
@@ -738,5 +796,10 @@ class SimulationPlotter:
         :type dpi: int
         """
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(filepath, dpi=dpi, bbox_inches="tight")
+        try:
+            from src.ui.widgets.plot_customizer_dialog import PlotStyleApplicator
+
+            PlotStyleApplicator.save(fig, filepath, dpi=dpi)
+        except Exception:
+            fig.savefig(filepath, dpi=dpi, bbox_inches="tight")
         logger.info(f"Saved plot to {filepath}")

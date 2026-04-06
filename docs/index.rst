@@ -55,6 +55,7 @@ Table of Contents
    architecture
    advanced
    sensorless_observers
+   visualization
    branch_protection
 
 Indices and Tables
