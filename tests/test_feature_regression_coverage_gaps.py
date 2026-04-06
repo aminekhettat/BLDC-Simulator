@@ -63,11 +63,11 @@ from src.hardware.hardware_interface import HardwareInterface, MockDAQHardware
 from src.utils import compute_backend, motor_profiles, regression_baseline
 from src.visualization.visualization import SimulationPlotter
 
-# PyQt6 imports only if needed (may not be available in all test environments)
+# PySide6 imports only if needed (may not be available in all test environments)
 try:
-    from PyQt6.QtCore import QEvent, Qt
-    from PyQt6.QtGui import QKeyEvent
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtCore import QEvent, Qt
+    from PySide6.QtGui import QKeyEvent
+    from PySide6.QtWidgets import QApplication
 
     PYQT6_AVAILABLE = True
 
@@ -86,7 +86,7 @@ except ImportError:
 def qapp():
     """Provide a QApplication instance."""
     if not PYQT6_AVAILABLE:
-        pytest.skip("PyQt6 not available")
+        pytest.skip("PySide6 not available")
     try:
         app = QApplication.instance()
         if app is None:
@@ -96,7 +96,7 @@ def qapp():
         pytest.skip("Qt application not available")
 
 
-@pytest.mark.skipif(not PYQT6_AVAILABLE, reason="PyQt6 not available")
+@pytest.mark.skipif(not PYQT6_AVAILABLE, reason="PySide6 not available")
 def test_accessible_list_widget_keyboard_event_non_arrow_non_select(qapp):
     """
     Test AccessibleListWidget handles non-arrow, non-select keys.
@@ -116,7 +116,7 @@ def test_accessible_list_widget_keyboard_event_non_arrow_non_select(qapp):
     assert result is None
 
 
-@pytest.mark.skipif(not PYQT6_AVAILABLE, reason="PyQt6 not available")
+@pytest.mark.skipif(not PYQT6_AVAILABLE, reason="PySide6 not available")
 def test_accessible_table_widget_keyboard_event_non_arrow_non_select(qapp):
     """
     Test AccessibleTableWidget handles non-arrow, non-select keys.
@@ -253,7 +253,7 @@ def test_src_init_valid_imports():
     assert src.__dict__["control"] is src.control
 
 
-@pytest.mark.skipif(not PYQT6_AVAILABLE, reason="PyQt6 not available")
+@pytest.mark.skipif(not PYQT6_AVAILABLE, reason="PySide6 not available")
 def test_ui_init_getattr_valid_and_invalid_paths():
     gui_cls = src_ui.__getattr__("BLDCMotorControlGUI")
     assert gui_cls.__name__ == "BLDCMotorControlGUI"

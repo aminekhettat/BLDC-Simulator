@@ -44,7 +44,7 @@ except Exception as e:
 
 # Test 3: Main window with status bar
 try:
-    from PyQt6.QtWidgets import QApplication, QLabel
+    from PySide6.QtWidgets import QApplication, QLabel
 
     from src.ui.main_window import BLDCMotorControlGUI
 

@@ -6,7 +6,7 @@ Atomic features tested in this module:
 
 import sys
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 
 def test_accessibility_related_modules_import():

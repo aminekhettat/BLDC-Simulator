@@ -2,7 +2,7 @@
 Accessible Widgets Module
 ==========================
 
-Provides accessible PyQt6 widgets with proper ARIA labels and keyboard navigation.
+Provides accessible PySide6 widgets with proper ARIA labels and keyboard navigation.
 
 All widgets support:
 - Screen reader accessibility
@@ -14,8 +14,8 @@ All widgets support:
 :version: 0.8.0
 """
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QGroupBox,
@@ -229,7 +229,7 @@ class LabeledSpinBox(QWidget):
     Simplifies accessibility by grouping related elements.
     """
 
-    valueChanged = pyqtSignal(float)
+    valueChanged = Signal(float)
 
     def __init__(
         self,
@@ -289,7 +289,7 @@ class LabeledSpinBox(QWidget):
 class LabeledComboBox(QWidget):
     """Convenience widget combining label and combo box."""
 
-    currentTextChanged = pyqtSignal(str)
+    currentTextChanged = Signal(str)
 
     def __init__(self, label: str, items: list = None, description: str = ""):
         """

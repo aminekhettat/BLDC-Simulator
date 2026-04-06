@@ -26,9 +26,9 @@ from threading import Lock
 from typing import Any, Literal, cast
 
 import numpy as np
-from PyQt6 import QtCore
-from PyQt6.QtCore import QProcess, Qt, QThread, QTimer, QUrl, pyqtSignal
-from PyQt6.QtGui import (
+from PySide6 import QtCore
+from PySide6.QtCore import QProcess, Qt, QThread, QTimer, QUrl, Signal
+from PySide6.QtGui import (
     QAction,
     QColor,
     QDesktopServices,
@@ -38,8 +38,8 @@ from PyQt6.QtGui import (
     QPixmap,
     QTextDocument,
 )
-from PyQt6.QtPrintSupport import QPrinter
-from PyQt6.QtWidgets import (
+from PySide6.QtPrintSupport import QPrinter
+from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFileDialog,
@@ -99,7 +99,7 @@ from src.utils.speech import (
 )
 from src.visualization.visualization import SimulationPlotter
 
-# QAccessible was removed from PyQt6.QtCore in some builds of PyQt6.
+# QAccessible was removed from PySide6.QtCore in some builds of PySide6.
 # We still want the code to run even if accessibility support is not available.
 QAccessible: Any = getattr(QtCore, "QAccessible", None)
 if QAccessible is None:  # pragma: no cover
@@ -236,8 +236,8 @@ logger = logging.getLogger(__name__)
 class SimulationThread(QThread):
     """Background simulation thread."""
 
-    update_signal = pyqtSignal(dict)  # Emit current state
-    finished_signal = pyqtSignal()
+    update_signal = Signal(dict)  # Emit current state
+    finished_signal = Signal()
 
     def __init__(self):
         super().__init__()
@@ -418,7 +418,7 @@ class SimulationThread(QThread):
 class CurrentSpectrumWindow(QMainWindow):
     """Dedicated FFT window for controller-facing current harmonics."""
 
-    closed = pyqtSignal()
+    closed = Signal()
 
     def __init__(self, window_size_samples: int = 512, parent=None):
         super().__init__(parent)
@@ -509,7 +509,7 @@ class CurrentSpectrumWindow(QMainWindow):
 
         layout.addLayout(controls_row)
 
-        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
         from matplotlib.figure import Figure
 
         self.figure = Figure(figsize=(8, 6), dpi=90)
@@ -856,13 +856,11 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Tab widget
         self.tabs = AccessibleTabWidget()
-        self._create_parameters_tab()
-        self._create_load_tab()
-        self._create_supply_tab()
-        self._create_control_tab()
-        self._create_monitoring_tab()
-        self._create_plotting_tab()
-        self._create_calibration_tab()
+        self._create_motor_drive_tab()
+        self._create_controller_tab()
+        self._create_observer_startup_tab()
+        self._create_advanced_tab()
+        self._create_analysis_tab()
 
         left_layout.addWidget(self.tabs, 1)
 
@@ -942,15 +940,35 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Add status bar with simulation parameters and telemetry
         self.status_bar_dt = QLabel("dt: -- s")
+        self.status_bar_dt.setAccessibleName("Simulation time step")
+        self.status_bar_dt.setAccessibleDescription("Integration step size in seconds.")
         self.status_bar_tau_e = QLabel("τ_e: -- s")
+        self.status_bar_tau_e.setAccessibleName("Electrical time constant")
+        self.status_bar_tau_e.setAccessibleDescription("Motor electrical time constant L/R in seconds.")
         self.status_bar_tau_m = QLabel("τ_m: -- s")
+        self.status_bar_tau_m.setAccessibleName("Mechanical time constant")
+        self.status_bar_tau_m.setAccessibleDescription("Motor mechanical time constant J/b in seconds.")
         self.status_bar_stability = QLabel("RK4: --")
         self.status_bar_stability.setStyleSheet("color: #455A64;")
+        self.status_bar_stability.setAccessibleName("RK4 stability advisory")
+        self.status_bar_stability.setAccessibleDescription(
+            "Warns when the simulation time step may be too large for stable integration."
+        )
         self.status_bar_state = QLabel("State: Ready")
+        self.status_bar_state.setAccessibleName("Simulation state")
+        self.status_bar_state.setAccessibleDescription("Current simulation state: Ready, Running, or Stopped.")
         self.status_bar_time_remaining = QLabel("Remaining: -- s")
+        self.status_bar_time_remaining.setAccessibleName("Estimated time remaining")
+        self.status_bar_time_remaining.setAccessibleDescription("Estimated seconds remaining to complete the simulation.")
         self.status_bar_cpu_load = QLabel("CPU: -- %")
+        self.status_bar_cpu_load.setAccessibleName("CPU load")
+        self.status_bar_cpu_load.setAccessibleDescription("Percentage of one CPU core consumed by the simulation thread.")
         self.status_bar_task = QLabel("Task: None")
+        self.status_bar_task.setAccessibleName("Active task")
+        self.status_bar_task.setAccessibleDescription("Name of the currently running background task.")
         self.status_bar_backend = QLabel("Backend: --")
+        self.status_bar_backend.setAccessibleName("Compute backend")
+        self.status_bar_backend.setAccessibleDescription("Active computation backend, e.g. NumPy or CuPy.")
 
         status_bar = self.statusBar()
         assert status_bar is not None
@@ -1493,11 +1511,17 @@ class BLDCMotorControlGUI(QMainWindow):
                 },
                 "observer": {
                     "mode": self.foc_angle_observer_mode.currentText(),
+                    "solver": self.foc_solver_mode.currentText(),
                     "pll_kp": float(self.foc_pll_kp.value()),
                     "pll_ki": float(self.foc_pll_ki.value()),
                     "smo_k_slide": float(self.foc_smo_k_slide.value()),
                     "smo_lpf_alpha": float(self.foc_smo_lpf_alpha.value()),
                     "smo_boundary": float(self.foc_smo_boundary.value()),
+                    "stsmo_k1": float(self.foc_stsmo_k1.value()),
+                    "stsmo_k2_min": float(self.foc_stsmo_k2_min.value()),
+                    "stsmo_k2_factor": float(self.foc_stsmo_k2_factor.value()),
+                    "stsmo_rated_rpm": float(self.foc_stsmo_rated_rpm.value()),
+                    "af_dc_cutoff_hz": float(self.foc_af_dc_cutoff.value()),
                 },
                 "startup_sequence": {
                     "enabled": self.foc_startup_sequence_mode.currentText() == "Enabled",
@@ -1820,7 +1844,7 @@ class BLDCMotorControlGUI(QMainWindow):
         layout.addStretch()
 
         widget.setLayout(layout)
-        self.tabs.addTab(widget, "Motor Parameters")
+        return widget  # Motor & Drive tab picks this up
 
     def _create_load_tab(self):
         """Create load profile configuration tab."""
@@ -1892,9 +1916,9 @@ class BLDCMotorControlGUI(QMainWindow):
         layout.addStretch()
 
         widget.setLayout(layout)
-        self.tabs.addTab(widget, "Load Profile")
+        return widget  # Motor & Drive tab picks this up
         # also create supply tab right after load
-        self._create_supply_tab()
+        # Supply tab is built separately by Motor & Drive composite tab
 
     def _create_supply_tab(self):
         """Create power supply configuration tab."""
@@ -1966,7 +1990,7 @@ class BLDCMotorControlGUI(QMainWindow):
         layout.addWidget(group)
         layout.addStretch()
         widget.setLayout(layout)
-        self.tabs.addTab(widget, "Supply Profile")
+        return widget  # Motor & Drive tab picks this up
 
     def _on_supply_type_changed(self, text: str) -> None:
         """Show/hide appropriate supply parameters."""
@@ -2376,12 +2400,42 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.foc_group_layout.addWidget(self.foc_decouple_q_mode)
 
+        self.foc_group.setLayout(self.foc_group_layout)
+        layout.addWidget(self.foc_group)
+
+        # ── Observer group (moved to Observer & Startup tab) ─────────────────
+        self.foc_observer_group = AccessibleGroupBox(
+            "Angle Observer",
+            "Select and configure the rotor angle observer. "
+            "Parameters show/hide based on the selected observer type.",
+        )
+        self.foc_observer_group_layout = QVBoxLayout()
+
         self.foc_angle_observer_mode = LabeledComboBox(
             "Angle Observer",
-            items=["Measured", "PLL", "SMO"],
-            description="Select rotor electrical angle source: direct model angle, PLL on back-EMF, or sliding-mode observer variant.",  # noqa: E501
+            items=["Measured", "PLL", "SMO", "STSMO", "ActiveFlux"],
+            description=(
+                "Select rotor electrical angle source. "
+                "Measured: direct sensor angle. "
+                "PLL: phase-locked loop on back-EMF. "
+                "SMO: first-order sliding-mode observer. "
+                "STSMO: Super-Twisting SMO with backward-Euler integration (best accuracy, unconditionally stable). "
+                "ActiveFlux: Boldea active-flux integrator (robust in field-weakening)."
+            ),
         )
-        self.foc_group_layout.addWidget(self.foc_angle_observer_mode)
+        self.foc_observer_group_layout.addWidget(self.foc_angle_observer_mode)
+
+        self.foc_solver_mode = LabeledComboBox(
+            "Integration Solver",
+            items=["Backward Euler (stable)", "Forward Euler"],
+            description=(
+                "Integration method for the STSMO current estimator. "
+                "Backward Euler is unconditionally stable for any gain and is the default. "
+                "Forward Euler requires k1 < L/(√2·dt) and can become unstable at high gains or low inductance."
+            ),
+        )
+        self.foc_solver_mode.setCurrentText("Backward Euler (stable)")
+        self.foc_observer_group_layout.addWidget(self.foc_solver_mode)
 
         self.foc_pll_kp = LabeledSpinBox(
             "PLL Kp",
@@ -2393,7 +2447,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix="",
             description="Proportional gain for back-EMF PLL angle observer.",
         )
-        self.foc_group_layout.addWidget(self.foc_pll_kp)
+        self.foc_observer_group_layout.addWidget(self.foc_pll_kp)
 
         self.foc_pll_ki = LabeledSpinBox(
             "PLL Ki",
@@ -2405,7 +2459,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix="",
             description="Integral gain for back-EMF PLL angle observer.",
         )
-        self.foc_group_layout.addWidget(self.foc_pll_ki)
+        self.foc_observer_group_layout.addWidget(self.foc_pll_ki)
 
         self.foc_smo_k_slide = LabeledSpinBox(
             "SMO Kslide",
@@ -2417,7 +2471,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix="",
             description="Sliding gain for SMO-inspired angle observer correction.",
         )
-        self.foc_group_layout.addWidget(self.foc_smo_k_slide)
+        self.foc_observer_group_layout.addWidget(self.foc_smo_k_slide)
 
         self.foc_smo_lpf_alpha = LabeledSpinBox(
             "SMO LPF Alpha",
@@ -2429,7 +2483,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix="",
             description="Low-pass blending factor for SMO estimated electrical speed.",
         )
-        self.foc_group_layout.addWidget(self.foc_smo_lpf_alpha)
+        self.foc_observer_group_layout.addWidget(self.foc_smo_lpf_alpha)
 
         self.foc_smo_boundary = LabeledSpinBox(
             "SMO Boundary",
@@ -2441,7 +2495,110 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" rad",
             description="Boundary layer width used in SMO switching nonlinearity.",
         )
-        self.foc_group_layout.addWidget(self.foc_smo_boundary)
+        self.foc_observer_group_layout.addWidget(self.foc_smo_boundary)
+
+        # ── STSMO parameters (shown only when STSMO observer is selected) ──────
+        self.foc_stsmo_k1 = LabeledSpinBox(
+            "STSMO k1 (injection)",
+            min_val=0.1,
+            max_val=500.0,
+            initial=18.0,
+            step=0.5,
+            decimals=2,
+            suffix="",
+            description=(
+                "Super-Twisting injection gain k1. Controls how aggressively the "
+                "observer reacts to current error. Higher values → faster convergence "
+                "but more chattering. Use 'Auto-calibrate STSMO' to set analytically."
+            ),
+        )
+        self.foc_observer_group_layout.addWidget(self.foc_stsmo_k1)
+
+        self.foc_stsmo_k2_min = LabeledSpinBox(
+            "STSMO k2 floor",
+            min_val=1.0,
+            max_val=50000.0,
+            initial=500.0,
+            step=10.0,
+            decimals=1,
+            suffix=" V/s",
+            description=(
+                "Minimum integral gain k2 [V/s] for the STSMO. "
+                "The effective k2 is speed-adaptive (k2 ≥ ke·ωm·ωe) but never "
+                "falls below this floor, preventing loss of tracking at standstill."
+            ),
+        )
+        self.foc_observer_group_layout.addWidget(self.foc_stsmo_k2_min)
+
+        self.foc_stsmo_k2_factor = LabeledSpinBox(
+            "STSMO k2 factor",
+            min_val=0.1,
+            max_val=10.0,
+            initial=1.0,
+            step=0.1,
+            decimals=2,
+            suffix="×",
+            description=(
+                "Speed-adaptive k2 scaling factor (Levant condition multiplier). "
+                "Effective k2 = max(k2_floor, factor × ke × ωm × ωe). "
+                "Values > 1 increase robustness at the cost of higher chattering. "
+                "SOGI post-filter suppresses chattering, so 1.0 is optimal."
+            ),
+        )
+        self.foc_observer_group_layout.addWidget(self.foc_stsmo_k2_factor)
+
+        self.foc_stsmo_rated_rpm = LabeledSpinBox(
+            "STSMO Rated Speed",
+            min_val=100.0,
+            max_val=100000.0,
+            initial=3500.0,
+            step=100.0,
+            decimals=0,
+            suffix=" RPM",
+            description=(
+                "Rated motor speed used for analytical gain calibration. "
+                "Pressing 'Auto-calibrate STSMO' computes k1 and k2 from this speed "
+                "and the motor back-EMF constant."
+            ),
+        )
+        self.foc_observer_group_layout.addWidget(self.foc_stsmo_rated_rpm)
+
+        self.foc_stsmo_autocalib_btn = AccessibleButton(
+            "Auto-calibrate STSMO",
+            description=(
+                "Compute ST-SMO gains analytically from motor parameters and rated speed. "
+                "Sets k1 = λ·√(ke·ωm_max), k2_factor = 1.0 (Levant condition). "
+                "Run this once after setting motor parameters before starting the simulation."
+            ),
+        )
+        self.foc_stsmo_autocalib_btn.clicked.connect(self._on_stsmo_autocalib)
+        self.foc_observer_group_layout.addWidget(self.foc_stsmo_autocalib_btn)
+
+        # ── ActiveFlux parameter ──────────────────────────────────────────────
+        self.foc_af_dc_cutoff = LabeledSpinBox(
+            "ActiveFlux DC cutoff",
+            min_val=0.01,
+            max_val=10.0,
+            initial=0.5,
+            step=0.05,
+            decimals=2,
+            suffix=" Hz",
+            description=(
+                "Drift-correction pole frequency for the Active Flux integrator [Hz]. "
+                "Must be much lower than the minimum electrical frequency (typically < 1 Hz). "
+                "Lower values → less drift suppression; higher values → phase distortion at low speed."
+            ),
+        )
+        self.foc_observer_group_layout.addWidget(self.foc_af_dc_cutoff)
+        self.foc_observer_group.setLayout(self.foc_observer_group_layout)
+        # Not added to layout — picked up by Observer & Startup tab
+
+        # ── Startup Sequence group ────────────────────────────────────────────
+        self.foc_startup_group = AccessibleGroupBox(
+            "Startup Sequence & Transition",
+            "Configure rotor alignment, open-loop ramp, and observer handoff criteria.",
+        )
+        self.foc_startup_group_layout = QVBoxLayout()
 
         self.foc_startup_sequence_mode = LabeledComboBox(
             "Startup Sequence",
@@ -2451,7 +2608,7 @@ class BLDCMotorControlGUI(QMainWindow):
         self.foc_startup_sequence_mode.setCurrentText(
             "Enabled" if FOC_STARTUP_PARAMS["startup_sequence_enabled"] else "Disabled"
         )
-        self.foc_group_layout.addWidget(self.foc_startup_sequence_mode)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_sequence_mode)
 
         self.foc_align_time = LabeledSpinBox(
             "Alignment Time",
@@ -2463,7 +2620,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" s",
             description="Duration of the initial rotor alignment phase.",
         )
-        self.foc_group_layout.addWidget(self.foc_align_time)
+        self.foc_startup_group_layout.addWidget(self.foc_align_time)
 
         self.foc_align_current = LabeledSpinBox(
             "Alignment Current",
@@ -2475,7 +2632,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" A",
             description="d-axis current used to lock the rotor before acceleration.",
         )
-        self.foc_group_layout.addWidget(self.foc_align_current)
+        self.foc_startup_group_layout.addWidget(self.foc_align_current)
 
         self.foc_align_angle = LabeledSpinBox(
             "Alignment Angle",
@@ -2487,7 +2644,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" deg",
             description="Electrical angle held during rotor alignment.",
         )
-        self.foc_group_layout.addWidget(self.foc_align_angle)
+        self.foc_startup_group_layout.addWidget(self.foc_align_angle)
 
         self.foc_open_loop_initial_speed = LabeledSpinBox(
             "Open-Loop Initial Speed",
@@ -2499,7 +2656,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" RPM",
             description="Forced mechanical speed used at the beginning of the sensorless ramp.",
         )
-        self.foc_group_layout.addWidget(self.foc_open_loop_initial_speed)
+        self.foc_startup_group_layout.addWidget(self.foc_open_loop_initial_speed)
 
         self.foc_open_loop_target_speed = LabeledSpinBox(
             "Open-Loop Target Speed",
@@ -2511,7 +2668,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" RPM",
             description="Forced mechanical speed reached before closed-loop observer takeover.",
         )
-        self.foc_group_layout.addWidget(self.foc_open_loop_target_speed)
+        self.foc_startup_group_layout.addWidget(self.foc_open_loop_target_speed)
 
         self.foc_open_loop_ramp_time = LabeledSpinBox(
             "Open-Loop Ramp Time",
@@ -2523,7 +2680,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" s",
             description="Duration of the forced-angle acceleration ramp.",
         )
-        self.foc_group_layout.addWidget(self.foc_open_loop_ramp_time)
+        self.foc_startup_group_layout.addWidget(self.foc_open_loop_ramp_time)
 
         self.foc_open_loop_id_ref = LabeledSpinBox(
             "Open-Loop d-axis Ref",
@@ -2535,7 +2692,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" A",
             description="d-axis current reference used during forced open-loop acceleration.",
         )
-        self.foc_group_layout.addWidget(self.foc_open_loop_id_ref)
+        self.foc_startup_group_layout.addWidget(self.foc_open_loop_id_ref)
 
         self.foc_open_loop_iq_ref = LabeledSpinBox(
             "Open-Loop q-axis Ref",
@@ -2547,21 +2704,27 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" A",
             description="q-axis current reference used to generate torque during the forced ramp.",
         )
-        self.foc_group_layout.addWidget(self.foc_open_loop_iq_ref)
+        self.foc_startup_group_layout.addWidget(self.foc_open_loop_iq_ref)
 
         self.foc_startup_transition_mode = LabeledComboBox(
             "Observer Startup Transition",
             items=["Disabled", "Enabled"],
             description="Automatic observer takeover criteria used after the forced open-loop ramp or for legacy observer-only startup mode.",  # noqa: E501
         )
-        self.foc_group_layout.addWidget(self.foc_startup_transition_mode)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_transition_mode)
 
         self.foc_startup_initial_observer = LabeledComboBox(
             "Startup Initial Observer",
-            items=["Measured", "PLL", "SMO"],
-            description="Observer mode used during startup before handoff.",
+            items=["Measured", "PLL", "SMO", "STSMO", "ActiveFlux"],
+            description=(
+                "Observer mode used during the startup phase before handoff to the main observer. "
+                "Measured: safe choice when a position sensor is available. "
+                "PLL or SMO: suitable when back-EMF is already above the noise floor. "
+                "STSMO: recommended for sensorless startups — backward-Euler guarantees stability. "
+                "ActiveFlux: use when field-weakening starts immediately at low speed."
+            ),
         )
-        self.foc_group_layout.addWidget(self.foc_startup_initial_observer)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_initial_observer)
 
         self.foc_startup_min_speed = LabeledSpinBox(
             "Startup Min Speed",
@@ -2573,7 +2736,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" RPM",
             description="Minimum speed required before observer handoff.",
         )
-        self.foc_group_layout.addWidget(self.foc_startup_min_speed)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_min_speed)
 
         self.foc_startup_min_time = LabeledSpinBox(
             "Startup Min Time",
@@ -2585,7 +2748,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" s",
             description="Minimum startup dwell time before observer handoff.",
         )
-        self.foc_group_layout.addWidget(self.foc_startup_min_time)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_min_time)
 
         self.foc_startup_min_emf = LabeledSpinBox(
             "Startup Min Back-EMF",
@@ -2597,7 +2760,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" V",
             description="Minimum back-EMF magnitude required before observer handoff.",
         )
-        self.foc_group_layout.addWidget(self.foc_startup_min_emf)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_min_emf)
 
         self.foc_startup_min_confidence = LabeledSpinBox(
             "Startup Min Confidence",
@@ -2609,7 +2772,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix="",
             description="Minimum observer confidence required before handoff.",
         )
-        self.foc_group_layout.addWidget(self.foc_startup_min_confidence)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_min_confidence)
 
         self.foc_startup_confidence_hold = LabeledSpinBox(
             "Confidence Hold Time",
@@ -2621,7 +2784,7 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" s",
             description="Time confidence must stay above threshold before handoff.",
         )
-        self.foc_group_layout.addWidget(self.foc_startup_confidence_hold)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_confidence_hold)
 
         self.foc_startup_confidence_hysteresis = LabeledSpinBox(
             "Confidence Hysteresis",
@@ -2633,14 +2796,14 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix="",
             description="Lower-confidence margin before fallback to startup observer.",
         )
-        self.foc_group_layout.addWidget(self.foc_startup_confidence_hysteresis)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_confidence_hysteresis)
 
         self.foc_startup_fallback_mode = LabeledComboBox(
             "Observer Fallback",
             items=["Enabled", "Disabled"],
             description="Allow reverting to startup observer when confidence degrades.",
         )
-        self.foc_group_layout.addWidget(self.foc_startup_fallback_mode)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_fallback_mode)
 
         self.foc_startup_fallback_hold = LabeledSpinBox(
             "Fallback Hold Time",
@@ -2652,18 +2815,22 @@ class BLDCMotorControlGUI(QMainWindow):
             suffix=" s",
             description="Time degraded confidence must persist before fallback.",
         )
-        self.foc_group_layout.addWidget(self.foc_startup_fallback_hold)
+        self.foc_startup_group_layout.addWidget(self.foc_startup_fallback_hold)
 
         btn_auto_d = AccessibleButton("Auto-tune d-axis", "Auto-tune d-axis PI controller")
         btn_auto_d.clicked.connect(lambda: self._auto_tune_axis("d"))
-        self.foc_group_layout.addWidget(btn_auto_d)
+        self.foc_startup_group_layout.addWidget(btn_auto_d)
 
         btn_auto_q = AccessibleButton("Auto-tune q-axis", "Auto-tune q-axis PI controller")
         btn_auto_q.clicked.connect(lambda: self._auto_tune_axis("q"))
-        self.foc_group_layout.addWidget(btn_auto_q)
+        self.foc_startup_group_layout.addWidget(btn_auto_q)
 
-        self.foc_group.setLayout(self.foc_group_layout)
-        layout.addWidget(self.foc_group)
+        self.foc_startup_group.setLayout(self.foc_startup_group_layout)
+        # Not added to layout — picked up by Observer & Startup tab
+
+        # ── Advanced groups (moved to Advanced tab) ───────────────────────────
+        _adv_widget = QWidget()
+        _adv_layout = QVBoxLayout()
 
         self.inverter_group = AccessibleGroupBox(
             "Inverter Non-Idealities",
@@ -2675,38 +2842,74 @@ class BLDCMotorControlGUI(QMainWindow):
         # losing any tuned numerical parameters.
         self.inverter_enable_device_drop = QCheckBox("Enable Device Drop")
         self.inverter_enable_device_drop.setChecked(False)
+        self.inverter_enable_device_drop.setAccessibleName("Enable device voltage drop")
+        self.inverter_enable_device_drop.setAccessibleDescription(
+            "When checked, applies a per-phase voltage drop from switching devices (IGBT, MOSFET)."
+        )
         inverter_layout.addWidget(self.inverter_enable_device_drop)
 
         self.inverter_enable_dead_time = QCheckBox("Enable Dead-Time Distortion")
         self.inverter_enable_dead_time.setChecked(False)
+        self.inverter_enable_dead_time.setAccessibleName("Enable dead-time distortion")
+        self.inverter_enable_dead_time.setAccessibleDescription(
+            "When checked, simulates gate dead-time as a voltage distortion proportional to current sign."
+        )
         inverter_layout.addWidget(self.inverter_enable_dead_time)
 
         self.inverter_enable_conduction = QCheckBox("Enable Conduction Loss")
         self.inverter_enable_conduction.setChecked(False)
+        self.inverter_enable_conduction.setAccessibleName("Enable conduction loss")
+        self.inverter_enable_conduction.setAccessibleDescription(
+            "When checked, models I²R conduction loss through inverter on-resistance."
+        )
         inverter_layout.addWidget(self.inverter_enable_conduction)
 
         self.inverter_enable_switching = QCheckBox("Enable Switching Loss")
         self.inverter_enable_switching.setChecked(False)
+        self.inverter_enable_switching.setAccessibleName("Enable switching loss")
+        self.inverter_enable_switching.setAccessibleDescription(
+            "When checked, models switching loss as a frequency-proportional voltage reduction."
+        )
         inverter_layout.addWidget(self.inverter_enable_switching)
 
         self.inverter_enable_diode = QCheckBox("Enable Freewheel Diode Path")
         self.inverter_enable_diode.setChecked(False)
+        self.inverter_enable_diode.setAccessibleName("Enable freewheel diode path")
+        self.inverter_enable_diode.setAccessibleDescription(
+            "When checked, models body-diode forward drop on phase legs carrying opposing current."
+        )
         inverter_layout.addWidget(self.inverter_enable_diode)
 
         self.inverter_enable_min_pulse = QCheckBox("Enable Minimum Pulse Suppression")
         self.inverter_enable_min_pulse.setChecked(False)
+        self.inverter_enable_min_pulse.setAccessibleName("Enable minimum pulse suppression")
+        self.inverter_enable_min_pulse.setAccessibleDescription(
+            "When checked, voltage commands smaller than the minimum pulse fraction are zeroed."
+        )
         inverter_layout.addWidget(self.inverter_enable_min_pulse)
 
         self.inverter_enable_bus_ripple = QCheckBox("Enable DC-Link Ripple")
         self.inverter_enable_bus_ripple.setChecked(False)
+        self.inverter_enable_bus_ripple.setAccessibleName("Enable DC-link bus ripple")
+        self.inverter_enable_bus_ripple.setAccessibleDescription(
+            "When checked, models capacitor ripple and source impedance on the DC bus voltage."
+        )
         inverter_layout.addWidget(self.inverter_enable_bus_ripple)
 
         self.inverter_enable_thermal = QCheckBox("Enable Thermal Coupling")
         self.inverter_enable_thermal.setChecked(False)
+        self.inverter_enable_thermal.setAccessibleName("Enable thermal coupling")
+        self.inverter_enable_thermal.setAccessibleDescription(
+            "When checked, tracks junction temperature and scales device resistance with temperature."
+        )
         inverter_layout.addWidget(self.inverter_enable_thermal)
 
         self.inverter_enable_phase_asymmetry = QCheckBox("Enable Phase Asymmetry")
         self.inverter_enable_phase_asymmetry.setChecked(False)
+        self.inverter_enable_phase_asymmetry.setAccessibleName("Enable phase asymmetry")
+        self.inverter_enable_phase_asymmetry.setAccessibleDescription(
+            "When checked, allows independent voltage scale and drop offsets per phase."
+        )
         inverter_layout.addWidget(self.inverter_enable_phase_asymmetry)
 
         self.inverter_device_drop = LabeledSpinBox(
@@ -2974,7 +3177,7 @@ class BLDCMotorControlGUI(QMainWindow):
         inverter_layout.addWidget(self.inverter_phase_drop_scale_c)
 
         self.inverter_group.setLayout(inverter_layout)
-        layout.addWidget(self.inverter_group)
+        _adv_layout.addWidget(self.inverter_group)
 
         self.current_sense_group = AccessibleGroupBox(
             "Current Measurement and FFT",
@@ -2984,6 +3187,11 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.current_sense_enable = QCheckBox("Enable Current Sensing Model")
         self.current_sense_enable.setChecked(False)
+        self.current_sense_enable.setAccessibleName("Enable current sensing model")
+        self.current_sense_enable.setAccessibleDescription(
+            "When checked, applies shunt amplifier gain, offset, and anti-alias filter "
+            "to the measured phase currents before they reach the controller."
+        )
         current_sense_layout.addWidget(self.current_sense_enable)
 
         self.current_sense_topology = LabeledComboBox(
@@ -3142,6 +3350,10 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.current_sense_fft_show_grid = QCheckBox("Show FFT Grids")
         self.current_sense_fft_show_grid.setChecked(True)
+        self.current_sense_fft_show_grid.setAccessibleName("Show FFT grids")
+        self.current_sense_fft_show_grid.setAccessibleDescription(
+            "When checked, overlays a frequency grid on the FFT magnitude and phase plots."
+        )
         current_sense_layout.addWidget(self.current_sense_fft_show_grid)
 
         fft_scale_row_1 = QHBoxLayout()
@@ -3191,7 +3403,7 @@ class BLDCMotorControlGUI(QMainWindow):
         bridge_title = QLabel("Live Inverter Bridge / Shunt Topology")
         current_sense_layout.addWidget(bridge_title)
 
-        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
         from matplotlib.figure import Figure
 
         self.bridge_figure = Figure(figsize=(6.4, 2.8), dpi=90)
@@ -3229,7 +3441,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.current_sense_group.setLayout(current_sense_layout)
         self._update_bridge_visualization({})
-        layout.addWidget(self.current_sense_group)
+        _adv_layout.addWidget(self.current_sense_group)
 
         self.mcu_budget_group = AccessibleGroupBox(
             "MCU Budget Estimator",
@@ -3298,7 +3510,7 @@ class BLDCMotorControlGUI(QMainWindow):
         mcu_layout.addWidget(self.mcu_target_clock_3_mhz)
 
         self.mcu_budget_group.setLayout(mcu_layout)
-        layout.addWidget(self.mcu_budget_group)
+        _adv_layout.addWidget(self.mcu_budget_group)
 
         self.pfc_group = AccessibleGroupBox(
             "Power Factor Correction",
@@ -3374,7 +3586,7 @@ class BLDCMotorControlGUI(QMainWindow):
         pfc_layout.addWidget(self.pfc_window_samples)
 
         self.pfc_group.setLayout(pfc_layout)
-        layout.addWidget(self.pfc_group)
+        _adv_layout.addWidget(self.pfc_group)
 
         self.hardware_group = AccessibleGroupBox(
             "Communication Interface",
@@ -3384,6 +3596,11 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.hardware_enable_backend = QCheckBox("Enable Communication Backend")
         self.hardware_enable_backend.setChecked(False)
+        self.hardware_enable_backend.setAccessibleName("Enable hardware communication backend")
+        self.hardware_enable_backend.setAccessibleDescription(
+            "When checked, the simulation sends real-time telemetry to the selected "
+            "hardware backend (e.g., serial, CAN). Disable for pure software simulation."
+        )
         hardware_layout.addWidget(self.hardware_enable_backend)
 
         self.hardware_backend_type = LabeledComboBox(
@@ -3418,12 +3635,22 @@ class BLDCMotorControlGUI(QMainWindow):
         hardware_layout.addWidget(self.hardware_seed)
 
         self.hardware_group.setLayout(hardware_layout)
-        layout.addWidget(self.hardware_group)
+        _adv_layout.addWidget(self.hardware_group)
+
+        _adv_layout.addStretch()
+        _adv_widget.setLayout(_adv_layout)
+        _adv_scroll = QScrollArea()
+        _adv_scroll.setWidget(_adv_widget)
+        _adv_scroll.setWidgetResizable(True)
+        _adv_scroll.setAccessibleName("Advanced settings scroll area")
+        _adv_scroll.setAccessibleDescription(
+            "Inverter non-idealities, current sensing, MCU budget, PFC, and hardware backend settings."
+        )
+        self._advanced_scroll = _adv_scroll
 
         layout.addStretch()
-
         widget.setLayout(layout)
-        self.tabs.addTab(widget, "Control")
+        return widget  # caller adds to the appropriate tab
 
     def _create_monitoring_tab(self):
         """Create real-time monitoring tab with speed curve."""
@@ -3576,7 +3803,7 @@ class BLDCMotorControlGUI(QMainWindow):
         group_layout.addWidget(scroll, 1)
 
         # Right side: Speed curve display (using matplotlib)
-        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
         from matplotlib.figure import Figure
 
         self.speed_figure = Figure(figsize=(5, 4), dpi=80)
@@ -3597,7 +3824,7 @@ class BLDCMotorControlGUI(QMainWindow):
         layout.addWidget(group)
 
         widget.setLayout(layout)
-        self.tabs.addTab(widget, "Monitoring")
+        return widget  # Analysis tab picks this up
 
     def _create_plotting_tab(self):
         """Create plotting and visualization tab."""
@@ -3616,15 +3843,21 @@ class BLDCMotorControlGUI(QMainWindow):
 
         # Grid controls for plots
         grid_layout = QHBoxLayout()
-        from PyQt6.QtWidgets import QCheckBox
+        from PySide6.QtWidgets import QCheckBox
 
         self.plot_grid_checkbox = QCheckBox("Show Grid")
-        self.plot_grid_checkbox.setAccessibleName("Show Grid")
+        self.plot_grid_checkbox.setAccessibleName("Show major grid on plots")
+        self.plot_grid_checkbox.setAccessibleDescription(
+            "When checked, draws major grid lines aligned to axis ticks on all generated plots."
+        )
         self.plot_grid_checkbox.setChecked(True)
         grid_layout.addWidget(self.plot_grid_checkbox)
 
         self.plot_minor_grid_checkbox = QCheckBox("Minor Grid")
-        self.plot_minor_grid_checkbox.setAccessibleName("Show Minor Grid")
+        self.plot_minor_grid_checkbox.setAccessibleName("Show minor grid on plots")
+        self.plot_minor_grid_checkbox.setAccessibleDescription(
+            "When checked, draws a finer minor grid between major tick lines on all generated plots."
+        )
         self.plot_minor_grid_checkbox.setChecked(False)
         grid_layout.addWidget(self.plot_minor_grid_checkbox)
 
@@ -3729,7 +3962,7 @@ class BLDCMotorControlGUI(QMainWindow):
         layout.addWidget(group)
 
         widget.setLayout(layout)
-        self.tabs.addTab(widget, "Plotting")
+        return widget  # Analysis tab picks this up
 
     # ------------------------------------------------------------------
     # Calibration tab
@@ -3884,11 +4117,170 @@ class BLDCMotorControlGUI(QMainWindow):
         inner.setLayout(layout)
         widget.setWidget(inner)
         widget.setWidgetResizable(True)
-        self.tabs.addTab(widget, "Calibration")
+        return widget  # Analysis tab picks this up
 
         # Prime session/output labels for the initial selection
         if profile_names[0] != "(no profiles found)":
             self._on_calib_profile_changed(profile_names[0])
+
+    # ── Five composite tab builders ────────────────────────────────────────────
+
+    def _create_motor_drive_tab(self) -> None:
+        """Tab 1 — Motor & Drive: Motor Parameters + Load Profile + Supply Profile as sub-tabs."""
+        container = QWidget()
+        container.setAccessibleName("Motor and Drive configuration")
+        container.setAccessibleDescription(
+            "Configure motor electrical and mechanical parameters, load profile, and supply voltage."
+        )
+        sub_tabs = AccessibleTabWidget()
+        sub_tabs.setAccessibleName("Motor and Drive sub-tabs")
+        sub_tabs.setAccessibleDescription(
+            "Three configuration areas: motor parameters, load profile, and supply voltage profile."
+        )
+        motor_w = self._create_parameters_tab()
+        load_w  = self._create_load_tab()
+        supply_w = self._create_supply_tab()
+        sub_tabs.addTab(motor_w,  "Motor")
+        sub_tabs.addTab(load_w,   "Load")
+        sub_tabs.addTab(supply_w, "Supply")
+        lay = QVBoxLayout()
+        lay.addWidget(sub_tabs)
+        container.setLayout(lay)
+        self.tabs.addTab(container, "Motor & Drive")
+
+    def _create_controller_tab(self) -> None:
+        """Tab 2 — Controller: simulation duration + V/f + FOC current loops + FW + PI gains."""
+        ctrl_widget = self._create_control_tab()   # returns widget (no addTab)
+        scroll = QScrollArea()
+        scroll.setWidget(ctrl_widget)
+        scroll.setWidgetResizable(True)
+        scroll.setAccessibleName("Controller settings scroll area")
+        scroll.setAccessibleDescription(
+            "Simulation duration, control mode (V/f or FOC), current references, "
+            "field weakening, speed loop, PI gains, and decoupling settings."
+        )
+        container = QWidget()
+        lay = QVBoxLayout()
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.addWidget(scroll)
+        container.setLayout(lay)
+        self.tabs.addTab(container, "Controller")
+
+    def _create_observer_startup_tab(self) -> None:
+        """Tab 3 — Observer & Startup: context-sensitive observer params + startup sequence."""
+        container = QWidget()
+        container.setAccessibleName("Observer and Startup configuration")
+
+        scroll = QScrollArea()
+        inner = QWidget()
+        layout = QVBoxLayout()
+
+        # Intro label
+        intro = QLabel(
+            "Select the angle observer below. "
+            "Only the parameters relevant to the chosen observer are shown."
+        )
+        intro.setWordWrap(True)
+        intro.setAccessibleName("Observer tab introduction")
+        layout.addWidget(intro)
+
+        # Observer group (built in _create_control_tab, stored as self.foc_observer_group)
+        layout.addWidget(self.foc_observer_group)
+
+        # Startup group (built in _create_control_tab, stored as self.foc_startup_group)
+        layout.addWidget(self.foc_startup_group)
+
+        layout.addStretch()
+        inner.setLayout(layout)
+        scroll.setWidget(inner)
+        scroll.setWidgetResizable(True)
+        scroll.setAccessibleName("Observer and Startup scroll area")
+
+        outer = QVBoxLayout()
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(scroll)
+        container.setLayout(outer)
+
+        # Connect context-sensitive visibility
+        self.foc_angle_observer_mode.currentTextChanged.connect(self._on_observer_mode_changed)
+        # Apply initial state
+        self._on_observer_mode_changed(self.foc_angle_observer_mode.currentText())
+
+        self.tabs.addTab(container, "Observer & Startup")
+
+    def _create_advanced_tab(self) -> None:
+        """Tab 4 — Advanced: Inverter, Current Sense, MCU Budget, PFC, Hardware Backend."""
+        container = QWidget()
+        container.setAccessibleName("Advanced settings")
+        container.setAccessibleDescription(
+            "Inverter non-idealities, current sensing model, MCU budget estimator, "
+            "power factor correction, and hardware communication backend."
+        )
+        outer = QVBoxLayout()
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(self._advanced_scroll)   # built by _create_control_tab
+        container.setLayout(outer)
+        self.tabs.addTab(container, "Advanced")
+
+    def _create_analysis_tab(self) -> None:
+        """Tab 5 — Analysis: Monitoring + Plotting + Calibration as sub-tabs."""
+        container = QWidget()
+        container.setAccessibleName("Analysis and results")
+        container.setAccessibleDescription(
+            "Real-time monitoring, plot generation, and auto-calibration."
+        )
+        sub_tabs = AccessibleTabWidget()
+        sub_tabs.setAccessibleName("Analysis sub-tabs")
+        sub_tabs.setAccessibleDescription(
+            "Three sections: real-time monitoring, plot generation, and calibration."
+        )
+        mon_w  = self._create_monitoring_tab()
+        plot_w = self._create_plotting_tab()
+        cal_w  = self._create_calibration_tab()
+        sub_tabs.addTab(mon_w,  "Monitoring")
+        sub_tabs.addTab(plot_w, "Plotting")
+        sub_tabs.addTab(cal_w,  "Calibration")
+        lay = QVBoxLayout()
+        lay.addWidget(sub_tabs)
+        container.setLayout(lay)
+        self.tabs.addTab(container, "Analysis")
+
+    # ── Observer context-sensitive visibility ──────────────────────────────────
+
+    def _on_observer_mode_changed(self, mode: str) -> None:
+        """Show/hide observer-specific parameter widgets based on selected observer mode.
+
+        Called whenever the Angle Observer dropdown changes. Groups are sub-sections
+        of self.foc_observer_group that contain per-observer parameters.
+        """
+        # All observer-specific spinboxes — grouped by observer type
+        _pll_widgets = [self.foc_pll_kp, self.foc_pll_ki]
+        _smo_widgets = [self.foc_smo_k_slide, self.foc_smo_lpf_alpha, self.foc_smo_boundary]
+        _stsmo_widgets = [
+            self.foc_stsmo_k1, self.foc_stsmo_k2_min, self.foc_stsmo_k2_factor,
+            self.foc_stsmo_rated_rpm, self.foc_stsmo_autocalib_btn, self.foc_solver_mode,
+        ]
+        _af_widgets = [self.foc_af_dc_cutoff]
+
+        # First hide everything
+        for w in _pll_widgets + _smo_widgets + _stsmo_widgets + _af_widgets:
+            w.hide()
+
+        # Show only what the selected observer needs
+        if mode == "PLL":
+            for w in _pll_widgets:
+                w.show()
+        elif mode == "SMO":
+            for w in _smo_widgets:
+                w.show()
+        elif mode == "STSMO":
+            for w in _stsmo_widgets:
+                w.show()
+        elif mode == "ActiveFlux":
+            for w in _af_widgets:
+                w.show()
+        # "Measured" → all hidden (no observer params needed)
+        # "Measured" mode: no observer parameters shown
 
     def _on_calib_profile_changed(self, profile_name: str) -> None:
         """Update session and output path labels when profile selection changes."""
@@ -4483,7 +4875,29 @@ class BLDCMotorControlGUI(QMainWindow):
                 enable_d=self.foc_decouple_d_mode.currentText() == "Enabled",
                 enable_q=self.foc_decouple_q_mode.currentText() == "Enabled",
             )
-            controller.set_angle_observer(self.foc_angle_observer_mode.currentText())
+            _obs_mode = self.foc_angle_observer_mode.currentText()
+            # ── Observer-specific activation ─────────────────────────────────
+            if _obs_mode in ("STSMO", "ActiveFlux", "PLL", "SMO"):
+                # All sensorless modes need EMF reconstruction
+                controller.enable_sensorless_emf_reconstruction()
+            if _obs_mode == "STSMO":
+                # Apply backward-Euler STSMO; set_angle_observer("PLL") for the
+                # outer angle/speed loop — STSMO provides the EMF feed.
+                controller.calibrate_stsmo_gains_analytical(
+                    rated_rpm=self.foc_stsmo_rated_rpm.value(),
+                )
+                # Override individual gains if user has manually tuned them
+                controller.stsmo["k1"] = self.foc_stsmo_k1.value()
+                controller.stsmo["k2_min"] = self.foc_stsmo_k2_min.value()
+                controller.stsmo["k2_factor"] = self.foc_stsmo_k2_factor.value()
+                controller.set_angle_observer("PLL")          # outer loop stays PLL
+            elif _obs_mode == "ActiveFlux":
+                controller.enable_active_flux_observer(
+                    dc_cutoff_hz=self.foc_af_dc_cutoff.value(),
+                )
+            else:
+                controller.set_angle_observer(_obs_mode)
+
             controller.set_pll_gains(
                 kp=self.foc_pll_kp.value(),
                 ki=self.foc_pll_ki.value(),
@@ -4715,6 +5129,36 @@ class BLDCMotorControlGUI(QMainWindow):
         else:
             self.vf_group.setVisible(False)
             self.foc_group.setVisible(True)
+
+    def _on_stsmo_autocalib(self) -> None:
+        """Analytically compute STSMO gains and populate the GUI spinboxes."""
+        if not isinstance(self.motor, type(self.motor)):
+            QMessageBox.warning(self, "Warning", "Motor parameters are not initialised.")
+            return
+        try:
+            from src.control import FOCController as _FOC
+            _tmp = _FOC(motor=self.motor)
+            result = _tmp.calibrate_stsmo_gains_analytical(
+                rated_rpm=self.foc_stsmo_rated_rpm.value(),
+                apply=False,
+            )
+            self.foc_stsmo_k1.setValue(round(result["k1"], 2))
+            # k2_min defaults to 500.0 per Levant — keep user value unless it's the factory
+            # default (500.0) so we don't overwrite a manual entry.
+            QMessageBox.information(
+                self,
+                "STSMO Gains Calibrated",
+                (
+                    f"k1 = {result['k1']:.3f}\n"
+                    f"k2 (rated-speed ref) = {result['k2']:.1f} V/s\n"
+                    f"E_max = {result['e_max_v']:.2f} V\n\n"
+                    "k2_min and k2_factor remain unchanged.\n"
+                    "The effective k2 at runtime is speed-adaptive:\n"
+                    "  k2_eff = max(k2_min, k2_factor × ke × ωm × ωe)"
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, "Calibration Error", str(exc))
 
     def _auto_tune_axis(self, axis: str) -> None:
         """Trigger FOC controller auto-tuning for a specific axis."""

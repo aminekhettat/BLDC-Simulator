@@ -27,9 +27,9 @@ from typing import cast
 
 import numpy as np
 import pytest
-from PyQt6.QtCore import QEvent, Qt
-from PyQt6.QtGui import QKeyEvent
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QKeyEvent
+from PySide6.QtWidgets import QApplication
 
 from src.control.base_controller import BaseController
 from src.control.svm_generator import SVMGenerator

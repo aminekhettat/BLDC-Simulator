@@ -21,7 +21,7 @@ import logging
 import sys
 from pathlib import Path
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 # Add project root to path
 
@@ -38,7 +38,7 @@ def main():
     """
     Main entry point for the BLDC motor control application.
 
-    Initializes PyQt6 application and launches the main GUI window.
+    Initializes PySide6 application and launches the main GUI window.
     """
     logger.info("=" * 60)
     logger.info("BLIND SYSTEMS SPINOTOR v0.10.0")

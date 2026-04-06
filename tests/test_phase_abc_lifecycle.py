@@ -19,8 +19,8 @@ from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
-from PyQt6.QtCore import QByteArray, QProcess
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtCore import QByteArray, QProcess
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from src.ui.main_window import BLDCMotorControlGUI
 

@@ -61,7 +61,7 @@ import sys
 
 import numpy as np
 import pytest
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 from src.control import CartesianSVMGenerator, FOCController, SVMGenerator, VFController
 from src.core.load_model import ConstantLoad

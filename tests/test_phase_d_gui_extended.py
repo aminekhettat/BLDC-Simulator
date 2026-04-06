@@ -1067,3 +1067,4 @@ class TestPlotAndExportHelpers:
         gui._show_efficiency_recommendations()
         gui._export_data()
         assert warned["count"] >= 8
+  

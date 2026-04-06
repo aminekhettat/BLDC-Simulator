@@ -5,7 +5,7 @@ Atomic features tested in this module:
 
 import sys
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 from src.ui.main_window import BLDCMotorControlGUI
 

@@ -16,9 +16,9 @@ Atomic features tested in this module:
 import sys
 
 import pytest
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QKeyEvent
-from PyQt6.QtWidgets import QApplication, QTableWidgetItem, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeyEvent
+from PySide6.QtWidgets import QApplication, QTableWidgetItem, QWidget
 
 from src.ui.widgets.accessible_widgets import (
     AccessibleButton,
