@@ -1,0 +1,51 @@
+{
+  "metrics_prefw": {
+    "pll_angle_rms_deg": 6.609705924987793,
+    "pll_angle_peak_deg": 11.750642776489258,
+    "smo_angle_rms_deg": 7.329211235046387,
+    "smo_angle_peak_deg": 13.059457778930664,
+    "pll_emf_rms_v": 0.7251374125480652,
+    "smo_emf_rms_v": 0.718628466129303,
+    "pll_emf_rel": 0.18115238580350337,
+    "smo_emf_rel": 0.17971993253734106,
+    "pll_speed_err_rms_rpm": 239.98696899414062,
+    "smo_speed_err_rms_rpm": 235.7653045654297,
+    "pll_conf_mean": 0.9953920841217041,
+    "smo_conf_mean": 0.994871199131012,
+    "emf_mean_pll_v": 4.002913951873779,
+    "emf_mean_smo_v": 3.9986019134521484
+  },
+  "metrics_fw_ss": {
+    "pll_angle_rms_deg": 12.592207908630371,
+    "pll_angle_peak_deg": 17.649017333984375,
+    "smo_angle_rms_deg": 13.451196670532227,
+    "smo_angle_peak_deg": 24.99974822998047,
+    "pll_emf_rms_v": 2.063566207885742,
+    "smo_emf_rms_v": 2.047668218612671,
+    "pll_emf_rel": 0.25743468793715174,
+    "smo_emf_rel": 0.2554325352176012,
+    "pll_speed_err_rms_rpm": 616.8712158203125,
+    "smo_speed_err_rms_rpm": 617.5592651367188,
+    "pll_conf_mean": 0.990999698638916,
+    "smo_conf_mean": 0.9905064702033997,
+    "emf_mean_pll_v": 8.01588249206543,
+    "emf_mean_smo_v": 8.016473770141602
+  },
+  "results": {
+    "PLL": {
+      "passed": true,
+      "angle_rms_deg": 6.609705924987793,
+      "emf_rel_err": 0.18115238580350337,
+      "speed_rms_rpm": 239.98696899414062,
+      "conf_mean": 0.9953920841217041
+    },
+    "SMO": {
+      "passed": true,
+      "angle_rms_deg": 7.329211235046387,
+      "emf_rel_err": 0.17971993253734106,
+      "speed_rms_rpm": 235.7653045654297,
+      "conf_mean": 0.994871199131012
+    }
+  },
+  "all_pass": true
+}

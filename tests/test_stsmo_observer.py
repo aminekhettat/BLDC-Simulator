@@ -28,7 +28,6 @@ import pytest
 from src.control import FOCController
 from src.core.motor_model import BLDCMotor, MotorParameters
 
-
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _make_motor(omega_mech: float = 80.0, theta: float = 0.6) -> BLDCMotor:
