@@ -1,12 +1,16 @@
 """
 Atomic features tested in this module:
 - ld lq controls and simulation params info are available
+- rk4 advisory accessibility text is exposed
+- rk4 advisory voice announces on severity change
+- dt pwm stability advisory method present callable and returns correct severity
 """
 
 import sys
 
 from PySide6.QtWidgets import QApplication
 
+from src.core.motor_model import MotorParameters
 from src.ui.main_window import BLDCMotorControlGUI
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -69,3 +73,30 @@ def test_rk4_advisory_voice_announces_on_severity_change(monkeypatch):
         margin=3.2,
     )
     assert any("healthy" in s.lower() for s in spoken)
+
+
+def test_dt_pwm_stability_advisory_returns_correct_severity():
+    """_build_dt_pwm_stability_advisory must exist and return the correct severity
+    for stable / marginal / unstable dt values.
+
+    Regression guard: ensures the UI DT alert is not accidentally removed
+    or renamed during refactors.  Uses default MotorParameters so that
+    dt_limit ≈ 5.57e-3 s (2.785 × tau_e, tau_e = L/R = 0.002 s).
+    """
+    win = BLDCMotorControlGUI()
+
+    assert hasattr(win, "_build_dt_pwm_stability_advisory"), (
+        "BLDCMotorControlGUI is missing _build_dt_pwm_stability_advisory — "
+        "the DT stability alert has been removed or renamed."
+    )
+
+    params = MotorParameters()   # R=2.5 Ω, L=0.005 H → dt_limit ≈ 5.57e-3 s
+    pwm_hz = 20_000.0
+
+    r_stable   = win._build_dt_pwm_stability_advisory(5e-5, params, pwm_hz)
+    r_marginal = win._build_dt_pwm_stability_advisory(4e-3, params, pwm_hz)
+    r_unstable = win._build_dt_pwm_stability_advisory(7e-3, params, pwm_hz)
+
+    assert r_stable["severity"]   == "stable",   f"Got {r_stable['severity']}"
+    assert r_marginal["severity"] == "marginal",  f"Got {r_marginal['severity']}"
+    assert r_unstable["severity"] == "unstable",  f"Got {r_unstable['severity']}"
