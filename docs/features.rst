@@ -60,6 +60,7 @@ angle for smooth low-speed handoff.  Detailed documentation: ``docs/sensorless_o
 Advanced Features
 -----------------
 
+- **IPM Torque-Robustness Validation**: Automated 30-second torque-step validation script (``scripts/validate_ipm_torque_robustness.py``) verifying all five observer modes on the IPM Salient 48V motor; all pass with EEMF model, SOGI filter, and low-chatter SMO calibration
 - **Monte Carlo Simulations**: Statistical analysis of motor performance across parameter variations
 - **Real-time Monitoring**: Live display of motor parameters, currents, voltages, and power
 - **Current Measurement Realism**: Triple-, double-, and single-shunt inverter sensing with topology-aware reconstruction and side-by-side true versus measured current history
