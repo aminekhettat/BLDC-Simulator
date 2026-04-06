@@ -2,7 +2,7 @@
 
 ## Compilation Summary
 
-**Project:** BLDC-Simulator FOC Control Module Auto-Calibration Improvement
+**Project:** SPINOTOR FOC Control Module Auto-Calibration Improvement
 **Date:** March 30, 2026
 **Total Documentation:** 2,437 lines across 4 comprehensive guides
 **Source Material:** 45+ academic papers + industry technical documentation
@@ -94,7 +94,7 @@
 - Replaces 144 grid evaluations with 7 targeted tests
 - AutoTuner class structure
 
-**Part 7: Integration with BLDC-Simulator (100 lines)**
+**Part 7: Integration with SPINOTOR (100 lines)**
 - AnalyticalAutoTuner class structure
 - Configuration for target motors (YAML)
 - Updated simulator interface

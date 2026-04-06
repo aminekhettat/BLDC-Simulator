@@ -15,16 +15,16 @@ The auto-calibration module (`src/control/adaptive_tuning.py`) has been signific
 
 ### Key Weaknesses Addressed
 
-| # | Original Weakness | Solution |
-|---|---|---|
-| 1 | 12×12=144 point grid search | Multi-resolution: 8×8 coarse + 10×10 fine around analytical guess |
-| 2 | Fixed search ranges (independent of motor) | Analytical bounds from L/R and J/B/Kt relationships |
-| 3 | Score function based on margins only | Added simulation validation with speed/torque tracking criteria |
-| 4 | Same Kp/Ki for d and q axes | Framework ready; can extend to separate d/q tuning |
-| 5 | No simulation validation | Added `validate_at_operating_point()` method |
-| 6 | Speed loop assumes viscous friction only | Motor model handles; validation checks actual response |
-| 7 | No warm start | Analytical initial guess provides intelligent warm start |
-| 8 | Single operating point only | Multi-point validation at ±20% speed offset |
+| #   | Original Weakness                          | Solution                                                          |
+| --- | ------------------------------------------ | ----------------------------------------------------------------- |
+| 1   | 12×12=144 point grid search                | Multi-resolution: 8×8 coarse + 10×10 fine around analytical guess |
+| 2   | Fixed search ranges (independent of motor) | Analytical bounds from L/R and J/B/Kt relationships               |
+| 3   | Score function based on margins only       | Added simulation validation with speed/torque tracking criteria   |
+| 4   | Same Kp/Ki for d and q axes                | Framework ready; can extend to separate d/q tuning                |
+| 5   | No simulation validation                   | Added `validate_at_operating_point()` method                      |
+| 6   | Speed loop assumes viscous friction only   | Motor model handles; validation checks actual response            |
+| 7   | No warm start                              | Analytical initial guess provides intelligent warm start          |
+| 8   | Single operating point only                | Multi-point validation at ±20% speed offset                       |
 
 ### New Classes and Functions
 
@@ -112,6 +112,7 @@ The current loop plant is: `I(s) / V(s) = 1 / (L*s + R)`
 Natural choice for bandwidth: `ω_c = R / L`
 
 PI controller gains:
+
 ```
 Kp = ω_c * L = R
 Ki = ω_c * R = R² / L
@@ -124,6 +125,7 @@ The speed loop plant is: `ω(s) / Τ(s) = 1 / (J*s + B)`
 Speed loop bandwidth typically 1/10 of current loop: `ω_s = ω_c / 10 = R / (10*L)`
 
 PI controller gains:
+
 ```
 Kp_s = ω_s * J / Kt
 Ki_s = ω_s * B / Kt
@@ -348,11 +350,12 @@ AdaptiveFOCTuner.apply_to_foc(controller, result)
 ### Original Tests (100% Pass)
 
 ```bash
-cd BLDC-Simulator
+cd SPINOTOR
 python tests/test_adaptive_tuning.py
 ```
 
 Validates:
+
 - Margin estimators return finite values
 - State-space checks work correctly
 - tune() returns finite positive gains
@@ -364,6 +367,7 @@ python tests/test_adaptive_tuning_enhanced.py
 ```
 
 Validates:
+
 - All backward compatibility tests
 - Analytical initial guess computation
 - Analytical guess scales with motor parameters
@@ -421,9 +425,11 @@ Three motors successfully auto-calibrated:
 ## Files Modified/Created
 
 ### Modified
+
 - `/src/control/adaptive_tuning.py` - Enhanced module with all improvements
 
 ### Created
+
 - `/examples/auto_calibrate_all_motors.py` - Batch calibration script
 - `/tests/test_adaptive_tuning_enhanced.py` - Comprehensive test suite
 - `/data/tuning_sessions/auto_calibrated_innotec_255_ezs48_160.json` - Calibrated gains
@@ -452,6 +458,7 @@ Three motors successfully auto-calibrated:
 ### Motor Specifications
 
 **ME1718 / ME1719 (48V)**
+
 - Rated Speed: 4000 RPM
 - Rated Torque: 14.3 Nm
 - Rated Current: 100 A RMS
@@ -464,6 +471,7 @@ Three motors successfully auto-calibrated:
 - Pole Pairs: 5
 
 **Innotec 255-EZS48-160 (48V)**
+
 - Rated Speed: 3000 RPM
 - Rated Torque: 26.5 Nm
 - Rated Current: 160 A RMS
@@ -478,6 +486,7 @@ Three motors successfully auto-calibrated:
 ## Contact & Support
 
 For questions or issues with the calibration module, refer to:
+
 - `/src/control/adaptive_tuning.py` - Implementation details
 - `/examples/auto_calibrate_all_motors.py` - Usage examples
 - `/tests/test_adaptive_tuning_enhanced.py` - Test suite

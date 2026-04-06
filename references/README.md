@@ -1,8 +1,8 @@
-# BLDC-Simulator FOC Auto-Calibration References
+# SPINOTOR FOC Auto-Calibration References
 
 ## Overview
 
-This directory contains comprehensive documentation for improving the FOC (Field-Oriented Control) auto-calibration module in the BLDC-Simulator project. The documentation synthesizes research from 45+ academic papers and industry technical documents to provide practical, analytical methods for PI controller gain tuning.
+This directory contains comprehensive documentation for improving the FOC (Field-Oriented Control) auto-calibration module in the SPINOTOR project. The documentation synthesizes research from 45+ academic papers and industry technical documents to provide practical, analytical methods for PI controller gain tuning.
 
 **Focus Areas:**
 - Analytical, bandwidth-based PI tuning (replacing grid search)
@@ -93,7 +93,7 @@ This directory contains comprehensive documentation for improving the FOC (Field
    - Detailed pseudo-code
    - Replaces 144 evaluations with 7 targeted tests
 
-7. **Part 7: Integration with BLDC-Simulator**
+7. **Part 7: Integration with SPINOTOR**
    - Code structure for analytical tuner
    - Configuration files for target motors
    - Updated controller interface
@@ -246,7 +246,7 @@ Use **AUTO_TUNING_DESIGN_GUIDE.md** Part 4:
 2. Implement temperature compensation (if needed)
 3. Implement gain scheduling (if needed)
 4. Pack gains with motor model
-5. Deploy to BLDC-Simulator firmware
+5. Deploy to SPINOTOR firmware
 ```
 
 ---
@@ -291,7 +291,7 @@ Use **AUTO_TUNING_DESIGN_GUIDE.md** Part 4:
 ## File Structure
 
 ```
-BLDC-Simulator/
+SPINOTOR/
 └── references/
     ├── README.md (this file)
     ├── BIBLIOGRAPHY.md (45+ references)
@@ -377,7 +377,7 @@ Implement gain scheduling table with [speed, load, temp] dependencies.
    - Document results
 
 5. **Deploy and Monitor** (ongoing)
-   - Deploy gains to BLDC-Simulator firmware
+   - Deploy gains to SPINOTOR firmware
    - Monitor performance in field
    - Add temperature compensation if needed
 
@@ -447,7 +447,7 @@ See BIBLIOGRAPHY.md for complete citation list.
 
 **Document Generated:** 2026-03-30
 **Total References:** 45+ papers and technical documents
-**Target Project:** BLDC-Simulator FOC Control Module
+**Target Project:** SPINOTOR FOC Control Module
 **Estimated Implementation Time:** 8-16 hours to replace grid search with analytical tuning
 
 ---

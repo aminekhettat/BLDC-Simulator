@@ -6,7 +6,7 @@ Project Structure
 
 ::
 
-    BLDC_motor_control/
+    SPINOTOR/
     ├── src/
     │   ├── core/              # Core motor simulation
     │   │   ├── motor_model.py

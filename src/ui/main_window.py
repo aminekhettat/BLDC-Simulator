@@ -4339,8 +4339,7 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.calib_log.clear()
         self.calib_log.append(
-            "Starting single-profile field-weakening calibration for "
-            f"{profile_name}."
+            f"Starting single-profile field-weakening calibration for {profile_name}."
         )
 
         script_path = (
@@ -4457,10 +4456,6 @@ class BLDCMotorControlGUI(QMainWindow):
         self.status_bar_task.setText("Task: None")
         self.status_bar_time_remaining.setText("Remaining: -- s")
         self._mark_task_finished("calibration")
-
-
-
-
 
     # ------------------------------------------------------------------
     # Auto-Calibrate All (Analytic + Physics) — two-stage pipeline
@@ -4581,9 +4576,7 @@ class BLDCMotorControlGUI(QMainWindow):
                     "Auto-calibration complete — all motor profiles updated.", 10000
                 )
         else:
-            self.calib_log.append(
-                f"\n[Stage 2 FAILED — exit code {exit_code}]\n"
-            )
+            self.calib_log.append(f"\n[Stage 2 FAILED — exit code {exit_code}]\n")
             self.calib_result_status.setText(f"Status: Failed at Stage 2 (exit {exit_code})")
             speak("Auto-calibration stage two failed.")
 
@@ -6375,9 +6368,7 @@ class BLDCMotorControlGUI(QMainWindow):
             for i, k in enumerate(keys):
                 item = QTableWidgetItem(k)
                 item.setFlags(
-                    item.flags()
-                    | Qt.ItemFlag.ItemIsSelectable
-                    | Qt.ItemFlag.ItemIsEnabled
+                    item.flags() | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
                 )
                 self.plot_var_list.setItem(i, 0, item)
         selected = [item.text() for item in self.plot_var_list.selectedItems()]
