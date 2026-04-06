@@ -125,6 +125,8 @@ SPINOTOR/
 ├── tests/                    ← pytest suite (100% src/ coverage gate)
 ├── docs/                     ← Sphinx documentation
 ├── examples/                 ← headless usage scripts and calibration examples
+│   └── validate_all_observers.py  ← 5-observer validation (all pass in < 30 s)
+├── data/motor_profiles/      ← JSON motor profiles (nanotec SPM, IPM salient 48 V)
 ├── references/               ← control-theory formulas and bibliography
 └── Roadmap/                  ← planned and completed milestones
 ```

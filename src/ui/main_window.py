@@ -4566,14 +4566,19 @@ class BLDCMotorControlGUI(QMainWindow):
         if exit_code == 0:
             self.calib_log.append("\n[Stage 2 complete ✓]\n\n[Auto-calibration pipeline DONE]\n")
             self.calib_result_status.setText("Status: Complete ✓ (Analytic + Physics)")
+            # Apply analytically calibrated observer gains to the GUI widgets
+            # so the next simulation run uses the tuned values immediately.
+            self._apply_observer_calibration_to_gui()
             speak(
                 "Auto-calibration pipeline complete. "
-                "FOC PI gains and field-weakening parameters updated for all motors."
+                "FOC PI gains, field-weakening parameters, and observer gains "
+                "updated for the current motor."
             )
             status_bar = self.statusBar()
             if status_bar is not None:
                 status_bar.showMessage(
-                    "Auto-calibration complete — all motor profiles updated.", 10000
+                    "Auto-calibration complete — all motor profiles and observer gains updated.",
+                    10000,
                 )
         else:
             self.calib_log.append(f"\n[Stage 2 FAILED — exit code {exit_code}]\n")
@@ -4581,6 +4586,93 @@ class BLDCMotorControlGUI(QMainWindow):
             speak("Auto-calibration stage two failed.")
 
         self._reset_auto_calib_ui()
+
+    def _apply_observer_calibration_to_gui(self) -> None:
+        """Compute analytical observer gains from current motor params and apply to GUI.
+
+        Called automatically after the two-stage auto-calibration pipeline
+        finishes successfully.  Uses the same analytical formulas as the
+        individual per-observer auto-calibrate buttons so the GUI always
+        reflects a physically consistent set of gains for the loaded motor.
+
+        Calibrated observers
+        --------------------
+        * PLL  — Kp, Ki from type-2 bandwidth target (ωn = ωe_max / 5)
+        * SMO  — Kslide, LPF alpha, boundary from electrical time constant
+        * STSMO — k1, k2_min, k2_factor from Levant convergence conditions
+        * ActiveFlux — dc_cutoff_hz set to a safe 0.3 Hz (well below
+          minimum expected electrical frequency)
+        """
+        try:
+            from src.control.foc_controller import FOCController
+            from src.core.motor_model import BLDCMotor, MotorParameters
+
+            # Build a transient motor instance from current GUI values
+            mp = self._collect_current_motor_parameters()
+            rated_rpm = float(getattr(self, "foc_stsmo_rated_rpm", None)
+                              and self.foc_stsmo_rated_rpm.value() or 3000.0)
+
+            params = MotorParameters(
+                nominal_voltage=mp["nominal_voltage"],
+                phase_resistance=mp["phase_resistance"],
+                phase_inductance=mp["phase_inductance"],
+                back_emf_constant=mp["back_emf_constant"],
+                torque_constant=mp["torque_constant"],
+                rotor_inertia=mp["rotor_inertia"],
+                friction_coefficient=mp["friction_coefficient"],
+                num_poles=mp["num_poles"],
+                ld=mp.get("ld"),
+                lq=mp.get("lq"),
+                model_type=mp.get("model_type", "dq"),
+            )
+            motor = BLDCMotor(params)
+            ctrl = FOCController(motor=motor)
+
+            # ── PLL ────────────────────────────────────────────────────────
+            pll = ctrl.calibrate_pll_gains_analytical(rated_rpm=rated_rpm, apply=False)
+            self.foc_pll_kp.setValue(float(pll["kp"]))
+            self.foc_pll_ki.setValue(float(pll["ki"]))
+
+            # ── SMO ────────────────────────────────────────────────────────
+            dt_ui = 1.0 / max(float(self.foc_pwm_freq.value()), 1.0)
+            smo = ctrl.calibrate_smo_gains_analytical(
+                rated_rpm=rated_rpm, dt=dt_ui, apply=False
+            )
+            self.foc_smo_k_slide.setValue(float(smo["k_slide"]))
+            self.foc_smo_lpf_alpha.setValue(float(smo["lpf_alpha"]))
+            self.foc_smo_boundary.setValue(float(smo["boundary"]))
+
+            # ── STSMO ──────────────────────────────────────────────────────
+            ctrl.enable_sensorless_emf_reconstruction()
+            stsmo = ctrl.calibrate_stsmo_gains_analytical(rated_rpm=rated_rpm, apply=False)
+            self.foc_stsmo_k1.setValue(float(stsmo["k1"]))
+            # k2_min stays at 500 V/s (startup floor — motor-independent)
+            self.foc_stsmo_k2_min.setValue(500.0)
+            # k2_factor = 1.0 is the Levant theoretical minimum
+            self.foc_stsmo_k2_factor.setValue(1.0)
+            self.foc_stsmo_rated_rpm.setValue(float(rated_rpm))
+
+            # ── ActiveFlux ─────────────────────────────────────────────────
+            # dc_cutoff must be well below the minimum electrical frequency.
+            # 0.3 Hz is a safe conservative default for motors ≥ ~20 RPM.
+            self.foc_af_dc_cutoff.setValue(0.3)
+
+            # Log calibrated values for the user
+            self.calib_log.append(
+                "\n[Observer gains calibrated for current motor]\n"
+                f"  PLL:   Kp={pll['kp']:.2f}  Ki={pll['ki']:.1f}\n"
+                f"  SMO:   Kslide={smo['k_slide']:.1f}  LPF_alpha={smo['lpf_alpha']:.4f}"
+                f"  Boundary={smo['boundary']:.3f} rad\n"
+                f"  STSMO: k1={stsmo['k1']:.3f}  k2_min=500.0 V/s  k2_factor=1.0\n"
+                f"  ActiveFlux: dc_cutoff=0.3 Hz\n"
+            )
+
+        except Exception as exc:  # noqa: BLE001
+            self.calib_log.append(
+                f"\n[Observer calibration to GUI failed: {exc}]\n"
+                "  Observer gains were NOT updated — please use the per-observer "
+                "Auto-Calibrate buttons manually.\n"
+            )
 
     def _stop_auto_calibrate_all(self) -> None:
         """Terminate the running auto-calibration pipeline gracefully."""

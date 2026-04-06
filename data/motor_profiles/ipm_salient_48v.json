@@ -1,0 +1,25 @@
+{
+  "profile_name": "IPM Salient 48V (synthetic, Lq/Ld=2.0)",
+  "description": "Synthetic interior permanent-magnet (IPM) motor with strong d/q saliency (Lq/Ld=2.0). Used to validate saliency-sensitive observers (ActiveFlux, STSMO) and MTPA control strategies. Parameters are representative of a mid-power EV traction IPM with a 48V bus.",
+  "motor_params": {
+    "model_type": "dq",
+    "emf_shape": "sinusoidal",
+    "nominal_voltage": 48.0,
+    "phase_resistance": 0.08,
+    "phase_inductance": 0.00015,
+    "back_emf_constant": 0.082,
+    "torque_constant": 0.082,
+    "rotor_inertia": 0.0008,
+    "friction_coefficient": 0.0005,
+    "num_poles": 8,
+    "ld": 0.00010,
+    "lq": 0.00020,
+    "flux_weakening_id_coefficient": 0.0,
+    "flux_weakening_min_ratio": 0.2
+  },
+  "rated_speed_rpm": 3000.0,
+  "rated_current_a": 30.0,
+  "rated_torque_nm": 2.46,
+  "saliency_ratio": 2.0,
+  "notes": "Ld=0.10 mH, Lq=0.20 mH → Lq/Ld=2.0. Highest saliency among SPINOTOR profiles. Designed to stress-test ActiveFlux observer and STSMO under strong reluctance torque."
+}
