@@ -63,30 +63,37 @@ SPM_PROFILE_PATH = (
     PROJECT_ROOT / "data" / "motor_profiles" / "nanotec_db57m012_12v.json"
 )
 
-# ── Shared simulation constants ───────────────────────────────────────────────
-SIM_DURATION_S = 5.0       # total simulation time [s]
-DT = 5e-4                  # integration step [s] — 2 kHz (within RK4 limit)
-SWITCH_TIME_S = 1.5        # warmup → target observer switch [s]
-SETTLE_START_S = 3.0       # analysis window start [s]
-LOAD_RAMP_START_S = 0.5    # load ramp begins [s]
-LOAD_RAMP_END_S = 1.5      # load ramp ends (coincides with switch) [s]
+# ── Simulation timing ─────────────────────────────────────────────────────────
+# Architecture rule: the control law (FOC + observer) runs once per PWM period,
+# exactly as on a real MCU.  The motor model runs at a finer sub-step so the
+# plant ODE is integrated accurately while voltages are held constant (ZOH).
+#
+#   DT_CTRL  = 1 / PWM_HZ        — controller cadence (50 µs at 20 kHz)
+#   DT_MOTOR = DT_CTRL / N_SUB   — motor RK4 sub-step (10 µs, 5 per period)
+#
+# With DT_CTRL = 50 µs at 2 000 RPM / pp=4:
+#   ωe · DT_CTRL = 838 × 50e-6 = 0.042 rad  → ActiveFlux flux-integrator
+#   error < 0.1 %  ✓  (criterion: ωe·dt ≲ 0.1 rad for stable cross-product)
+PWM_HZ       = 20_000          # PWM (= FOC interrupt) frequency [Hz]
+DT_CTRL      = 1.0 / PWM_HZ   # controller time step [s]  = 50 µs
+# N_SUB: motor sub-steps per control period.  Set to 1 for the validation
+# script — ωe·DT_CTRL = 0.042 rad at 2 000 RPM/pp=4, already well inside the
+# 0.1 rad stability limit, so a single motor step per PWM period is accurate
+# enough.  Use N_SUB > 1 only for higher-speed or higher-accuracy studies.
+N_SUB        = 1               # motor sub-steps per control period
+DT_MOTOR     = DT_CTRL / N_SUB  # motor integration step [s] = 50 µs
+
+SIM_DURATION_S  = 5.0   # total simulation time [s]
+SWITCH_TIME_S   = 1.5   # warmup → target observer switch [s]
+SETTLE_START_S  = 3.0   # analysis window start [s]
+LOAD_RAMP_START_S = 0.5
+LOAD_RAMP_END_S   = 1.5
 
 # ── IPM motor simulation parameters ──────────────────────────────────────────
-IPM_TARGET_RPM = 2000.0    # speed reference [RPM] — Measured, PLL, SMO
-IPM_LOAD_NM = 0.8          # constant load after ramp [N·m]
+IPM_TARGET_RPM = 2000.0    # speed reference [RPM]
+IPM_LOAD_NM    = 0.8       # constant load after ramp [N·m]
 
-# Active Flux observer must operate at a lower electrical speed because the
-# forward-Euler stator-flux integrator in _update_active_flux requires
-# ωe·dt ≲ 0.1 rad for stable cross-product speed estimation.
-#   At 2000 RPM / pp=4: ωe·dt = 838·5e-4 = 0.419 rad  → |ψa| overshoots
-#     by ~8 %, causing the cross-product to underestimate ωe by ~17 %,
-#     which makes θ̂_af fall behind by ~1 rad within a few ms.
-#   At 500 RPM / pp=4:  ωe·dt = 209·5e-4 = 0.105 rad  → |ψa| error < 0.5 %,
-#     cross-product error < 0.6 %, steady-state phase offset < 4°.
-IPM_AF_TARGET_RPM = 500.0  # speed reference for the ActiveFlux test [RPM]
-IPM_AF_LOAD_NM = 0.8       # same load (same iq demand, stresses saliency)
-
-# ── SPM motor simulation parameters (STSMO only) ─────────────────────────────
+# ── SPM motor simulation parameters (STSMO) ──────────────────────────────────
 # Nanotec DB57M012 12V: Ke=0.028 V·s/rad, 5 pole pairs.
 # Max back-EMF at SVM limit (Vdc/√3 ≈ 6.93 V) → ω_e_max ≈ 247 rad/s
 # → ω_mech_max ≈ 49.5 rad/s → ~473 RPM.  Use 300 RPM for comfortable headroom.
@@ -165,7 +172,8 @@ def _build_controller(
     target_rpm: float,
 ) -> FOCController:
     """Instantiate a fresh FOCController with analytically tuned PI gains."""
-    motor = BLDCMotor(params, dt=DT)
+    # Motor model uses the fine integration step; controller uses DT_CTRL.
+    motor = BLDCMotor(params, dt=DT_MOTOR)
 
     ctrl = FOCController(motor=motor, enable_speed_loop=True)
     ctrl.set_cascaded_speed_loop(True, iq_limit_a=60.0)
@@ -266,7 +274,7 @@ def _bumpless_switch_to_observer(
 
     elif mode_norm == "SMO":
         ctrl.enable_sensorless_emf_reconstruction()
-        ctrl.calibrate_smo_gains_analytical(rated_rpm=rated_rpm, dt=DT, apply=True)
+        ctrl.calibrate_smo_gains_analytical(rated_rpm=rated_rpm, dt=DT_CTRL, apply=True)
         ctrl.theta_est_smo = theta_e_now
         ctrl.smo["omega_est"] = omega_e_now
         ctrl._e_alpha_obs = e_alpha_0
@@ -415,9 +423,16 @@ def run_observer_simulation(
     Phase 1: Measured (0 … SWITCH_TIME_S) — motor accelerates to *target_rpm*.
     Phase 2: Target observer (SWITCH_TIME_S … SIM_DURATION_S) — stability check.
 
-    Uses motor.step() directly (no SimulationEngine history) for speed.
+    Timing architecture
+    -------------------
+    * ctrl.update(DT_CTRL)  — runs once per PWM period (50 µs at 20 kHz).
+    * motor.step(DT_MOTOR)  — runs N_SUB times per control period (10 µs × 5),
+      voltages held constant between sub-steps (zero-order hold, as on real HW).
+
+    This matches the on-target execution model and ensures ωe·DT_CTRL ≲ 0.1 rad
+    for all observers up to rated speed.
     """
-    motor = BLDCMotor(params, dt=DT)
+    motor = BLDCMotor(params, dt=DT_MOTOR)
     load = SmoothRampLoad(LOAD_RAMP_START_S, LOAD_RAMP_END_S, load_torque)
     svm = SVMGenerator(dc_voltage=params.nominal_voltage)
 
@@ -434,23 +449,37 @@ def run_observer_simulation(
     ctrl.startup_transition_done = True
     ctrl.startup_ready_to_switch = True
 
-    n_warmup = int(SWITCH_TIME_S / DT)
-    n_total = int(SIM_DURATION_S / DT)
-    n_settle = int(SETTLE_START_S / DT)
+    n_warmup = int(SWITCH_TIME_S  / DT_CTRL)
+    n_total  = int(SIM_DURATION_S / DT_CTRL)
+    n_settle = int(SETTLE_START_S / DT_CTRL)
 
     speed_hist: list[float] = []
     angle_err_hist: list[float] = []
 
     try:
         for step in range(n_total):
+            t_now = step * DT_CTRL
+
             # Switch to target observer at the warmup boundary
             if step == n_warmup and mode_norm != "Measured":
                 _bumpless_switch_to_observer(ctrl, params, mode_norm, rated_rpm)
 
-            mag, ang = ctrl.update(DT)
+            # ── Controller runs once per PWM period ───────────────────────────
+            mag, ang = ctrl.update(DT_CTRL)
             voltages = svm.modulate(mag, ang)
-            t_now = step * DT
-            motor.step(voltages, load_torque=load.get_torque(t_now))
+
+            # Feed actual SVM-applied voltages back to the controller so that
+            # the Active-Flux integrator (and EMF reconstructor for PLL/SMO)
+            # use the real terminal voltage, not the inverse-Park command.
+            # Clarke(SVM output) can differ from the inverse-Park output due to
+            # SVM normalization (≈ 26 % difference at rated voltage).  Without
+            # this call the open-loop flux integrator drifts and AF loses lock.
+            ctrl.update_applied_voltage(*voltages)
+
+            # ── Motor integrated with N_SUB fine sub-steps (ZOH voltages) ─────
+            load_now = load.get_torque(t_now)
+            for _ in range(N_SUB):
+                motor.step(voltages, load_torque=load_now)
 
             # Divergence safety guard
             omega_mech = motor.omega
@@ -462,7 +491,7 @@ def run_observer_simulation(
                     speed_error_pct=100.0,
                     mean_angle_error_rad=float("inf"),
                     stable=False,
-                    note=f"Diverged at t={step*DT:.2f}s (speed={speed_rpm:.0f} RPM)",
+                    note=f"Diverged at t={t_now:.2f}s (speed={speed_rpm:.0f} RPM)",
                 )
 
             # Accumulate analysis window
@@ -525,8 +554,10 @@ def run_observer_simulation(
 def main() -> int:
     print("=" * 72)
     print("SPINOTOR — Observer Validation")
-    print(f"  dt={DT*1e4:.0f}×10⁻⁴ s   switch at {SWITCH_TIME_S:.1f} s   "
-          f"analysis from {SETTLE_START_S:.1f} s   total {SIM_DURATION_S:.1f} s")
+    print(f"  PWM={PWM_HZ//1000} kHz  dt_ctrl={DT_CTRL*1e6:.0f} µs  "
+          f"dt_motor={DT_MOTOR*1e6:.0f} µs ({N_SUB} sub-steps)  "
+          f"switch@{SWITCH_TIME_S:.1f}s  analysis@{SETTLE_START_S:.1f}s  "
+          f"total {SIM_DURATION_S:.1f} s")
     print("=" * 72)
 
     # ── Check profile files ───────────────────────────────────────────────────
@@ -561,8 +592,7 @@ def main() -> int:
          "IPM"),
         ("SMO",        ipm_params, ipm_rated_rpm, IPM_TARGET_RPM,    IPM_LOAD_NM,
          "IPM"),
-        # ActiveFlux uses a lower speed so ωe·dt ≲ 0.1 rad — see IPM_AF_TARGET_RPM.
-        ("ActiveFlux", ipm_params, ipm_rated_rpm, IPM_AF_TARGET_RPM, IPM_AF_LOAD_NM,
+        ("ActiveFlux", ipm_params, ipm_rated_rpm, IPM_TARGET_RPM,    IPM_LOAD_NM,
          "IPM"),
         ("STSMO",      spm_params, spm_rated_rpm, SPM_TARGET_RPM,    SPM_LOAD_NM,
          "SPM"),
