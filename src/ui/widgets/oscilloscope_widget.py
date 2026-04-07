@@ -77,8 +77,8 @@ except ImportError:  # pragma: no cover — headless/CI environments
     _PYSIDE6_AVAILABLE = False
     # Provide stub base classes so the module-level constants and
     # _ChannelBuffer can be imported without a running Qt environment.
-    Qt = None  # type: ignore[assignment]
-    QTimer = None  # type: ignore[assignment]
+    Qt = None  # type: ignore[assignment,misc]
+    QTimer = None  # type: ignore[assignment,misc]
     QWidget = object  # type: ignore[assignment,misc]
     QFrame = object  # type: ignore[assignment,misc]
     QGroupBox = object  # type: ignore[assignment,misc]
@@ -398,7 +398,8 @@ class _StripHeader(QWidget):
 
     @property
     def current_key(self) -> str | None:
-        return self.combo.currentData()
+        data = self.combo.currentData()
+        return str(data) if data is not None else None
 
 
 # ── Main OscilloscopeWidget ───────────────────────────────────────────────────
@@ -566,6 +567,7 @@ class OscilloscopeWidget(QWidget):
             if _PYQTGRAPH_AVAILABLE:
                 strip: _PgStrip | _MplStrip = _PgStrip(key, label, unit, color, container)
                 # Connect crosshair mouse event
+                assert isinstance(strip, _PgStrip)
                 strip.plot_widget.scene().sigMouseMoved.connect(
                     lambda pos, idx=i, s=strip: self._on_mouse_moved(pos, idx, s)
                 )

@@ -1,0 +1,290 @@
+{
+  "motor": "IPM Salient 48V (synthetic, Lq/Ld=2.0)",
+  "t_sim_s": 30.0,
+  "dt_s": 0.0002,
+  "speed_ref_rpm": 3000.0,
+  "torque_steps": {
+    "t1_s": 10.0,
+    "t2_s": 20.0,
+    "t1_nm": 1.23,
+    "t2_nm": 2.46
+  },
+  "thresholds": {
+    "speed_err_pct": 5.0,
+    "angle_rms_deg": 15.0,
+    "angle_peak_deg": 30.0,
+    "conf_min": 0.4
+  },
+  "results": [
+    {
+      "config": "Measured",
+      "windows": {
+        "no_load": {
+          "t_range": [
+            8.0,
+            10.0
+          ],
+          "speed_rms_rpm": 2.22,
+          "speed_err_pct": 0.074,
+          "angle_rms_deg": 0.0,
+          "angle_peak_deg": 0.0,
+          "conf_mean": 1.0,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "half_load": {
+          "t_range": [
+            18.0,
+            20.0
+          ],
+          "speed_rms_rpm": 2.4,
+          "speed_err_pct": 0.08,
+          "angle_rms_deg": 0.0,
+          "angle_peak_deg": 0.0,
+          "conf_mean": 1.0,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "full_load": {
+          "t_range": [
+            28.0,
+            30.0
+          ],
+          "speed_rms_rpm": 2.739,
+          "speed_err_pct": 0.091,
+          "angle_rms_deg": 0.0,
+          "angle_peak_deg": 0.0,
+          "conf_mean": 1.0,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        }
+      },
+      "pass": true
+    },
+    {
+      "config": "PLL",
+      "windows": {
+        "no_load": {
+          "t_range": [
+            8.0,
+            10.0
+          ],
+          "speed_rms_rpm": 2.127,
+          "speed_err_pct": 0.071,
+          "angle_rms_deg": 7.907,
+          "angle_peak_deg": 8.693,
+          "conf_mean": 0.984,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "half_load": {
+          "t_range": [
+            18.0,
+            20.0
+          ],
+          "speed_rms_rpm": 2.247,
+          "speed_err_pct": 0.075,
+          "angle_rms_deg": 11.065,
+          "angle_peak_deg": 12.225,
+          "conf_mean": 0.984,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "full_load": {
+          "t_range": [
+            28.0,
+            30.0
+          ],
+          "speed_rms_rpm": 2.375,
+          "speed_err_pct": 0.079,
+          "angle_rms_deg": 14.226,
+          "angle_peak_deg": 15.99,
+          "conf_mean": 0.984,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        }
+      },
+      "pass": true
+    },
+    {
+      "config": "SMO",
+      "windows": {
+        "no_load": {
+          "t_range": [
+            8.0,
+            10.0
+          ],
+          "speed_rms_rpm": 2.161,
+          "speed_err_pct": 0.072,
+          "angle_rms_deg": 7.816,
+          "angle_peak_deg": 10.378,
+          "conf_mean": 0.9844,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "half_load": {
+          "t_range": [
+            18.0,
+            20.0
+          ],
+          "speed_rms_rpm": 2.153,
+          "speed_err_pct": 0.072,
+          "angle_rms_deg": 10.724,
+          "angle_peak_deg": 13.361,
+          "conf_mean": 0.9845,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "full_load": {
+          "t_range": [
+            28.0,
+            30.0
+          ],
+          "speed_rms_rpm": 2.456,
+          "speed_err_pct": 0.082,
+          "angle_rms_deg": 14.164,
+          "angle_peak_deg": 18.147,
+          "conf_mean": 0.9842,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        }
+      },
+      "pass": true
+    },
+    {
+      "config": "STSMO",
+      "windows": {
+        "no_load": {
+          "t_range": [
+            8.0,
+            10.0
+          ],
+          "speed_rms_rpm": 2.127,
+          "speed_err_pct": 0.071,
+          "angle_rms_deg": 7.907,
+          "angle_peak_deg": 8.693,
+          "conf_mean": 0.984,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "half_load": {
+          "t_range": [
+            18.0,
+            20.0
+          ],
+          "speed_rms_rpm": 2.247,
+          "speed_err_pct": 0.075,
+          "angle_rms_deg": 11.065,
+          "angle_peak_deg": 12.225,
+          "conf_mean": 0.984,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "full_load": {
+          "t_range": [
+            28.0,
+            30.0
+          ],
+          "speed_rms_rpm": 2.375,
+          "speed_err_pct": 0.079,
+          "angle_rms_deg": 14.226,
+          "angle_peak_deg": 15.99,
+          "conf_mean": 0.984,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        }
+      },
+      "pass": true
+    },
+    {
+      "config": "ActiveFlux",
+      "windows": {
+        "no_load": {
+          "t_range": [
+            8.0,
+            10.0
+          ],
+          "speed_rms_rpm": 2.37,
+          "speed_err_pct": 0.079,
+          "angle_rms_deg": 13.932,
+          "angle_peak_deg": 15.356,
+          "conf_mean": 0.9767,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "half_load": {
+          "t_range": [
+            18.0,
+            20.0
+          ],
+          "speed_rms_rpm": 2.642,
+          "speed_err_pct": 0.088,
+          "angle_rms_deg": 12.203,
+          "angle_peak_deg": 14.02,
+          "conf_mean": 0.9744,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        },
+        "full_load": {
+          "t_range": [
+            28.0,
+            30.0
+          ],
+          "speed_rms_rpm": 4.115,
+          "speed_err_pct": 0.137,
+          "angle_rms_deg": 10.693,
+          "angle_peak_deg": 13.924,
+          "conf_mean": 0.9722,
+          "speed_ok": true,
+          "angle_ok": true,
+          "peak_ok": true,
+          "conf_ok": true,
+          "pass": true
+        }
+      },
+      "pass": true
+    }
+  ]
+}

@@ -13,15 +13,14 @@ Atomic features tested
 from __future__ import annotations
 
 import importlib.util
-import os
 import sys
 import tempfile
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")          # headless — no display needed
 import matplotlib.pyplot as plt
-import numpy as np
 import pytest
 
 # Load plot_customizer_dialog directly to bypass src/ui/widgets/__init__.py
@@ -159,7 +158,7 @@ class TestPlotStyleApplicator:
         PlotStyleApplicator.apply(fig, style)
         ax = fig.get_axes()[0]
         lines = ax.get_lines()
-        test_lines = [l for l in lines if l.get_label() == "test"]
+        test_lines = [ln for ln in lines if ln.get_label() == "test"]
         assert test_lines, "Line with label 'test' not found"
         import matplotlib.colors as mcolors
         actual = mcolors.to_hex(test_lines[0].get_color())

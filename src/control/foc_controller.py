@@ -532,16 +532,24 @@ class FOCController(BaseController):
         self.startup_open_loop_speed_rpm = self.startup_open_loop_initial_speed_rpm
         self.startup_open_loop_angle = self.startup_align_angle
         # Reset SOGI states
-        self._sogi_e_alpha = 0.0; self._sogi_e_alpha_90 = 0.0
-        self._sogi_e_beta  = 0.0; self._sogi_e_beta_90  = 0.0
+        self._sogi_e_alpha = 0.0
+        self._sogi_e_alpha_90 = 0.0
+        self._sogi_e_beta = 0.0
+        self._sogi_e_beta_90 = 0.0
         # Reset Active Flux states
-        self._psi_s_alpha = 0.0; self._psi_s_beta = 0.0
-        self._psi_af_prev_a = 0.0; self._psi_af_prev_b = 0.0
-        self._theta_est_af = 0.0; self._omega_est_af = 0.0
+        self._psi_s_alpha = 0.0
+        self._psi_s_beta = 0.0
+        self._psi_af_prev_a = 0.0
+        self._psi_af_prev_b = 0.0
+        self._theta_est_af = 0.0
+        self._omega_est_af = 0.0
         # Reset ST-SMO states
-        self._stsmo_i_alpha = 0.0; self._stsmo_i_beta  = 0.0
-        self._stsmo_z1_alpha = 0.0; self._stsmo_z1_beta = 0.0
-        self._stsmo_e_alpha  = 0.0; self._stsmo_e_beta  = 0.0
+        self._stsmo_i_alpha = 0.0
+        self._stsmo_i_beta = 0.0
+        self._stsmo_z1_alpha = 0.0
+        self._stsmo_z1_beta = 0.0
+        self._stsmo_e_alpha = 0.0
+        self._stsmo_e_beta = 0.0
         # Reset vq-FF and MRAS states
         self._omega_vq_est = 0.0
         self._mras_R = self._emf_recon_R
@@ -1136,6 +1144,7 @@ class FOCController(BaseController):
         self,
         rated_rpm: float | None = None,
         convergence_factor: float = 3.0,
+        k2_min: float | None = None,
         apply: bool = True,
     ) -> dict:
         """Compute Super-Twisting SMO gains analytically.
@@ -1165,13 +1174,19 @@ class FOCController(BaseController):
         rated_rpm : float, optional
             Rated speed [RPM].  Defaults to motor rated speed.
         convergence_factor : float
-            λ — convergence multiplier (>1 ensures robustness).
+            λ — convergence multiplier (>1 ensures robustness).  Use 3.0 for
+            isotropic SPM motors and 4.0 for salient IPM motors.
+        k2_min : float, optional
+            Floor for the speed-adaptive k2 [V/s].  Guards STSMO tracking
+            during the open-loop startup ramp when ωm ≈ 0.  If None, computed
+            automatically as ``max(50, 1.5 · Ke · ωe_max)``, which scales with
+            the motor's back-EMF constant and rated electrical speed.
         apply : bool
             If True, immediately loads the gains into ``self.stsmo``.
 
         Returns
         -------
-        dict with keys ``k1``, ``k2``, ``e_max_v``.
+        dict with keys ``k1``, ``k2``, ``e_max_v``, ``k2_min``.
         """
         if rated_rpm is None:
             rated_rpm = float(
@@ -1181,10 +1196,19 @@ class FOCController(BaseController):
         pp   = float(self.motor.params.poles_pairs)
         # ke is in V·s/rad_mech; use mechanical angular speed for correct EMF
         ωm_max = rated_rpm / 60.0 * 2.0 * float(np.pi)
+        ωe_max = ωm_max * pp
         e_max  = ke * ωm_max          # max back-EMF amplitude [V]  (≈8.8 V Nanotec)
         lam = float(convergence_factor)
         k1  = lam * float(np.sqrt(e_max))
         k2  = (lam ** 2) * e_max / 2.0
+        # Motor-aware k2_min: proportional to Ke × ωe_max so the floor covers
+        # the EMF rate-of-change during a typical open-loop startup acceleration.
+        # Formula: 1.5 × Ke × ωe_max gives a physical bound that scales with
+        # the motor's EMF constant and rated electrical speed.
+        if k2_min is None:
+            k2_min_val = float(np.clip(1.5 * ke * ωe_max, 50.0, 20000.0))
+        else:
+            k2_min_val = float(np.clip(k2_min, 50.0, 20000.0))
         if apply:
             self.stsmo["k1"]        = k1
             self.stsmo["k2"]        = k2           # rated-speed reference value (informational)
@@ -1193,11 +1217,11 @@ class FOCController(BaseController):
             # increase chattering amplitude; smaller values cause z1 to lag.
             # The SOGI post-filter suppresses chattering, so 1.0 is optimal.
             self.stsmo["k2_factor"] = 1.0
-            self.stsmo["k2_min"]    = 500.0            # floor [V/s] — prevents zero at startup
+            self.stsmo["k2_min"]    = k2_min_val   # motor-aware floor [V/s]
             self._use_stsmo         = True
-        return {"k1": k1, "k2": k2, "e_max_v": e_max}
+        return {"k1": k1, "k2": k2, "e_max_v": e_max, "k2_min": k2_min_val}
 
-    def _update_stsmo_emf(self, dt: float) -> tuple[float, float, float]:
+    def _update_stsmo_emf(self, dt: float) -> tuple[float, float, float]:  # noqa: C901
         """Advance Super-Twisting SMO one step — backward-Euler integration.
 
         Uses a fully implicit (backward-Euler) discretisation of the current

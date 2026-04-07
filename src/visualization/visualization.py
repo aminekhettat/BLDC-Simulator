@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _apply_style(fig: Figure, style: "PlotStyle | None") -> None:
+def _apply_style(fig: Figure, style: PlotStyle | None) -> None:
     """Apply *style* to *fig* in-place; no-op when *style* is ``None``.
 
     The module is loaded directly from its file path (bypassing the package
@@ -80,7 +80,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
-        style: "PlotStyle | None" = None,
+        style: PlotStyle | None = None,
     ) -> Figure:
         """
         Create figure with 3-phase motor variables.
@@ -257,7 +257,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
-        style: "PlotStyle | None" = None,
+        style: PlotStyle | None = None,
     ) -> Figure:
         """
         Create dedicated current analysis plot.
@@ -317,7 +317,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
-        style: "PlotStyle | None" = None,
+        style: PlotStyle | None = None,
     ) -> Figure:
         """Create a dedicated PFC telemetry plot with PF, power, and command trends."""
         from matplotlib.ticker import MultipleLocator
@@ -385,7 +385,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
-        style: "PlotStyle | None" = None,
+        style: PlotStyle | None = None,
     ) -> Figure:
         """Create a dedicated efficiency plot with input/output/loss power trends."""
         from matplotlib.ticker import MultipleLocator
@@ -453,7 +453,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
-        style: "PlotStyle | None" = None,
+        style: PlotStyle | None = None,
     ) -> Figure:
         """Create a dedicated inverter-realism telemetry plot."""
         from matplotlib.ticker import MultipleLocator
@@ -568,7 +568,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
-        style: "PlotStyle | None" = None,
+        style: PlotStyle | None = None,
     ) -> Figure:
         """
         Create a multi-axis plot for an arbitrary list of variables.
@@ -660,7 +660,7 @@ class SimulationPlotter:
         grid_spacing: float | None = None,
         minor_grid: bool = False,
         grid_spacing_y: float | None = None,
-        style: "PlotStyle | None" = None,
+        style: PlotStyle | None = None,
     ) -> Figure:
         """Create a 4-panel overlay plot comparing measured vs true phase currents.
 

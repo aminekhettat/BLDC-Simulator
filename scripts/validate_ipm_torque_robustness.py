@@ -47,9 +47,9 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.control import FOCController, SVMGenerator                          # noqa: E402
-from src.core import BLDCMotor, MotorParameters, SimulationEngine            # noqa: E402
-from src.core.load_model import VariableLoad                                 # noqa: E402
+from src.control import FOCController, SVMGenerator  # noqa: E402
+from src.core import BLDCMotor, MotorParameters, SimulationEngine  # noqa: E402
+from src.core.load_model import VariableLoad  # noqa: E402
 
 # ── Output directory ──────────────────────────────────────────────────────────────────────────────────────
 OUT_DIR = ROOT / "sim_results_ipm_torque_robustness"
@@ -101,11 +101,12 @@ T_50   = 0.5 * T_NOM           # 1.23 Nm
 T_STEP1 = 10.0                 # [s] first step
 T_STEP2 = 20.0                 # [s] second step
 
-torque_func = (
-    lambda t: 0.0           if t < T_STEP1 else
-              T_50          if t < T_STEP2 else
-              T_NOM
-)
+def torque_func(t: float) -> float:
+    if t < T_STEP1:
+        return 0.0
+    if t < T_STEP2:
+        return T_50
+    return T_NOM
 
 # ── Speed reference (constant rated speed) ────────────────────────────────────────────────────────────────────────────
 SPEED_REF_RPM = rated_rpm          # 3000 RPM
@@ -521,7 +522,6 @@ def peak(x: np.ndarray) -> float:
 def compute_metrics(logs: dict) -> dict:
     """Return per-window metrics and a top-level pass/fail result."""
     config  = logs["config"]
-    t       = logs["t"]
     is_sens = config != "Measured"
 
     speed_err_rpm = logs["speed"] - SPEED_REF_RPM
@@ -760,7 +760,7 @@ all_logs:    list[dict] = []
 all_metrics: list[dict] = []
 
 print(f"\n{'='*70}")
-print(f"IPM SALIENT 48V — TORQUE ROBUSTNESS VALIDATION")
+print("IPM SALIENT 48V — TORQUE ROBUSTNESS VALIDATION")
 print(f"{'='*70}")
 print(f"Configs      : {', '.join(CONFIGS)}")
 print(f"T_sim        : {T_SIM:.0f} s  ({N_STEPS} steps, DT={DT*1e3:.2f} ms)")

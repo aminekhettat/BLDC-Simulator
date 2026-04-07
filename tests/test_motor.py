@@ -428,6 +428,7 @@ class TestDTArchitectureAndStability:
         update_applied_voltage, not the smaller inverse-Park value.
         """
         import math
+
         from src.control.transforms import clarke_transform, inverse_park
 
         svm = SVMGenerator(dc_voltage=48.0)
@@ -453,7 +454,6 @@ class TestDTArchitectureAndStability:
         update_applied_voltage the internal voltage registers hold the actual
         terminal voltage, not the smaller inverse-Park command.
         """
-        import math
         from src.control import FOCController
         from src.control.transforms import clarke_transform
 
@@ -475,6 +475,7 @@ class TestDTArchitectureAndStability:
         _v_alpha_prev, confirming the correct voltage source is wired in.
         """
         import math
+
         from src.control import FOCController
         from src.control.transforms import clarke_transform
 
@@ -507,6 +508,7 @@ class TestDTArchitectureAndStability:
         inverse-Park voltage mismatch fix.
         """
         import math
+
         from src.control import FOCController
         from src.control.transforms import clarke_transform
 

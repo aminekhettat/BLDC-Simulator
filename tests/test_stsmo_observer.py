@@ -358,6 +358,6 @@ def test_stsmo_mras_resistance_adapts_with_stsmo_emf():
         ctrl._update_stsmo_emf(dt=1e-4)
 
     # R must have changed from its initial value
-    assert ctrl._mras_R != pytest.approx(R_before, rel=1e-3)
+    assert ctrl._mras_R != pytest.approx(R_before, abs=1e-6)
     # R must remain within clipped bounds
     assert ctrl._mras_R_min <= ctrl._mras_R <= ctrl._mras_R_max

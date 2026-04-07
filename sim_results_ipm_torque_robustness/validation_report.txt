@@ -1,0 +1,58 @@
+======================================================================
+IPM SALIENT 48V — TORQUE ROBUSTNESS VALIDATION REPORT
+======================================================================
+Motor         : IPM Salient 48V (synthetic, Lq/Ld=2.0)
+Simulation    : 30 s  DT=0.20 ms
+Speed ref     : 3000 RPM
+Torque profile: 0 Nm → 1.23 Nm @ 10s → 2.46 Nm @ 20s
+
+Pass / Fail Criteria
+  Speed tracking error RMS  < 5.0 %  of rated speed
+  Angle error RMS            < 15 °  (sensorless)
+  Angle error peak           < 30 °  (sensorless)
+  Observer confidence mean   > 0.40 at full load (sensorless)
+
+──────────────────────────────────────────────────────────────────────
+Results by Configuration
+──────────────────────────────────────────────────────────────────────
+
+  Measured      [PASS]
+    no_load     [OK]  speed=0.07%  θ_rms=0.00°  θ_peak=0.00°  conf=1.000
+    half_load   [OK]  speed=0.08%  θ_rms=0.00°  θ_peak=0.00°  conf=1.000
+    full_load   [OK]  speed=0.09%  θ_rms=0.00°  θ_peak=0.00°  conf=1.000
+
+  PLL           [PASS]
+    no_load     [OK]  speed=0.07%  θ_rms=7.91°  θ_peak=8.69°  conf=0.984
+    half_load   [OK]  speed=0.07%  θ_rms=11.06°  θ_peak=12.22°  conf=0.984
+    full_load   [OK]  speed=0.08%  θ_rms=14.23°  θ_peak=15.99°  conf=0.984
+
+  SMO           [PASS]
+    no_load     [OK]  speed=0.07%  θ_rms=7.82°  θ_peak=10.38°  conf=0.984
+    half_load   [OK]  speed=0.07%  θ_rms=10.72°  θ_peak=13.36°  conf=0.985
+    full_load   [OK]  speed=0.08%  θ_rms=14.16°  θ_peak=18.15°  conf=0.984
+
+  STSMO         [PASS]
+    no_load     [OK]  speed=0.07%  θ_rms=7.91°  θ_peak=8.69°  conf=0.984
+    half_load   [OK]  speed=0.07%  θ_rms=11.06°  θ_peak=12.22°  conf=0.984
+    full_load   [OK]  speed=0.08%  θ_rms=14.23°  θ_peak=15.99°  conf=0.984
+
+  ActiveFlux    [PASS]
+    no_load     [OK]  speed=0.08%  θ_rms=13.93°  θ_peak=15.36°  conf=0.977
+    half_load   [OK]  speed=0.09%  θ_rms=12.20°  θ_peak=14.02°  conf=0.974
+    full_load   [OK]  speed=0.14%  θ_rms=10.69°  θ_peak=13.92°  conf=0.972
+
+──────────────────────────────────────────────────────────────────────
+OVERALL: ALL CONFIGURATIONS PASS ✅
+──────────────────────────────────────────────────────────────────────
+
+Output files:
+  /sessions/vibrant-kind-gates/mnt/BLDC-Simulator/sim_results_ipm_torque_robustness/
+    measured_results.png
+    pll_results.png
+    smo_results.png
+    stsmo_results.png
+    activeflux_results.png
+    comparison_speed.png
+    comparison_angle_error.png
+    validation_metrics.json
+    validation_report.txt

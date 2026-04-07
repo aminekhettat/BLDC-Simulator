@@ -327,6 +327,14 @@ class LabeledComboBox(QWidget):
         """Set selected text."""
         self.combo.setCurrentText(text)
 
+    def count(self) -> int:
+        """Return number of items in the combo box."""
+        return self.combo.count()
+
+    def itemText(self, index: int) -> str:
+        """Return text for item at the given index."""
+        return self.combo.itemText(index)
+
 
 class AccessibleTableWidget(QTableWidget):
     """

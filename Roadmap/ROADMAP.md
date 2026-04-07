@@ -24,6 +24,104 @@
 | **Auto-Tuning (Bounded)**   | ✅ Complete | Feb 2026           | Finite-budget PI parameter search                              |
 | **Auto-Tuning (Unbounded)** | ✅ Complete | **March 17, 2026** | **[NEW]** Iterative convergence guarantees                     |
 | **Field Weakening (FW)**    | ✅ Complete | **March 17, 2026** | **[NEW]** Headroom-based scheduling + loaded-point calibration |
+| **Auto-Calibration (Full)** | ✅ Complete | **April 7, 2026**  | **[NEW]** Single-click full calibration: observers + startup + IPM saliency |
+
+---
+
+## Completed Features (April 2026)
+
+### 🎯 Full Auto-Calibration Maturity — Single-Click Complete Tuning [NEW]
+
+**Objective**: Reach the maturity level where a single click on "Auto Calibrate" produces a physically complete, motor-specific configuration of every control parameter — observer gains, startup sequence, EEMF/SOGI toggles — with no manual entry required, including correct handling of IPM salient-pole motors.
+
+**Audit Finding** (prior to this release): The two-stage pipeline (Stage 1: FOC PI gains via frequency-domain search, Stage 2: field-weakening physics sweep) was already working. However, the post-calibration observer setup (`_apply_observer_calibration_to_gui`) had four critical gaps:
+1. No saliency detection — the same gain formulas applied to isotropic (Ld≈Lq) and salient (Lq/Ld>1.2) motors alike, producing a ~13° steady-state angle error for IPM motors at no-load.
+2. EEMF model and SOGI filter were never exposed in the GUI and never auto-enabled, even though the back-end support existed in `FOCController`.
+3. STSMO `k2_min` was hardcoded to 500 V/s regardless of the motor's rated back-EMF, which is too conservative for small motors and could be insufficient for large ones.
+4. Startup sequence (alignment, open-loop ramp, observer handoff) used hardcoded defaults with no connection to motor parameters.
+
+**What Was Delivered**:
+
+- ✅ **Saliency detection**: Any motor with `Lq/Ld > 1.2` is automatically classified as IPM-salient. The threshold is physics-based (non-zero reluctance torque starts affecting the reconstructed EMF at this ratio).
+- ✅ **EEMF Model GUI toggle** (`foc_smo_eemf_model`, Enabled/Disabled): New `LabeledComboBox` widget added to the Observer & Startup tab. Auto-set to "Enabled" by auto-calibration for salient motors. Wired into `_apply_to_simulation()` to call `FOCController.enable_eemf_model(Lq=lq_val)` when enabled.
+- ✅ **SOGI Filter GUI toggle** (`foc_smo_sogi_filter`, Enabled/Disabled): New `LabeledComboBox` widget. Auto-set to "Enabled" for salient motors. Wired into `_apply_to_simulation()` to call `FOCController.enable_sogi_filter(k=1.4142)` when enabled.
+- ✅ **IPM-specific SMO gains**: For salient motors, `k_slide` is reduced from `5×ωe_max` to `2×ωe_max` (the EEMF model handles the saliency angle bias; lower sliding gain reduces chattering) and `boundary` is widened from 0.04 to 0.08 rad (prevents the saliency harmonic from triggering excessive sign switching).
+- ✅ **Motor-aware STSMO convergence factor**: λ=3.0 for isotropic, λ=4.0 for salient (extra margin for the `(Lq-Ld)/Ld` harmonic in the reconstructed EMF).
+- ✅ **Motor-aware STSMO k2_min**: Formula `max(50, 1.5 × Ke × ωe_max) × saliency_multiplier` replaces the hardcoded 500 V/s. Scales with the motor's back-EMF constant and rated electrical speed. For IPM motors an extra 1.5× safety factor is applied. Validated: Nanotec 12V → 77 V/s, IPM Salient 48V → 232 V/s.
+- ✅ **Motor-aware ActiveFlux dc_cutoff**: Derived as `f_e_min / 10` where `f_e_min` is the electrical frequency at the observer handoff speed. Clipped to [0.05, 0.5] Hz. Ensures the integrator drift pole is well below the minimum working frequency.
+- ✅ **Full startup sequence auto-tuning** from motor parameters:
+  - Alignment duration: `max(50 ms, 5 × τe)` — settles the electrical transient
+  - Alignment current: `max(0.5 A, min(3.0 A, 0.1 × Vbus))` — locks rotor without risk
+  - Open-loop handoff speed: `ωm_threshold = 0.05 × Vbus / Ke` → RPM, rounded to 10 RPM — this is the speed at which back-EMF is reliably above 5% of bus voltage
+  - Open-loop initial speed: `min(30 RPM, 10% of handoff speed)`
+  - Open-loop ramp time: `max(0.1 s, handoff_rpm / rated_rpm × 0.5 s)`
+  - Open-loop Iq reference: `max(0.5 A, min(3.0 A, 0.05 × Vbus))`
+  - Observer handoff min_EMF: `0.03 × Vbus`
+  - Observer handoff min_speed: = handoff speed
+  - Observer handoff min_time: `0.8 × ramp_time`
+  - Startup sequence and transition automatically set to "Enabled"
+- ✅ **Motor-aware `calibrate_stsmo_gains_analytical()`**: Added optional `k2_min` parameter to `FOCController` method. When `None`, auto-computes `max(50, 1.5 × Ke × ωe_max)` internally. Backward-compatible (existing callers unaffected). Return dict now includes `k2_min` key.
+- ✅ **Bug fix**: `MotorParameters` defaults to `poles_pairs=4`. The `_apply_observer_calibration_to_gui()` method now explicitly passes `poles_pairs=pp` when constructing the transient motor instance, preventing incorrect PLL/SMO gain scaling for motors with ≠4 pole pairs (e.g., Nanotec DB57M012 with 5 pole pairs).
+
+**Validation Results**:
+
+Tested against two contrasting motor profiles:
+
+| Parameter              | Nanotec DB57M012 12V (isotropic) | IPM Salient 48V (Lq/Ld=2.0) |
+| ---------------------- | --------------------------------- | ----------------------------- |
+| Saliency ratio         | 1.0 → not salient                 | 2.0 → salient                 |
+| EEMF Model             | Disabled                          | **Enabled**                   |
+| SOGI Filter            | Disabled                          | **Enabled**                   |
+| PLL Kp / Ki            | 659.7 / 134336                    | 452.4 / 63166                 |
+| SMO Kslide             | 9163                              | **2513** (2×ωe_max)           |
+| SMO Boundary           | 0.04 rad                          | **0.08 rad**                  |
+| STSMO λ                | 3.0                               | **4.0**                       |
+| STSMO k1               | 9.61                              | 20.30                         |
+| STSMO k2_min           | 77 V/s                            | **232 V/s**                   |
+| ActiveFlux dc_cutoff   | 0.5 Hz                            | 0.5 Hz                        |
+| Align duration         | 50 ms                             | 50 ms                         |
+| Align current          | 1.2 A                             | 3.0 A                         |
+| Handoff speed          | 200 RPM                           | 280 RPM                       |
+| Open-loop Iq           | 0.6 A                             | 2.4 A                         |
+| Startup min EMF        | 0.36 V                            | 1.44 V                        |
+
+All parameter sanity checks passed. Physically derived from first principles with no hardcoded motor-specific constants.
+
+**Second pass — gaps closed (April 7, 2026 — same session)**:
+
+An audit revealed three further critical gaps: the two-stage calibration scripts were writing JSON files that the GUI never read back. They are now resolved:
+
+- ✅ **Stage 1 current/speed PI gains applied to GUI**: new `_load_stage1_gains_to_gui()` searches `data/tuning_sessions/auto_calibrated_*.json` for a file that matches the current motor (tolerance-based on R, L, Ke, Vnom, pp), then populates `foc_d_kp`, `foc_d_ki`, `foc_q_kp`, `foc_q_ki`, `foc_speed_kp`, `foc_speed_ki`. Graceful "no match" log message if no calibration file exists for the loaded motor.
+- ✅ **Stage 2 field-weakening parameters applied to GUI**: new `_load_stage2_fw_to_gui()` searches `data/tuning_sessions/fw_calibrated_*.json` with the same matching logic, then sets `foc_field_weakening_mode` (Enabled/Disabled based on `fw_needed`), `foc_field_weakening_start_speed`, `foc_field_weakening_gain`, `foc_field_weakening_max_id`, `foc_field_weakening_headroom_target`, and `foc_iq_limit` (from `I_rated` in motor_params_summary).
+- ✅ **D/Q cross-coupling decoupling auto-enabled**: `_apply_observer_calibration_to_gui()` now always sets both `foc_decouple_d_mode` and `foc_decouple_q_mode` to "Enabled". Cross-coupling compensation is beneficial for all FOC motors and is critical for IPM where Lq ≫ Ld produces large d/q current interference terms.
+- ✅ **PFC (Power Factor Controller) auto-calibrated**: The `PowerFactorController` existed fully implemented but with hardcoded defaults. Auto-calibration now derives:
+  - `max_compensation_var` = `clip(Vbus² / (2R) × 0.30, 100, 50 000)` [VAR] — reactive budget scales with the motor's power proxy; ranges from 180 VAR (Nanotec 12V/50W) to 50 kVAR (Motenergy 48V/5kW)
+  - `window_samples` = `clip(round(2 / (f_e_rated × dt_sim)), 8, 2000)` — covers exactly 2 electrical cycles at rated speed, ensuring the PF estimator averages over at least one full period of the fundamental (validated: 120–200 samples across all motor profiles)
+  - `pfc_mode` auto-set to "Enabled" for diagnostic visibility after calibration
+  - `kp = 0.10`, `ki = 1.0` remain at defaults (dimensionless gains, motor-independent)
+- ✅ `_on_auto_calib_step2_finished()` updated to call all three methods in order: `_load_stage1_gains_to_gui()` → `_load_stage2_fw_to_gui()` → `_apply_observer_calibration_to_gui()`.
+
+**Validated**:
+- Motenergy ME1718 48V and Innotec 255-EZS48-160: both match Stage-1 and Stage-2 files correctly → gains and FW params loaded
+- Nanotec 12V and IPM Salient 48V: no existing calibration files → graceful "no match" log, gains unchanged pending a calibration run on those profiles
+
+**Remaining Steps to Full Maturity** (future work — see Planned Features):
+
+- [ ] **Motor parameter self-identification**: Measure R, L, Ke from standstill test pulses (removes need to know specs in advance)
+- [x] **Observer auto-selection**: ✅ Done — "Auto (recommend from motor)" added to GUI; `_recommend_observer()` picks ActiveFlux/PLL/SMO from saliency ratio and ωe_max (April 7, 2026)
+- [ ] **Sensorless blend threshold tuning**: Auto-set `min_confidence` from motor electrical noise floor (currently default 0.7)
+- [ ] **Temperature adaptation**: Track Ke and R drift with junction temperature; compensate observer gains online
+- [ ] **MTPA operating point auto-calibration**: For IPM motors, compute the `id*` / `iq*` split that maximises torque per ampere (replaces hardcoded `id_ref=0`)
+- [ ] **Hardware-in-loop validation**: Confirm calibrated values produce the expected transient on real motor hardware
+
+**File Changes**:
+
+- `src/ui/main_window.py`:
+  - `_apply_observer_calibration_to_gui()`: Full rewrite — saliency detection, IPM-specific gains, motor-aware k2_min, ActiveFlux dc_cutoff, complete startup auto-tuning, correct `poles_pairs` fix
+  - Added `foc_smo_eemf_model` and `foc_smo_sogi_filter` `LabeledComboBox` widgets to Observer group
+  - `_apply_to_simulation()`: Wire new EEMF/SOGI toggles to `enable_eemf_model()` / `enable_sogi_filter()` calls
+- `src/control/foc_controller.py`:
+  - `calibrate_stsmo_gains_analytical()`: Added `k2_min` parameter with motor-aware auto-formula; return dict extended with `k2_min` key
 
 ---
 
@@ -269,18 +367,86 @@ Field weakening injection negative eighteen point five Amperes. System stable."
 
 **Dependencies**: Completed auto-tuning convergence (✅ done)
 
+### Phase 1b: Auto-Calibration Maturity — Remaining Steps (Q2–Q3 2026)
+
+**Objective**: Close the remaining gaps between auto-calibration and fully autonomous self-commissioning, so the system can determine all control parameters from a motor with no prior specification sheet.
+
+**Step 1 — Observer Auto-Selection** ✅ COMPLETED (April 7, 2026)
+
+The user may now choose between a specific observer or the new **"Auto (recommend from motor)"** option in the Angle Observer combo box.  Default remains **"Measured"** (sensored, always safe).  When Auto is selected and Auto Calibrate runs:
+
+- `_recommend_observer(is_salient, omega_e_max, v_bus, ke)` applies the following decision tree:
+  1. `is_salient` (Lq/Ld > 1.2) → **ActiveFlux** (immune to cross-saturation; handles reluctance torque in FW)
+  2. Isotropic + `ωe_max > 1 500 rad/s` → **PLL** (clean sinusoidal back-EMF at high speed)
+  3. Isotropic + lower speed → **SMO** (robust at moderate back-EMF levels)
+- The combo is programmed to the recommended observer; startup observer is set to **STSMO** (unconditionally stable) for all sensorless modes.
+- A user-visible log line confirms the selection and the reasoning (`saliency_ratio`, `ωe_max`).
+- If a simulation is started while the combo still shows "Auto" (i.e., Auto Calibrate was never run), the engine falls back to "Measured" with a logger warning — the combo is NOT overwritten so the user can still run Auto Calibrate later.
+- `_on_observer_mode_changed` shows all four observer parameter groups when "Auto" is active, so the user can review auto-calibrated gains before running.
+
+Validation — expected observer recommendations:
+
+| Profile | Lq/Ld | ωe_max (rad/s) | Expected | Result |
+|---|---|---|---|---|
+| Nanotec DB57M012 12V (pp=5, 3500 RPM) | 1.0 | ~1 833 | PLL | ✅ |
+| IPM Salient 48V (pp=4, 3000 RPM) | 2.0 | ~1 257 | ActiveFlux | ✅ |
+
+**Step 2 — Sensorless Blend Threshold Auto-Tuning** (Q2 2026)
+
+The observer handoff criteria (`min_confidence`, `confidence_hysteresis`, `fallback_hold_s`) are currently at fixed defaults (0.70 / 0.05 / 0.1 s). These should be derived from the electrical noise floor:
+- `min_confidence = 1 - σ_EMF / E_rated` where σ_EMF is the EMF reconstruction RMS noise estimated from motor R, L, and PWM ripple
+- `confidence_hysteresis = 0.5 × (1 - min_confidence)` to prevent hunting
+
+**Step 3 — Motor Parameter Self-Identification** (Q3 2026)
+
+Eliminate the need to enter motor specs manually by performing a standstill commissioning test:
+- Inject DC pulses to measure phase resistance R (voltage/current ratio at steady state)
+- Inject a pulsed voltage step and measure di/dt to estimate phase inductance L
+- Rotate at low forced speed and measure back-EMF amplitude to compute Ke
+- Apply d/q current steps to estimate Ld and Lq separately (for IPM saliency ratio)
+
+Deliverable: a `self_identify_motor()` script that saves a motor profile JSON and immediately feeds the auto-calibration pipeline.
+
+**Step 4 — MTPA Auto-Calibration for IPM Motors** (Q3 2026)
+
+For IPM motors, maximum torque per ampere (MTPA) requires `id ≠ 0` at any operating point.  The optimal split is:
+`id_mtpa = Ψpm / (2·(Lq−Ld)) - sqrt(Ψpm² + 8·(Lq−Ld)²·iq²) / (4·(Lq−Ld))`
+
+Auto-calibration should:
+1. Compute the MTPA locus analytically from Ld, Lq, Ψpm
+2. Pre-populate a lookup table (RPM → id*, iq*) in the GUI
+3. Enable MTPA mode automatically for motors with Lq/Ld > 1.2
+
+**Step 5 — Temperature-Adaptive Observer Gains** (Q3 2026)
+
+Ke and R both drift with winding temperature (≈−0.1%/°C for Ke, ≈+0.4%/°C for R on copper windings). At rated load, this can shift the SMO boundary layer by 15–20%.  Add:
+- Real-time R estimation from measured `vd - Ld·did/dt` (at low speed where the EMF is negligible)
+- Real-time Ke estimation from measured EMF magnitude at known speed
+- Online update of PLL, SMO, STSMO gain formulas from the estimated parameters
+
+**Step 6 — Hardware-In-Loop Validation** (Q2–Q3 2026)
+
+Confirm that the auto-calibrated gains produce correct transient behavior on physical hardware:
+- Validate alignment torque (align_current produces enough holding force)
+- Validate ramp synchronism (no slip during open-loop ramp)
+- Validate observer handoff (speed error <5% at handoff)
+- Validate steady-state tracking (θ_rms < 10°, ωm_error < 2%) at rated torque
+
+**Dependencies**: Phase 1 hardware testbed stand-up
+
 ### Phase 2: Advanced Control Algorithms (Q3 2026)
 
 **Objective**: Extend control capabilities beyond basic FOC.
 
-- [ ] Sensorless rotor position estimation (back-EMF observer)
-- [ ] Advanced FW enhancements (voltage-loop refinement, MTPA coupling, and efficiency-aware scheduling)
+- [x] Sensorless rotor position estimation (PLL, SMO, STSMO, ActiveFlux observers — complete)
+- [x] Field weakening headroom-based control — complete
+- [ ] Advanced FW enhancements (MTPA coupling, efficiency-aware scheduling)
 - [ ] Multi-zone speed control (low/mid/high speed strategies)
 - [ ] Adaptive gain scheduling (load-dependent PI parameters)
 - [ ] Power factor correction (PFC) module
 - [ ] Harmonic distortion analysis and mitigation
 
-**Dependencies**: Hardware validation phase
+**Dependencies**: Phase 1b auto-calibration maturity (partial), hardware validation
 
 ### Phase 3: Grid Integration (Q4 2026)
 
@@ -312,12 +478,17 @@ Field weakening injection negative eighteen point five Amperes. System stable."
 
 ## Known Limitations
 
-### Current (March 2026)
+### Current (April 2026)
 
 1. **Unbounded mode trial efficiency**: Convergence at 71 trials for all motors suggests room for scaling analysis
 2. **GPU acceleration**: Auto-tuning runs on CPU only; no CUDA parallelization of trials yet
 3. **Custom convergence criteria**: Users cannot define custom acceptance functions (hardcoded gates)
-4. **Motor coverage**: Only three motor profiles tuned (Innotec, ME1718, ME1719)
+4. **Motor coverage**: PI auto-tuning validated on three isotropic profiles (Innotec, ME1718, ME1719); IPM salient profile coverage pending hardware validation
+5. **Observer auto-selection**: ✅ Resolved — "Auto (recommend from motor)" option added to Angle Observer combo; `_recommend_observer()` selects ActiveFlux for IPM salient motors, PLL for high-speed isotropic, SMO otherwise. Default remains "Measured". (Phase 1b Step 1 — April 7, 2026)
+6. **Self-identification**: Motor parameters (R, L, Ke, Ld, Lq) must still be entered manually — standstill commissioning not yet implemented (Phase 1b Step 3)
+7. **MTPA not yet automated**: For IPM motors, the MTPA id*/iq* locus must still be configured manually; auto-MTPA calibration is planned (Phase 1b Step 4)
+8. **Temperature compensation**: Observer gains do not adapt to winding temperature drift; online R/Ke estimation planned (Phase 1b Step 5)
+9. **Calibration coverage**: Nanotec 12V and IPM Salient 48V profiles do not yet have `auto_calibrated_*.json` / `fw_calibrated_*.json` files; current/speed PI and FW parameters fall back to defaults for these motors until the calibration scripts are run against them
 
 ### Simulation (Inherent)
 
@@ -480,6 +651,6 @@ pytest tests/test_baseline_integrity.py \
 
 ---
 
-**Roadmap Last Updated**: March 17, 2026  
-**Next Review Date**: April 15, 2026  
+**Roadmap Last Updated**: April 7, 2026
+**Next Review Date**: May 1, 2026
 **Maintained By**: BLDC Control Team

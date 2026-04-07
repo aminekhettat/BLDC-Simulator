@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Favicon 32x32 — fond violet arrondi, flèche blanche -->
+  <!-- Fond carré arrondi -->
+  <rect x="0" y="0" width="32" height="32" rx="6" fill="#534AB7"/>
+  <!-- Hexagone mini centré -->
+  <polygon points="16,4 26,9 26,22 16,27 6,22 6,9" fill="#534AB7" stroke="#7F77DD" stroke-width="0.8"/>
+  <!-- Arcs rotation fine -->
+  <path d="M16,7 A9,9 0 0 1 25,16"  fill="none" stroke="#EEEDFE" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M25,16 A9,9 0 0 1 16,25" fill="none" stroke="#EEEDFE" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M16,25 A9,9 0 0 1 7,16"  fill="none" stroke="#EEEDFE" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Pointe flèche minimaliste -->
+  <polygon points="16,7 13,11 19,11" fill="#EEEDFE" transform="rotate(-25,16,7)"/>
+  <!-- Hub -->
+  <circle cx="16" cy="16" r="2.5" fill="#EEEDFE"/>
+</svg>

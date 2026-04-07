@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="400" height="120">
+  <!-- Badge PyPI / README horizontal -->
+  <!-- Fond carré arrondi violet à gauche -->
+  <rect x="0" y="0" width="120" height="120" rx="16" fill="#534AB7"/>
+  <!-- Hexagone mini dans le carré -->
+  <polygon points="60,14 96,34 96,76 60,96 24,76 24,34" fill="#534AB7" stroke="#7F77DD" stroke-width="1.5"/>
+  <!-- Arcs -->
+  <path d="M60,22 A38,38 0 0 1 98,55"  fill="none" stroke="#EEEDFE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M98,55 A38,38 0 0 1 60,90"  fill="none" stroke="#EEEDFE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M60,90 A38,38 0 0 1 22,55"  fill="none" stroke="#EEEDFE" stroke-width="6" stroke-linecap="round"/>
+  <polygon points="60,22 52,36 68,36" fill="#EEEDFE" transform="rotate(-28,60,22)"/>
+  <circle cx="60" cy="55" r="7" fill="#EEEDFE"/>
+  <!-- Partie texte à droite -->
+  <text x="148" y="52" font-family="Arial, Helvetica, sans-serif"
+        font-size="30" font-weight="700" letter-spacing="4" fill="#534AB7">SPINOTOR</text>
+  <text x="148" y="80" font-family="Arial, Helvetica, sans-serif"
+        font-size="13" fill="#888780">physics-informed motor simulator</text>
+</svg>

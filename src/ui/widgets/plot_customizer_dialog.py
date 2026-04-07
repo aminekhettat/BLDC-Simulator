@@ -43,7 +43,6 @@ from typing import Any
 
 import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.figure import Figure
 
 logger = logging.getLogger(__name__)
@@ -181,7 +180,7 @@ class PlotStyle:
         return dataclasses.asdict(self)
 
     @classmethod
-    def from_preset(cls, preset: ExportPreset) -> "PlotStyle":
+    def from_preset(cls, preset: ExportPreset) -> PlotStyle:
         return cls(
             figsize=preset.figsize,
             dpi=preset.dpi,
@@ -204,7 +203,7 @@ class PlotStyleApplicator:
     """
 
     @staticmethod
-    def apply(fig: Figure, style: PlotStyle) -> None:
+    def apply(fig: Figure, style: PlotStyle) -> None:  # noqa: C901
         """
         Apply *style* to *fig* in-place.
 
@@ -248,7 +247,7 @@ class PlotStyleApplicator:
             # Line widths and colors
             for line in ax.get_lines():
                 line.set_linewidth(style.linewidth)
-                lbl = line.get_label()
+                lbl: str = str(line.get_label())
                 if lbl and lbl in style.trace_colors:
                     line.set_color(style.trace_colors[lbl])
                 if lbl and lbl in style.trace_linestyles:
@@ -272,12 +271,12 @@ class PlotStyleApplicator:
 # ── Qt dialog ─────────────────────────────────────────────────────────────────
 
 try:
-    from PySide6.QtCore import Qt
+    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
     from PySide6.QtWidgets import (
+        QCheckBox,
         QColorDialog,
         QComboBox,
         QDialog,
-        QDialogButtonBox,
         QDoubleSpinBox,
         QFileDialog,
         QFormLayout,
@@ -288,15 +287,11 @@ try:
         QPushButton,
         QScrollArea,
         QSizePolicy,
-        QSlider,
         QSpinBox,
-        QSplitter,
         QTabWidget,
         QVBoxLayout,
         QWidget,
-        QCheckBox,
     )
-    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
     _QT_AVAILABLE = True
 except ImportError:
@@ -493,7 +488,7 @@ if _QT_AVAILABLE:
             seen: set[str] = set()
             for ax in axes:
                 for line in ax.get_lines():
-                    lbl = line.get_label()
+                    lbl: str = str(line.get_label())
                     if not lbl or lbl.startswith("_") or lbl in seen:
                         continue
                     seen.add(lbl)
@@ -639,7 +634,7 @@ if _QT_AVAILABLE:
                 self._lw_spin.setValue(p.linewidth)
                 self._export_dpi_spin.setValue(p.dpi)
 
-        def _pick_color(self, label: str, btn: "QPushButton") -> None:
+        def _pick_color(self, label: str, btn: QPushButton) -> None:
             from PySide6.QtGui import QColor
 
             current_hex = (

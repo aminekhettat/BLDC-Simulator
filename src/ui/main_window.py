@@ -12,7 +12,7 @@ Provides comprehensive GUI for:
 - Data export
 
 :author: BLDC Control Team
-:version: 0.10.1
+:version: 0.11.0
 """
 
 import csv
@@ -82,7 +82,6 @@ from src.utils.config import (
     FOC_FIELD_WEAKENING_PARAMS,
     FOC_STARTUP_PARAMS,
     MOTOR_PROFILES_DIR,
-    PLOT_STYLE,
     SIMULATION_PARAMS,
     VF_CONTROLLER_PARAMS,
 )
@@ -779,7 +778,7 @@ class BLDCMotorControlGUI(QMainWindow):
         super().__init__()
 
         APP_NAME = "BLIND SYSTEMS SPINOTOR"
-        APP_VERSION = "0.10.1"
+        APP_VERSION = "0.11.0"
 
         self.setWindowTitle(f"{APP_NAME} - SPINOTOR (v{APP_VERSION})")
         self.setGeometry(100, 100, 1500, 950)
@@ -956,10 +955,14 @@ class BLDCMotorControlGUI(QMainWindow):
         self.status_bar_dt.setAccessibleDescription("Integration step size in seconds.")
         self.status_bar_tau_e = QLabel("τ_e: -- s")
         self.status_bar_tau_e.setAccessibleName("Electrical time constant")
-        self.status_bar_tau_e.setAccessibleDescription("Motor electrical time constant L/R in seconds.")
+        self.status_bar_tau_e.setAccessibleDescription(
+            "Motor electrical time constant L/R in seconds."
+        )
         self.status_bar_tau_m = QLabel("τ_m: -- s")
         self.status_bar_tau_m.setAccessibleName("Mechanical time constant")
-        self.status_bar_tau_m.setAccessibleDescription("Motor mechanical time constant J/b in seconds.")
+        self.status_bar_tau_m.setAccessibleDescription(
+            "Motor mechanical time constant J/b in seconds."
+        )
         self.status_bar_stability = QLabel("RK4: --")
         self.status_bar_stability.setStyleSheet("color: #455A64;")
         self.status_bar_stability.setAccessibleName("RK4 stability advisory")
@@ -968,19 +971,29 @@ class BLDCMotorControlGUI(QMainWindow):
         )
         self.status_bar_state = QLabel("State: Ready")
         self.status_bar_state.setAccessibleName("Simulation state")
-        self.status_bar_state.setAccessibleDescription("Current simulation state: Ready, Running, or Stopped.")
+        self.status_bar_state.setAccessibleDescription(
+            "Current simulation state: Ready, Running, or Stopped."
+        )
         self.status_bar_time_remaining = QLabel("Remaining: -- s")
         self.status_bar_time_remaining.setAccessibleName("Estimated time remaining")
-        self.status_bar_time_remaining.setAccessibleDescription("Estimated seconds remaining to complete the simulation.")
+        self.status_bar_time_remaining.setAccessibleDescription(
+            "Estimated seconds remaining to complete the simulation."
+        )
         self.status_bar_cpu_load = QLabel("CPU: -- %")
         self.status_bar_cpu_load.setAccessibleName("CPU load")
-        self.status_bar_cpu_load.setAccessibleDescription("Percentage of one CPU core consumed by the simulation thread.")
+        self.status_bar_cpu_load.setAccessibleDescription(
+            "Percentage of one CPU core consumed by the simulation thread."
+        )
         self.status_bar_task = QLabel("Task: None")
         self.status_bar_task.setAccessibleName("Active task")
-        self.status_bar_task.setAccessibleDescription("Name of the currently running background task.")
+        self.status_bar_task.setAccessibleDescription(
+            "Name of the currently running background task."
+        )
         self.status_bar_backend = QLabel("Backend: --")
         self.status_bar_backend.setAccessibleName("Compute backend")
-        self.status_bar_backend.setAccessibleDescription("Active computation backend, e.g. NumPy or CuPy.")
+        self.status_bar_backend.setAccessibleDescription(
+            "Active computation backend, e.g. NumPy or CuPy."
+        )
 
         status_bar = self.statusBar()
         assert status_bar is not None
@@ -1245,7 +1258,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         html = (
             "<h1>BLIND SYSTEMS SPINOTOR - User Manual</h1>"
-            "<p><b>Version:</b> 0.10.1</p>"
+            "<p><b>Version:</b> 0.11.0</p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<h2>1. Getting Started</h2>"
             "<p>Configure motor, load and controller parameters, then start simulation.</p>"
@@ -1266,7 +1279,7 @@ class BLDCMotorControlGUI(QMainWindow):
         printer.setOutputFileName(str(pdf_path))
         document = QTextDocument()
         document.setHtml(html)
-        document.print(printer)
+        document.print_(printer)
         return pdf_path
 
     def _open_user_manual_pdf(self):
@@ -1645,7 +1658,7 @@ class BLDCMotorControlGUI(QMainWindow):
     def _show_about(self):
         """Show about dialog."""
         about_text = (
-            "<h2>BLIND SYSTEMS SPINOTOR v0.10.1</h2>"
+            "<h2>BLIND SYSTEMS SPINOTOR v0.11.0</h2>"
             "<p><b>Advanced SPINOTOR</b></p>"
             "<p><b>Author:</b> Amine Khettat</p>"
             "<p><b>Copyright:</b> 2026 BLIND SYSTEMS</p>"
@@ -2425,14 +2438,23 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.foc_angle_observer_mode = LabeledComboBox(
             "Angle Observer",
-            items=["Measured", "PLL", "SMO", "STSMO", "ActiveFlux"],
+            items=["Measured", "PLL", "SMO", "STSMO", "ActiveFlux",
+                   "Auto (recommend from motor)"],
             description=(
                 "Select rotor electrical angle source. "
-                "Measured: direct sensor angle. "
-                "PLL: phase-locked loop on back-EMF. "
-                "SMO: first-order sliding-mode observer. "
-                "STSMO: Super-Twisting SMO with backward-Euler integration (best accuracy, unconditionally stable). "
-                "ActiveFlux: Boldea active-flux integrator (robust in field-weakening)."
+                "Measured: direct sensor (always safe — default). "
+                "PLL: phase-locked loop on back-EMF (best at high speed). "
+                "SMO: first-order sliding-mode observer (good all-round sensorless). "
+                "STSMO: Super-Twisting SMO with backward-Euler integration "
+                "(best accuracy, unconditionally stable). "
+                "ActiveFlux: Boldea active-flux integrator (robust in field-weakening, "
+                "recommended for IPM salient motors). "
+                "Auto (recommend from motor): Auto-Calibrate will analyse motor saliency "
+                "and rated speed, "
+                "then automatically select and configure the most appropriate observer. "
+                "Default is Measured for safety; change to Auto before clicking Auto Calibrate "
+                "to let the calibration pipeline choose the best observer "
+                "for the loaded motor profile."
             ),
         )
         self.foc_observer_group_layout.addWidget(self.foc_angle_observer_mode)
@@ -2443,7 +2465,8 @@ class BLDCMotorControlGUI(QMainWindow):
             description=(
                 "Integration method for the STSMO current estimator. "
                 "Backward Euler is unconditionally stable for any gain and is the default. "
-                "Forward Euler requires k1 < L/(√2·dt) and can become unstable at high gains or low inductance."
+                "Forward Euler requires k1 < L/(√2·dt) and can become unstable "
+                "at high gains or low inductance."
             ),
         )
         self.foc_solver_mode.setCurrentText("Backward Euler (stable)")
@@ -2472,6 +2495,34 @@ class BLDCMotorControlGUI(QMainWindow):
             description="Integral gain for back-EMF PLL angle observer.",
         )
         self.foc_observer_group_layout.addWidget(self.foc_pll_ki)
+
+        # ── EEMF Model toggle (IPM saliency compensation) ─────────────────────
+        self.foc_smo_eemf_model = LabeledComboBox(
+            "EEMF Model (IPM)",
+            items=["Disabled", "Enabled"],
+            description=(
+                "Enable Extended EMF (EEMF) model for IPM salient-pole motors "
+                "(Chen 2003). Uses Lq instead of Ld in the di/dt term, removing "
+                "the iq-dependent saliency bias (~13° at no-load for Lq/Ld=2). "
+                "Auto-enabled by auto-calibration when Lq/Ld > 1.2."
+            ),
+        )
+        self.foc_observer_group_layout.addWidget(self.foc_smo_eemf_model)
+
+        # ── SOGI Filter toggle (zero-phase EMF bandpass) ──────────────────────
+        self.foc_smo_sogi_filter = LabeledComboBox(
+            "SOGI Filter",
+            items=["Disabled", "Enabled"],
+            description=(
+                "Enable Second-Order Generalized Integrator (SOGI) bandpass filter "
+                "for back-EMF reconstruction. Replaces the fixed-frequency LPF with "
+                "a resonant filter that tracks ωe: zero phase lag at the electrical "
+                "frequency vs ~14° lag from the standard LPF at 3000 RPM. "
+                "Recommended for IPM motors and high-speed sensorless operation. "
+                "Auto-enabled by auto-calibration when Lq/Ld > 1.2."
+            ),
+        )
+        self.foc_observer_group_layout.addWidget(self.foc_smo_sogi_filter)
 
         self.foc_smo_k_slide = LabeledSpinBox(
             "SMO Kslide",
@@ -2577,7 +2628,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.foc_stsmo_autocalib_btn = AccessibleButton(
             "Auto-calibrate STSMO",
-            description=(
+            tooltip=(
                 "Compute ST-SMO gains analytically from motor parameters and rated speed. "
                 "Sets k1 = λ·√(ke·ωm_max), k2_factor = 1.0 (Levant condition). "
                 "Run this once after setting motor parameters before starting the simulation."
@@ -2598,7 +2649,8 @@ class BLDCMotorControlGUI(QMainWindow):
             description=(
                 "Drift-correction pole frequency for the Active Flux integrator [Hz]. "
                 "Must be much lower than the minimum electrical frequency (typically < 1 Hz). "
-                "Lower values → less drift suppression; higher values → phase distortion at low speed."
+                "Lower values → less drift suppression; "
+                "higher values → phase distortion at low speed."
             ),
         )
         self.foc_observer_group_layout.addWidget(self.foc_af_dc_cutoff)
@@ -2727,13 +2779,19 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self.foc_startup_initial_observer = LabeledComboBox(
             "Startup Initial Observer",
-            items=["Measured", "PLL", "SMO", "STSMO", "ActiveFlux"],
+            items=["Measured", "PLL", "SMO", "STSMO", "ActiveFlux",
+                   "Auto (recommend from motor)"],
             description=(
                 "Observer mode used during the startup phase before handoff to the main observer. "
-                "Measured: safe choice when a position sensor is available. "
+                "Measured: safe choice when a position sensor is available (default). "
                 "PLL or SMO: suitable when back-EMF is already above the noise floor. "
                 "STSMO: recommended for sensorless startups — backward-Euler guarantees stability. "
-                "ActiveFlux: use when field-weakening starts immediately at low speed."
+                "ActiveFlux: use when field-weakening starts immediately at low speed. "
+                "Auto (recommend from motor): mirrors the main observer selection "
+                "made by Auto Calibrate — "
+                "for sensorless startup the calibration pipeline will set STSMO "
+                "(unconditionally stable), "
+                "or Measured when a sensor is detected."
             ),
         )
         self.foc_startup_group_layout.addWidget(self.foc_startup_initial_observer)
@@ -2864,7 +2922,8 @@ class BLDCMotorControlGUI(QMainWindow):
         self.inverter_enable_dead_time.setChecked(False)
         self.inverter_enable_dead_time.setAccessibleName("Enable dead-time distortion")
         self.inverter_enable_dead_time.setAccessibleDescription(
-            "When checked, simulates gate dead-time as a voltage distortion proportional to current sign."
+            "When checked, simulates gate dead-time as a voltage distortion "
+            "proportional to current sign."
         )
         inverter_layout.addWidget(self.inverter_enable_dead_time)
 
@@ -2912,7 +2971,8 @@ class BLDCMotorControlGUI(QMainWindow):
         self.inverter_enable_thermal.setChecked(False)
         self.inverter_enable_thermal.setAccessibleName("Enable thermal coupling")
         self.inverter_enable_thermal.setAccessibleDescription(
-            "When checked, tracks junction temperature and scales device resistance with temperature."
+            "When checked, tracks junction temperature and scales device resistance "
+            "with temperature."
         )
         inverter_layout.addWidget(self.inverter_enable_thermal)
 
@@ -3422,7 +3482,11 @@ class BLDCMotorControlGUI(QMainWindow):
         self.bridge_canvas = FigureCanvas(self.bridge_figure)
         self.bridge_ax = self.bridge_figure.add_subplot(111)
         self.bridge_ax.set_axis_off()
-        current_sense_layout.addWidget(self.bridge_canvas, 1)
+        _bridge_container = QWidget()
+        _bridge_vbox = QVBoxLayout(_bridge_container)
+        _bridge_vbox.setContentsMargins(0, 0, 0, 0)
+        _bridge_vbox.addWidget(self.bridge_canvas)
+        current_sense_layout.addWidget(_bridge_container)
 
         self.current_sense_status_label = QLabel(
             "Current sensing disabled. Enable to expose measured-vs-true current telemetry."
@@ -3656,7 +3720,8 @@ class BLDCMotorControlGUI(QMainWindow):
         _adv_scroll.setWidgetResizable(True)
         _adv_scroll.setAccessibleName("Advanced settings scroll area")
         _adv_scroll.setAccessibleDescription(
-            "Inverter non-idealities, current sensing, MCU budget, PFC, and hardware backend settings."
+            "Inverter non-idealities, current sensing, MCU budget, PFC, "
+            "and hardware backend settings."
         )
         self._advanced_scroll = _adv_scroll
 
@@ -3862,7 +3927,8 @@ class BLDCMotorControlGUI(QMainWindow):
         self.plot_minor_grid_checkbox = QCheckBox("Minor Grid")
         self.plot_minor_grid_checkbox.setAccessibleName("Show minor grid on plots")
         self.plot_minor_grid_checkbox.setAccessibleDescription(
-            "When checked, draws a finer minor grid between major tick lines on all generated plots."
+            "When checked, draws a finer minor grid between major tick lines "
+            "on all generated plots."
         )
         self.plot_minor_grid_checkbox.setChecked(False)
         grid_layout.addWidget(self.plot_minor_grid_checkbox)
@@ -3975,13 +4041,19 @@ class BLDCMotorControlGUI(QMainWindow):
         customize_layout = QHBoxLayout()
 
         _cust_specs = [
-            ("Customize 3-Phase", "_last_fig_3phase", "Open style editor for the 3-phase overview plot"),
-            ("Customize Currents", "_last_fig_currents", "Open style editor for the current analysis plot"),
+            ("Customize 3-Phase", "_last_fig_3phase",
+             "Open style editor for the 3-phase overview plot"),
+            ("Customize Currents", "_last_fig_currents",
+             "Open style editor for the current analysis plot"),
             ("Customize PFC", "_last_fig_pfc", "Open style editor for the PFC analysis plot"),
-            ("Customize Efficiency", "_last_fig_efficiency", "Open style editor for the efficiency analysis plot"),
-            ("Customize Inverter", "_last_fig_inverter", "Open style editor for the inverter analysis plot"),
-            ("Customize Meas/True", "_last_fig_measured_vs_true", "Open style editor for the measured-vs-true current plot"),
-            ("Customize Selected", "_last_fig_custom", "Open style editor for the custom multi-axis plot"),
+            ("Customize Efficiency", "_last_fig_efficiency",
+             "Open style editor for the efficiency analysis plot"),
+            ("Customize Inverter", "_last_fig_inverter",
+             "Open style editor for the inverter analysis plot"),
+            ("Customize Meas/True", "_last_fig_measured_vs_true",
+             "Open style editor for the measured-vs-true current plot"),
+            ("Customize Selected", "_last_fig_custom",
+             "Open style editor for the custom multi-axis plot"),
         ]
         for _label, _attr, _desc in _cust_specs:
             _btn = AccessibleButton(_label, _desc)
@@ -4185,7 +4257,8 @@ class BLDCMotorControlGUI(QMainWindow):
         container = QWidget()
         container.setAccessibleName("Motor and Drive configuration")
         container.setAccessibleDescription(
-            "Configure motor electrical and mechanical parameters, load profile, and supply voltage."
+            "Configure motor electrical and mechanical parameters, "
+            "load profile, and supply voltage."
         )
         sub_tabs = AccessibleTabWidget()
         sub_tabs.setAccessibleName("Motor and Drive sub-tabs")
@@ -4302,7 +4375,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
     # ── Observer context-sensitive visibility ──────────────────────────────────
 
-    def _on_observer_mode_changed(self, mode: str) -> None:
+    def _on_observer_mode_changed(self, mode: str) -> None:  # noqa: C901
         """Show/hide observer-specific parameter widgets based on selected observer mode.
 
         Called whenever the Angle Observer dropdown changes. Groups are sub-sections
@@ -4334,8 +4407,13 @@ class BLDCMotorControlGUI(QMainWindow):
         elif mode == "ActiveFlux":
             for w in _af_widgets:
                 w.show()
+        elif mode == "Auto (recommend from motor)":
+            # Show all observer parameters so the user can review the
+            # auto-calibrated gains before running the simulation.
+            # The actual observer will be selected when Auto Calibrate runs.
+            for w in _pll_widgets + _smo_widgets + _stsmo_widgets + _af_widgets:
+                w.show()
         # "Measured" → all hidden (no observer params needed)
-        # "Measured" mode: no observer parameters shown
 
     def _on_calib_profile_changed(self, profile_name: str) -> None:
         """Update session and output path labels when profile selection changes."""
@@ -4430,7 +4508,7 @@ class BLDCMotorControlGUI(QMainWindow):
             return
 
         raw = self.calib_process.readAllStandardOutput().data()
-        text = raw.decode("utf-8", errors="replace")
+        text = bytes(raw).decode("utf-8", errors="replace")
         for line in text.splitlines():
             self.calib_log.append(line)
 
@@ -4563,7 +4641,7 @@ class BLDCMotorControlGUI(QMainWindow):
         if self.auto_calib_process is None:
             return
         raw = self.auto_calib_process.readAllStandardOutput().data()
-        text = raw.decode("utf-8", errors="replace")
+        text = bytes(raw).decode("utf-8", errors="replace")
         for line in text.splitlines():
             self.calib_log.append(line)
         sb = self.calib_log.verticalScrollBar()
@@ -4621,13 +4699,18 @@ class BLDCMotorControlGUI(QMainWindow):
         if exit_code == 0:
             self.calib_log.append("\n[Stage 2 complete ✓]\n\n[Auto-calibration pipeline DONE]\n")
             self.calib_result_status.setText("Status: Complete ✓ (Analytic + Physics)")
-            # Apply analytically calibrated observer gains to the GUI widgets
-            # so the next simulation run uses the tuned values immediately.
+            # ── Apply all calibrated values to the GUI ─────────────────────
+            # 1. Load Stage-1 current/speed PI gains from saved JSON
+            self._load_stage1_gains_to_gui()
+            # 2. Load Stage-2 field-weakening parameters from saved JSON
+            self._load_stage2_fw_to_gui()
+            # 3. Compute observer gains analytically + startup sequence
+            #    + EEMF/SOGI/decoupling toggles for the current motor
             self._apply_observer_calibration_to_gui()
             speak(
                 "Auto-calibration pipeline complete. "
-                "FOC PI gains, field-weakening parameters, and observer gains "
-                "updated for the current motor."
+                "FOC PI gains, field-weakening parameters, observer gains, "
+                "and startup sequence updated for the current motor."
             )
             status_bar = self.statusBar()
             if status_bar is not None:
@@ -4642,84 +4725,332 @@ class BLDCMotorControlGUI(QMainWindow):
 
         self._reset_auto_calib_ui()
 
+    @staticmethod
+    def _recommend_observer(
+        is_salient: bool,
+        omega_e_max: float,
+        v_bus: float,
+        ke: float,
+    ) -> str:
+        """Recommend the most appropriate sensorless observer for a motor profile.
+
+        Decision tree (in priority order):
+        1. Salient-pole (IPM, Lq/Ld > 1.2) → ``"ActiveFlux"``
+           ActiveFlux integrator is immune to cross-saturation bias and handles
+           the reluctance-torque term naturally in field-weakening.
+        2. Isotropic, high back-EMF speed (ωe_max > 1 500 rad/s) → ``"PLL"``
+           Phase-locked loop is simple and very accurate when back-EMF is
+           well above the noise floor across most of the speed range.
+        3. Isotropic, lower speed range → ``"SMO"``
+           First-order SMO is more robust than PLL when back-EMF is small
+           and provides adequate accuracy up to moderate speeds.
+
+        Parameters
+        ----------
+        is_salient : bool
+            True when Lq/Ld > 1.2 (IPM motor).
+        omega_e_max : float
+            Maximum electrical angular speed [rad/s] at rated mechanical speed.
+        v_bus : float
+            DC bus voltage [V] (reserved for future SNR-based logic).
+        ke : float
+            Back-EMF constant [Vs/rad] (reserved for future SNR-based logic).
+
+        Returns
+        -------
+        str
+            One of ``"ActiveFlux"``, ``"PLL"``, or ``"SMO"``.
+        """
+        if is_salient:
+            return "ActiveFlux"
+        # Threshold: 1 500 rad/s ≈ 3 000 RPM with pp=5, or 7 500 RPM with pp=2
+        if omega_e_max > 1500.0:
+            return "PLL"
+        return "SMO"
+
     def _apply_observer_calibration_to_gui(self) -> None:
         """Compute analytical observer gains from current motor params and apply to GUI.
 
         Called automatically after the two-stage auto-calibration pipeline
-        finishes successfully.  Uses the same analytical formulas as the
-        individual per-observer auto-calibrate buttons so the GUI always
-        reflects a physically consistent set of gains for the loaded motor.
+        finishes successfully.  Produces a physically consistent set of gains
+        for the loaded motor, including full saliency awareness for IPM motors.
 
         Calibrated observers
         --------------------
-        * PLL  — Kp, Ki from type-2 bandwidth target (ωn = ωe_max / 5)
-        * SMO  — Kslide, LPF alpha, boundary from electrical time constant
-        * STSMO — k1, k2_min, k2_factor from Levant convergence conditions
-        * ActiveFlux — dc_cutoff_hz set to a safe 0.3 Hz (well below
-          minimum expected electrical frequency)
+        * PLL       — Kp, Ki from type-2 bandwidth target (ωn = ωe_max / 5)
+        * SMO       — Kslide, LPF alpha, boundary from τe; for IPM (Lq/Ld>1.2):
+                      lower k_slide (2×ωe_max) and wider boundary (0.08 rad) to
+                      reduce chattering from saliency harmonics
+        * STSMO     — k1, k2_min, k2_factor from Levant convergence conditions;
+                      k2_min is motor-aware (scales with Ke×ωe_max); convergence
+                      factor raised to 4.0 for salient motors
+        * ActiveFlux — dc_cutoff derived from minimum electrical frequency at
+                      the open-loop handoff speed
+        * EEMF model — auto-enabled when Lq/Ld > 1.2 (IPM compensation)
+        * SOGI filter — auto-enabled when Lq/Ld > 1.2 (zero phase-lag EMF filter)
+
+        Startup sequence
+        ----------------
+        Alignment duration, align current, open-loop ramp speed/time, iq reference,
+        and observer handoff thresholds are all derived analytically from motor
+        parameters so the first simulation run uses safe default values without
+        any manual entry.
         """
         try:
+            import numpy as np
+
             from src.control.foc_controller import FOCController
             from src.core.motor_model import BLDCMotor, MotorParameters
 
-            # Build a transient motor instance from current GUI values
+            # ── Collect current motor parameters from GUI ──────────────────
             mp = self._collect_current_motor_parameters()
-            rated_rpm = float(getattr(self, "foc_stsmo_rated_rpm", None)
-                              and self.foc_stsmo_rated_rpm.value() or 3000.0)
+            rated_rpm = float(
+                getattr(self, "foc_stsmo_rated_rpm", None)
+                and self.foc_stsmo_rated_rpm.value()
+                or 3000.0
+            )
 
+            # ── Derive key motor quantities ────────────────────────────────
+            pp = max(1, int(mp["num_poles"]) // 2)
+            ke = float(mp["back_emf_constant"])
+            R  = float(mp["phase_resistance"])
+            v_bus = float(mp["nominal_voltage"])
+            ld = float(mp.get("ld") or mp["phase_inductance"])
+            lq = float(mp.get("lq") or mp["phase_inductance"])
+            # Average inductance for electrical time constant
+            L_avg = (ld + lq) / 2.0
+            tau_e = L_avg / max(R, 1e-9)          # electrical time constant [s]
+
+            omega_m_max = rated_rpm / 60.0 * 2.0 * float(np.pi)
+            omega_e_max = omega_m_max * pp         # max electrical angular speed [rad/s]
+
+            # ── Saliency detection ─────────────────────────────────────────
+            # IPM: Lq/Ld > 1.2 — requires EEMF model + SOGI to avoid angle bias
+            saliency_ratio = lq / max(ld, 1e-12)
+            is_salient = saliency_ratio > 1.2
+            # Convergence factor: raise to 4.0 for salient motors (extra margin
+            # against saliency-induced harmonic in the reconstructed EMF)
+            convergence_factor = 4.0 if is_salient else 3.0
+
+            # ── Observer auto-selection ────────────────────────────────────
+            # If the user left the observer mode as "Auto (recommend from motor)"
+            # we compute the best observer for this motor and programme it into
+            # the combo.  If the user already picked a specific observer we
+            # respect that choice and leave the combo unchanged.
+            _user_obs_mode = self.foc_angle_observer_mode.currentText()
+            if _user_obs_mode == "Auto (recommend from motor)":
+                _recommended = self._recommend_observer(
+                    is_salient=is_salient,
+                    omega_e_max=omega_e_max,
+                    v_bus=v_bus,
+                    ke=ke,
+                )
+                self.foc_angle_observer_mode.setCurrentText(_recommended)
+                # Startup observer: for sensorless modes use STSMO during
+                # startup (unconditionally stable); for Measured keep Measured.
+                if _recommended != "Measured":
+                    self.foc_startup_initial_observer.setCurrentText("STSMO")
+                else:
+                    self.foc_startup_initial_observer.setCurrentText("Measured")
+                self.calib_log.append(
+                    f"\n[Observer auto-selection: recommended '{_recommended}' "
+                    f"(saliency_ratio={saliency_ratio:.2f}, "
+                    f"ωe_max={omega_e_max:.0f} rad/s)]\n"
+                )
+            elif self.foc_startup_initial_observer.currentText() == "Auto (recommend from motor)":
+                # Main observer was set manually but startup is still Auto —
+                # derive startup observer from the manually chosen main observer.
+                _main_obs = _user_obs_mode
+                if _main_obs in ("PLL", "SMO", "STSMO", "ActiveFlux"):
+                    self.foc_startup_initial_observer.setCurrentText("STSMO")
+                else:
+                    self.foc_startup_initial_observer.setCurrentText("Measured")
+
+            # ── Build transient FOCController for analytical formulas ───────
             params = MotorParameters(
-                nominal_voltage=mp["nominal_voltage"],
-                phase_resistance=mp["phase_resistance"],
+                nominal_voltage=v_bus,
+                phase_resistance=R,
                 phase_inductance=mp["phase_inductance"],
-                back_emf_constant=mp["back_emf_constant"],
-                torque_constant=mp["torque_constant"],
-                rotor_inertia=mp["rotor_inertia"],
-                friction_coefficient=mp["friction_coefficient"],
-                num_poles=mp["num_poles"],
-                ld=mp.get("ld"),
-                lq=mp.get("lq"),
+                back_emf_constant=ke,
+                torque_constant=float(mp["torque_constant"]),
+                rotor_inertia=float(mp["rotor_inertia"]),
+                friction_coefficient=float(mp["friction_coefficient"]),
+                num_poles=int(mp["num_poles"]),
+                poles_pairs=pp,   # must be set explicitly; default is 4
+                ld=ld,
+                lq=lq,
                 model_type=mp.get("model_type", "dq"),
             )
             motor = BLDCMotor(params)
             ctrl = FOCController(motor=motor)
+            ctrl.enable_sensorless_emf_reconstruction()
 
             # ── PLL ────────────────────────────────────────────────────────
             pll = ctrl.calibrate_pll_gains_analytical(rated_rpm=rated_rpm, apply=False)
+
+            # ── SMO (saliency-aware) ────────────────────────────────────────
+            dt_ui = 1.0 / max(float(self.inverter_switching_frequency.value()), 1.0)
+            if is_salient:
+                # IPM motors: reduce k_slide to 2×ωe_max (EEMF model does the
+                # heavy lifting) and widen boundary to 0.08 rad to suppress
+                # the reluctance-torque harmonic that would otherwise cause
+                # excessive chattering with the standard 5×ωe_max gain.
+                k_slide_smo = 2.0 * omega_e_max
+                lpf_alpha_smo = float(dt_ui) / (float(dt_ui) + 3.0 * tau_e)
+                lpf_alpha_smo = float(np.clip(lpf_alpha_smo, 1e-4, 0.5))
+                smo = {
+                    "k_slide":   k_slide_smo,
+                    "lpf_alpha": lpf_alpha_smo,
+                    "boundary":  0.08,
+                }
+            else:
+                smo = ctrl.calibrate_smo_gains_analytical(
+                    rated_rpm=rated_rpm, dt=dt_ui, apply=False
+                )
+
+            # ── STSMO (motor-aware k2_min) ─────────────────────────────────
+            # k2_min governs STSMO tracking during the open-loop ramp when the
+            # speed-adaptive formula (k2 = ke·ωm·ωe) approaches zero.
+            # Formula: cover the EMF rate-of-change produced by accelerating from
+            # 0 to 5 % of ωe_max in 0.1 s (typical ramp), × 3 safety factor.
+            k2_min_motor = max(50.0, 1.5 * ke * omega_e_max)
+            if is_salient:
+                # Saliency adds a 2× harmonic in the reconstructed EMF whose
+                # amplitude is ≈ (Lq-Ld)/Ld × Ke×ωe.  Extra margin needed.
+                k2_min_motor *= 1.5
+            k2_min_motor = float(np.clip(k2_min_motor, 50.0, 20000.0))
+
+            stsmo = ctrl.calibrate_stsmo_gains_analytical(
+                rated_rpm=rated_rpm,
+                convergence_factor=convergence_factor,
+                apply=False,
+            )
+
+            # ── ActiveFlux dc_cutoff ────────────────────────────────────────
+            # Must be comfortably below the minimum electrical frequency.
+            # We use the open-loop handoff speed (computed below) as reference.
+            # f_e_min = handoff_rpm × pp / 60; dc_cutoff = f_e_min / 10
+            # (clamped to [0.05, 0.5] Hz for safety).
+            omega_m_emf_thresh = 0.05 * v_bus / max(ke, 1e-9)   # [rad/s mech]
+            handoff_rpm = max(60.0, omega_m_emf_thresh * 60.0 / (2.0 * float(np.pi)))
+            handoff_rpm = round(handoff_rpm / 10.0) * 10.0       # snap to 10 RPM
+            f_e_min = handoff_rpm * pp / 60.0                     # [Hz electrical]
+            dc_cutoff = float(np.clip(f_e_min / 10.0, 0.05, 0.5))
+
+            # ── Startup sequence auto-tuning ────────────────────────────────
+            # Alignment: settle in 5× electrical time constants (min 50 ms)
+            align_duration = float(np.clip(5.0 * tau_e, 0.05, 0.5))
+            # Alignment current: 10 % of bus voltage in amperes, capped [0.5, 3 A]
+            align_current = float(np.clip(0.10 * v_bus, 0.5, 3.0))
+            # Open-loop speed ramp: from 10 % to handoff speed
+            initial_rpm = float(np.clip(0.10 * handoff_rpm, 5.0, 30.0))
+            ramp_time = float(np.clip(handoff_rpm / max(rated_rpm, 1.0) * 0.5,
+                                      0.10, 2.0))
+            # Startup iq reference: enough to accelerate, capped [0.5, 3 A]
+            iq_startup = float(np.clip(0.05 * v_bus, 0.5, 3.0))
+            # Observer handoff thresholds
+            min_emf_v    = float(np.clip(0.03 * v_bus, 0.05, 2.0))
+            min_speed_rpm = handoff_rpm
+            min_time_s   = float(np.clip(ramp_time * 0.8, 0.05, 1.0))
+
+            # ── Apply all values to GUI widgets ────────────────────────────
+            # EEMF / SOGI toggles (auto-enable for IPM motors)
+            if hasattr(self, "foc_smo_eemf_model"):
+                self.foc_smo_eemf_model.setCurrentText(
+                    "Enabled" if is_salient else "Disabled"
+                )
+            if hasattr(self, "foc_smo_sogi_filter"):
+                self.foc_smo_sogi_filter.setCurrentText(
+                    "Enabled" if is_salient else "Disabled"
+                )
+
+            # D/Q decoupling — always beneficial for FOC; especially critical
+            # for IPM motors where Lq >> Ld produces large cross-coupling terms.
+            self.foc_decouple_d_mode.setCurrentText("Enabled")
+            self.foc_decouple_q_mode.setCurrentText("Enabled")
+
+            # ── PFC (Power Factor Controller) ──────────────────────────────
+            # max_compensation_var: upper VAR clamp — scale with rated power.
+            #   P_equiv ≈ Vbus² / (2R) gives a power proxy that works across
+            #   motors from 12 V / 50 W to 48 V / 5 kW without knowing rated
+            #   current explicitly.  30 % of that value is the reactive budget.
+            p_equiv = v_bus ** 2 / max(2.0 * R, 1e-9)
+            pfc_max_var = float(np.clip(p_equiv * 0.30, 100.0, 50000.0))
+
+            # window_samples: must cover ≥2 electrical cycles at rated speed so
+            #   the PF estimator averages out switching harmonics.
+            #   f_e_rated = rated_rpm × pp / 60  [Hz]
+            f_e_rated = rated_rpm * pp / 60.0
+            dt_sim = 1.0 / max(float(self.inverter_switching_frequency.value()), 1.0)
+            samples_per_cycle = 1.0 / max(f_e_rated * dt_sim, 1e-9)
+            pfc_window = int(np.clip(round(2.0 * samples_per_cycle), 8, 2000))
+
+            self.pfc_max_var.setValue(pfc_max_var)
+            self.pfc_window_samples.setValue(pfc_window)
+            # Enable PFC for diagnostic visibility; keep gains at defaults
+            # (kp=0.10, ki=1.0 are dimensionless and motor-independent)
+            self.pfc_mode.setCurrentText("Enabled")
+
+            # PLL
             self.foc_pll_kp.setValue(float(pll["kp"]))
             self.foc_pll_ki.setValue(float(pll["ki"]))
 
-            # ── SMO ────────────────────────────────────────────────────────
-            dt_ui = 1.0 / max(float(self.foc_pwm_freq.value()), 1.0)
-            smo = ctrl.calibrate_smo_gains_analytical(
-                rated_rpm=rated_rpm, dt=dt_ui, apply=False
-            )
+            # SMO
             self.foc_smo_k_slide.setValue(float(smo["k_slide"]))
             self.foc_smo_lpf_alpha.setValue(float(smo["lpf_alpha"]))
             self.foc_smo_boundary.setValue(float(smo["boundary"]))
 
-            # ── STSMO ──────────────────────────────────────────────────────
-            ctrl.enable_sensorless_emf_reconstruction()
-            stsmo = ctrl.calibrate_stsmo_gains_analytical(rated_rpm=rated_rpm, apply=False)
+            # STSMO
             self.foc_stsmo_k1.setValue(float(stsmo["k1"]))
-            # k2_min stays at 500 V/s (startup floor — motor-independent)
-            self.foc_stsmo_k2_min.setValue(500.0)
-            # k2_factor = 1.0 is the Levant theoretical minimum
+            self.foc_stsmo_k2_min.setValue(k2_min_motor)
             self.foc_stsmo_k2_factor.setValue(1.0)
             self.foc_stsmo_rated_rpm.setValue(float(rated_rpm))
 
-            # ── ActiveFlux ─────────────────────────────────────────────────
-            # dc_cutoff must be well below the minimum electrical frequency.
-            # 0.3 Hz is a safe conservative default for motors ≥ ~20 RPM.
-            self.foc_af_dc_cutoff.setValue(0.3)
+            # ActiveFlux
+            self.foc_af_dc_cutoff.setValue(dc_cutoff)
 
-            # Log calibrated values for the user
+            # Startup sequence
+            self.foc_startup_sequence_mode.setCurrentText("Enabled")
+            self.foc_startup_transition_mode.setCurrentText("Enabled")
+            self.foc_align_time.setValue(align_duration)
+            self.foc_align_current.setValue(align_current)
+            self.foc_open_loop_initial_speed.setValue(initial_rpm)
+            self.foc_open_loop_target_speed.setValue(handoff_rpm)
+            self.foc_open_loop_ramp_time.setValue(ramp_time)
+            self.foc_open_loop_id_ref.setValue(0.0)
+            self.foc_open_loop_iq_ref.setValue(iq_startup)
+            self.foc_startup_min_speed.setValue(min_speed_rpm)
+            self.foc_startup_min_emf.setValue(min_emf_v)
+            self.foc_startup_min_time.setValue(min_time_s)
+
+            # ── Log calibrated values ──────────────────────────────────────
+            salient_tag = (
+                f"  ⚑ IPM saliency detected: Lq/Ld={saliency_ratio:.2f} → "
+                "EEMF model + SOGI filter enabled\n"
+                if is_salient
+                else f"  Isotropic motor (Lq/Ld={saliency_ratio:.2f})\n"
+            )
+            _active_obs = self.foc_angle_observer_mode.currentText()
+            _startup_obs = self.foc_startup_initial_observer.currentText()
             self.calib_log.append(
-                "\n[Observer gains calibrated for current motor]\n"
-                f"  PLL:   Kp={pll['kp']:.2f}  Ki={pll['ki']:.1f}\n"
-                f"  SMO:   Kslide={smo['k_slide']:.1f}  LPF_alpha={smo['lpf_alpha']:.4f}"
-                f"  Boundary={smo['boundary']:.3f} rad\n"
-                f"  STSMO: k1={stsmo['k1']:.3f}  k2_min=500.0 V/s  k2_factor=1.0\n"
-                f"  ActiveFlux: dc_cutoff=0.3 Hz\n"
+                "\n[Observer gains auto-calibrated for current motor]\n"
+                + salient_tag
+                + f"  Active observer:  {_active_obs}\n"
+                f"  Startup observer: {_startup_obs}\n"
+                + f"  PLL:       Kp={pll['kp']:.2f}  Ki={pll['ki']:.1f}\n"
+                f"  SMO:       Kslide={smo['k_slide']:.1f}  "
+                f"LPF_alpha={smo['lpf_alpha']:.4f}  "
+                f"Boundary={smo['boundary']:.3f} rad\n"
+                f"  STSMO:     k1={stsmo['k1']:.3f}  k2_min={k2_min_motor:.1f} V/s"
+                f"  k2_factor=1.0  (λ={convergence_factor:.1f})\n"
+                f"  ActiveFlux: dc_cutoff={dc_cutoff:.3f} Hz\n"
+                f"  Startup:   align={align_duration*1000:.0f} ms  "
+                f"Ialign={align_current:.1f} A  "
+                f"ramp {initial_rpm:.0f}→{handoff_rpm:.0f} RPM in {ramp_time:.2f} s  "
+                f"min_EMF={min_emf_v:.2f} V\n"
+                "  Decoupling: D=Enabled  Q=Enabled\n"
+                f"  PFC:       Enabled  max_var={pfc_max_var:.0f} VAR"
+                f"  window={pfc_window} samples\n"
             )
 
         except Exception as exc:  # noqa: BLE001
@@ -4727,6 +5058,224 @@ class BLDCMotorControlGUI(QMainWindow):
                 f"\n[Observer calibration to GUI failed: {exc}]\n"
                 "  Observer gains were NOT updated — please use the per-observer "
                 "Auto-Calibrate buttons manually.\n"
+            )
+
+    # ── Calibration result loaders ────────────────────────────────────────────
+
+    def _match_calib_file(
+        self, calib_dir: "Path", prefix: str, mp: dict, tol: float = 0.03
+    ) -> "dict | None":
+        """Find the best-matching calibration JSON in *calib_dir*.
+
+        Looks for files whose name starts with *prefix* and whose stored motor
+        parameters are within *tol* (relative) of the current GUI motor params.
+
+        Parameters
+        ----------
+        calib_dir : Path
+            Directory to search.
+        prefix : str
+            File-name prefix, e.g. ``"auto_calibrated_"`` or ``"fw_calibrated_"``.
+        mp : dict
+            Current motor params from ``_collect_current_motor_parameters()``.
+        tol : float
+            Maximum relative difference allowed for each key parameter (default 3 %).
+
+        Returns
+        -------
+        Parsed JSON dict of the best-matching file, or ``None`` if no match.
+        """
+        import json as _json
+
+        def _rel_close(a: float, b: float) -> bool:
+            if max(abs(a), abs(b)) < 1e-12:
+                return True
+            return abs(a - b) / max(abs(a), abs(b)) <= tol
+
+        best: dict | None = None
+        best_score = -1
+
+        for path in sorted(calib_dir.glob(f"{prefix}*.json")):
+            try:
+                with path.open() as f:
+                    data = _json.load(f)
+            except Exception:  # noqa: BLE001  # nosec B112
+                continue
+
+            # Stage-1 files use "motor_params" key; Stage-2 uses "motor_params_summary"
+            stored = data.get("motor_params") or {}
+            summary = data.get("motor_params_summary") or {}
+
+            # Build a normalised comparison dict from whichever key is present
+            cmp: dict = {}
+            if stored:
+                cmp = {
+                    "R": stored.get("phase_resistance"),
+                    "L": stored.get("phase_inductance"),
+                    "Ke": stored.get("back_emf_constant"),
+                    "V": stored.get("nominal_voltage"),
+                    "pp": stored.get("poles_pairs"),
+                }
+            elif summary:
+                cmp = {
+                    "R": summary.get("R"),
+                    "L": summary.get("L"),
+                    "Ke": summary.get("Ke"),
+                    "V": summary.get("Vnom"),
+                    "pp": summary.get("pp"),
+                }
+
+            if not all(v is not None for v in cmp.values()):
+                continue
+
+            gui = {
+                "R":  mp["phase_resistance"],
+                "L":  mp["phase_inductance"],
+                "Ke": mp["back_emf_constant"],
+                "V":  mp["nominal_voltage"],
+                "pp": max(1, int(mp["num_poles"]) // 2),
+            }
+
+            matches = sum(
+                1 for k in gui if cmp[k] is not None and _rel_close(float(gui[k]), float(cmp[k]))
+            )
+            if matches == len(gui) and matches > best_score:
+                best_score = matches
+                best = data
+
+        return best
+
+    def _load_stage1_gains_to_gui(self) -> None:
+        """Apply Stage-1 calibration results (current PI + speed PI) to the GUI.
+
+        Searches ``data/tuning_sessions/`` for an ``auto_calibrated_*.json``
+        file whose motor parameters match the currently loaded motor (within
+        3 % relative tolerance on R, L, Ke, Vnom, pp).  If found, populates:
+
+        * ``foc_d_kp``, ``foc_d_ki`` — d-axis current PI (same as q-axis: unified calibration)
+        * ``foc_q_kp``, ``foc_q_ki`` — q-axis current PI
+        * ``foc_speed_kp``, ``foc_speed_ki`` — outer speed loop PI
+        """
+        try:
+            calib_dir = (
+                Path(__file__).resolve().parents[2] / "data" / "tuning_sessions"
+            )
+            mp = self._collect_current_motor_parameters()
+            data = self._match_calib_file(calib_dir, "auto_calibrated_", mp)
+
+            if data is None:
+                self.calib_log.append(
+                    "\n[Stage 1 gains: no matching calibration file found — "
+                    "current/speed PI gains unchanged]\n"
+                )
+                return
+
+            res = data.get("tuning_result", {})
+            current_kp = float(res["current_kp"])
+            current_ki = float(res["current_ki"])
+            speed_kp   = float(res["speed_kp"])
+            speed_ki   = float(res["speed_ki"])
+
+            # Stage 1 produces a single unified current_kp/ki; apply to both
+            # d- and q-axis controllers.  The d-axis (flux) and q-axis (torque)
+            # share the same bandwidth in the symmetric FOC design.
+            self.foc_d_kp.setValue(current_kp)
+            self.foc_d_ki.setValue(current_ki)
+            self.foc_q_kp.setValue(current_kp)
+            self.foc_q_ki.setValue(current_ki)
+            self.foc_speed_kp.setValue(speed_kp)
+            self.foc_speed_ki.setValue(speed_ki)
+
+            profile_name = data.get("motor_profile_name", "unknown")
+            self.calib_log.append(
+                f"\n[Stage 1 gains loaded — profile: {profile_name}]\n"
+                f"  Current PI: Kp={current_kp:.4f}  Ki={current_ki:.3f}  "
+                f"(applied to d- and q-axes)\n"
+                f"  Speed PI:   Kp={speed_kp:.4f}  Ki={speed_ki:.4f}\n"
+            )
+
+        except Exception as exc:  # noqa: BLE001
+            self.calib_log.append(
+                f"\n[Stage 1 gains load failed: {exc}]\n"
+                "  Current / speed PI gains unchanged.\n"
+            )
+
+    def _load_stage2_fw_to_gui(self) -> None:
+        """Apply Stage-2 calibration results (field-weakening parameters) to the GUI.
+
+        Searches ``data/tuning_sessions/`` for a ``fw_calibrated_*.json`` file
+        whose motor parameters match the currently loaded motor (within 3 %
+        relative tolerance).  If found, enables field-weakening and sets:
+
+        * ``foc_field_weakening_mode`` → "Enabled"
+        * ``foc_field_weakening_start_speed`` → ``physics_params.fw_start_rpm``
+        * ``foc_field_weakening_gain``        → ``selected_gain``
+        * ``foc_field_weakening_max_id``      → ``selected_fw_id_max_a``
+        * ``foc_field_weakening_headroom_target`` → ``physics_params.fw_headroom_target_v``
+        * ``foc_iq_limit``                   → rated current from motor_params_summary
+          (capped at the spinbox maximum for safety)
+
+        If field-weakening is not needed (``fw_needed = False``), FW mode is set
+        to "Disabled" and the remaining FW controls are still populated with the
+        physics-based analytical values for reference.
+        """
+        try:
+            calib_dir = (
+                Path(__file__).resolve().parents[2] / "data" / "tuning_sessions"
+            )
+            mp = self._collect_current_motor_parameters()
+            data = self._match_calib_file(calib_dir, "fw_calibrated_", mp)
+
+            if data is None:
+                self.calib_log.append(
+                    "\n[Stage 2 FW: no matching calibration file found — "
+                    "field-weakening parameters unchanged]\n"
+                )
+                return
+
+            pp        = data.get("physics_params", {})
+            fw_start  = float(pp.get("fw_start_rpm", 0.0))
+            fw_gain   = float(data.get("selected_gain", pp.get("fw_gain", 1.0)))
+            fw_id_max = float(data.get("selected_fw_id_max_a", pp.get("fw_id_max_a", 5.0)))
+            fw_head   = float(pp.get("fw_headroom_target_v", 1.0))
+            fw_needed = bool(pp.get("fw_needed", fw_start > 0))
+
+            # Rated current from motor_params_summary (used for Iq limit)
+            summary    = data.get("motor_params_summary", {})
+            i_rated    = float(summary.get("I_rated", 0.0))
+
+            self.foc_field_weakening_mode.setCurrentText(
+                "Enabled" if fw_needed else "Disabled"
+            )
+            self.foc_field_weakening_start_speed.setValue(fw_start)
+            self.foc_field_weakening_gain.setValue(fw_gain)
+            self.foc_field_weakening_max_id.setValue(abs(fw_id_max))
+            self.foc_field_weakening_headroom_target.setValue(fw_head)
+
+            # Set Iq limit from rated current (capped at spinbox max)
+            if i_rated > 0:
+                iq_limit_max = float(self.foc_iq_limit.spinner.maximum())
+                self.foc_iq_limit.setValue(min(i_rated, iq_limit_max))
+
+            profile_name = data.get("motor_profile_name", "unknown")
+            all_passed   = data.get("all_passed", False)
+            self.calib_log.append(
+                f"\n[Stage 2 FW parameters loaded — profile: {profile_name}]\n"
+                f"  FW mode:    {'Enabled' if fw_needed else 'Disabled (no FW needed)'}\n"
+                f"  Start RPM:  {fw_start:.1f}\n"
+                f"  Gain:       {fw_gain:.3f}\n"
+                f"  Max -Id:    {fw_id_max:.1f} A\n"
+                f"  Headroom:   {fw_head:.3f} V\n"
+                f"  All operating-point checks: {'PASS' if all_passed else 'PARTIAL'}\n"
+                + (f"  Iq limit:   "
+                   f"{min(i_rated, float(self.foc_iq_limit.spinner.maximum())):.1f} A\n"
+                   if i_rated > 0 else "")
+            )
+
+        except Exception as exc:  # noqa: BLE001
+            self.calib_log.append(
+                f"\n[Stage 2 FW load failed: {exc}]\n"
+                "  Field-weakening parameters unchanged.\n"
             )
 
     def _stop_auto_calibrate_all(self) -> None:
@@ -4813,7 +5362,7 @@ class BLDCMotorControlGUI(QMainWindow):
             self.hardware_enable_backend.setChecked(False)
         self._apply_to_simulation()
 
-    def _apply_to_simulation(self):
+    def _apply_to_simulation(self):  # noqa: C901
         """Apply current UI parameters to simulation."""
         requested_pwm_hz = float(self.inverter_switching_frequency.value())
         if requested_pwm_hz <= 0.0:
@@ -5016,10 +5565,37 @@ class BLDCMotorControlGUI(QMainWindow):
                 enable_q=self.foc_decouple_q_mode.currentText() == "Enabled",
             )
             _obs_mode = self.foc_angle_observer_mode.currentText()
+            # ── Guard: resolve unresolved "Auto" before entering simulation ───
+            # If the user selected "Auto (recommend from motor)" but did NOT run
+            # Auto Calibrate first, the combo is never resolved to a concrete
+            # observer.  Fall back to "Measured" (safe sensored mode) and warn.
+            if _obs_mode == "Auto (recommend from motor)":
+                logger.warning(
+                    "Observer mode 'Auto' was not resolved by Auto-Calibrate. "
+                    "Falling back to 'Measured' (sensored) for this simulation run. "
+                    "Click 'Auto Calibrate' first to let the pipeline choose the "
+                    "optimal observer for the loaded motor profile."
+                )
+                _obs_mode = "Measured"
+                # Do NOT write back to the combo — user may still want to run
+                # Auto Calibrate later, so keep "Auto" visible in the dropdown.
             # ── Observer-specific activation ─────────────────────────────────
             if _obs_mode in ("STSMO", "ActiveFlux", "PLL", "SMO"):
                 # All sensorless modes need EMF reconstruction
                 controller.enable_sensorless_emf_reconstruction()
+                # EEMF model — saliency compensation for IPM motors (Chen 2003)
+                if (
+                    hasattr(self, "foc_smo_eemf_model")
+                    and self.foc_smo_eemf_model.currentText() == "Enabled"
+                ):
+                    lq_val = float(self.param_lq.value())
+                    controller.enable_eemf_model(Lq=lq_val)
+                # SOGI bandpass filter — zero phase lag at ωe
+                if (
+                    hasattr(self, "foc_smo_sogi_filter")
+                    and self.foc_smo_sogi_filter.currentText() == "Enabled"
+                ):
+                    controller.enable_sogi_filter(k=1.4142)
             if _obs_mode == "STSMO":
                 # Apply backward-Euler STSMO; set_angle_observer("PLL") for the
                 # outer angle/speed loop — STSMO provides the EMF feed.
@@ -5276,7 +5852,7 @@ class BLDCMotorControlGUI(QMainWindow):
 
     def _on_stsmo_autocalib(self) -> None:
         """Analytically compute STSMO gains and populate the GUI spinboxes."""
-        if not isinstance(self.motor, type(self.motor)):
+        if self.motor is None:
             QMessageBox.warning(self, "Warning", "Motor parameters are not initialised.")
             return
         try:

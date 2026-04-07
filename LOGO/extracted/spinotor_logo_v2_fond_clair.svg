@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 300" width="260" height="300">
+  <!-- Variante 2 — fond clair, contour violet -->
+  <!-- Hexagone fond clair -->
+  <polygon points="130,20 210,65 210,155 130,200 50,155 50,65" fill="#F1EFE8" stroke="#534AB7" stroke-width="2.5"/>
+  <!-- Arc 1 -->
+  <path d="M130,50 A60,60 0 0 1 182,108" fill="none" stroke="#534AB7" stroke-width="7" stroke-linecap="round"/>
+  <!-- Arc 2 -->
+  <path d="M182,108 A60,60 0 0 1 130,166" fill="none" stroke="#534AB7" stroke-width="7" stroke-linecap="round"/>
+  <!-- Arc 3 -->
+  <path d="M130,166 A60,60 0 0 1 78,108" fill="none" stroke="#534AB7" stroke-width="7" stroke-linecap="round"/>
+  <!-- Pointe de flèche -->
+  <polygon points="130,50 120,67 140,67" fill="#534AB7" transform="rotate(-28,130,50)"/>
+  <!-- Hub central -->
+  <circle cx="130" cy="108" r="10" fill="#534AB7"/>
+  <!-- Texte SPINOTOR -->
+  <text x="130" y="238" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="22" font-weight="600"
+        letter-spacing="5" fill="#534AB7">SPINOTOR</text>
+</svg>
